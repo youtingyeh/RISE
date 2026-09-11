@@ -1,6 +1,6 @@
 "use strict";
 
-(() => {
+(async () => {
   const D = window.RISE_DATA;
   const app = document.getElementById("app");
 
@@ -17,6 +17,26 @@
     }
 
     return;
+  }
+
+  // 先驗證登入，再建立表單或播放器；直接輸入網址也適用。
+  if (['learning', 'inquiry', 'video'].includes(document.body.dataset.page)) {
+    app.innerHTML = '<main class="container section"><h1>確認登入狀態</h1><p>正在準備你的學習空間…</p></main>';
+    try {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        const timer = setTimeout(() => reject(Error('登入功能載入逾時。')), 15000);
+        s.src = new URL('learning-session.js', document.baseURI).href;
+        s.onload = () => { clearTimeout(timer); resolve(); };
+        s.onerror = () => { clearTimeout(timer); reject(Error('請確認 learning-session.js 已上傳。')); };
+        document.head.append(s);
+      });
+      if (!await window.RISE_LEARNING.ready) return;
+    } catch (err) {
+      app.innerHTML = '<main class="container section"><h1>暫時無法進入學習功能</h1><p id="gate-error"></p><a class="button" href="login.html">前往登入</a> <a href="index.html">返回首頁</a></main>';
+      document.getElementById('gate-error').textContent = err.message;
+      return;
+    }
   }
 
   /* ===== 共用工具 ===== */
@@ -1017,8 +1037,8 @@
   function programHomePage() {
     return `${heading("REASONING × QUESTIONING", "練習推理，也練習提出好問題", "數思新生以數理能力與提問力雙軌培育，陪你從理解概念、寫出思路，到修正問題與展開對話。")}
       <section class="section container"><div class="card-grid two">
-      <article class="subject-card math"><p class="eyebrow">TRACK 01 / REASONING</p><h2>數理能力</h2><p>先理解概念，再寫出每一步的理由；從錯誤中修正推理。</p>${link("learning.html", "查看學習路徑", "button")}</article>
-      <article class="subject-card physics"><p class="eyebrow">TRACK 02 / QUESTIONING</p><h2>提問力</h2><p>說明你觀察到什麼、為什麼想問，以及這個問題值得探索的原因。</p>${link("inquiry.html", "開始整理我的問題", "button")}</article></div>
+      <article class="subject-card math"><p class="eyebrow">TRACK 01 / REASONING</p><h2>數理能力</h2><p>先理解概念，再寫出每一步的理由；從錯誤中修正推理。此功能需登入使用。</p>${link("learning.html", "查看學習路徑", "button")}</article>
+      <article class="subject-card physics"><p class="eyebrow">TRACK 02 / QUESTIONING</p><h2>提問力</h2><p>說明你觀察到什麼、為什麼想問，以及這個問題值得探索的原因。此功能需登入使用。</p>${link("inquiry.html", "開始整理我的問題", "button")}</article></div>
       <div class="note"><h2>第一次來？</h2><p>對數理有興趣的高中生，可以先看學習路徑；想練習把想法問清楚，也可以直接使用提問工作台。範例階段尚未開放正式教材、作業繳交與助教批閱。</p></div>
       ${sectionHeading("DISCIPLINES", "學科探索", "science.html", "查看三學科 →")}<div class="card-grid">${subjectCards()}</div></section>
       <section class="section soft"><div class="container">${sectionHeading("LEARNING CYCLE", "看懂之後，把思路留下來")}
@@ -1078,7 +1098,7 @@
     const panel=document.querySelector("[data-draft-kind]");if(!panel)return;
     const form=document.getElementById("draft-form"),status=document.getElementById("draft-status"),historyBox=document.getElementById("draft-history");
     const inputs=[...form.querySelectorAll("textarea")];
-    const key="rise-draft-v1:"+panel.dataset.draftKind+":"+panel.dataset.draftContext;
+    const key="rise-draft-v2:"+window.RISE_LEARNING.user.id+":"+panel.dataset.draftKind+":"+panel.dataset.draftContext;
     let versions=[],dirty=false,storageAvailable=true;
     try{const stored=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(stored))throw Error("invalid");versions=stored.filter(v=>v&&typeof v.time==="string"&&v.values&&typeof v.values==="object").slice(-20);}catch{storageAvailable=false;status.textContent="無法讀取本機紀錄。請使用匯出保留本次草稿。";}
     function values(){return Object.fromEntries(inputs.map(input=>[input.name,input.value]));}
@@ -1186,7 +1206,7 @@
   addLearningRecord();
   setupDrafts();
   setupFilters();
-  setupPlayer();
+  // 播放器只由 media.js 建立，避免舊播放器繞過觀看紀錄。
   if(page === "video") {
     const mediaScript=document.createElement("script");
     mediaScript.src=new URL("./media.js", document.currentScript ? document.currentScript.src : document.baseURI).href;
@@ -1196,4 +1216,3 @@
 })();
 
   
-
