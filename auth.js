@@ -1,169 +1,1087 @@
 /* RISE 帳號介面：密碼由 Supabase Auth 處理；權限由資料庫決定。 */
 (() => {
   'use strict';
+
   const $ = s => document.querySelector(s);
-  const root = $('#auth-root'), status = $('#auth-status'), notice = $('#auth-notice');
+  const root = $('#auth-root');
+  const status = $('#auth-status');
+  const notice = $('#auth-notice');
+
   if (!root) return;
+
   const page = document.body.dataset.authPage;
   const cfg = window.RISE_AUTH_CONFIG || {};
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const labels = {pending:'待審核',returned:'待補件',approved:'已核准',rejected:'未核准'};
-  const roles = {student:'一般學習帳號',teacher:'教師',ta:'助教',admin:'管理員'};
-  let client, user, profile, recovery = false;
-  const report = (message, error = false) => {status.textContent = message;status.classList.toggle('error',error);};
-  const field = (id, label, type = 'text', extra = '') => `<div class="auth-field"><label for="${id}">${label}</label><input id="${id}" name="${id}" type="${type}" required ${extra}></div>`;
-  const password = () => field('password','密碼（至少 12 個字元）','password','minlength="12" maxlength="128" autocomplete="new-password"') + field('password2','再次輸入密碼','password','minlength="12" maxlength="128" autocomplete="new-password"');
-  const email = () => field('email','電子信箱','email','maxlength="254" autocomplete="email"');
-  const button = (label) => `<button type="submit" data-submit>${label}</button>`;
-  const side = `<aside class="auth-card auth-aside"><h2>從提問出發，持續探索</h2><p>數學、物理與化學，從理解概念到說明自己的推理。</p><ol><li>建立帳號並驗證信箱。</li><li>教師可提交資格申請。</li><li>管理員核准後取得教師身分。</li></ol><p>公開影片與教材可直接瀏覽。作業繳交與教學管理將另行開放。</p><a href="science.html">先探索三學科 →</a></aside>`;
-  function form(body) {root.innerHTML = `<div class="auth-grid"><section class="auth-card"><form id="auth-form">${body}</form></section>${side}</div>`;}
+
+  const esc = v => String(v ?? '').replace(
+    /[&<>"']/g,
+    c => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[c])
+  );
+
+  const labels = {
+    pending: '待審核',
+    returned: '待補件',
+    approved: '已核准',
+    rejected: '未核准'
+  };
+
+  const roles = {
+    student: '一般學習帳號',
+    teacher: '教師',
+    ta: '助教',
+    admin: '管理員／教師'
+  };
+
+  let client;
+  let user;
+  let profile;
+  let recovery = false;
+
+  function report(message, error = false) {
+    status.textContent = message;
+    status.classList.toggle('error', error);
+  }
+
+  function field(id, label, type = 'text', extra = '') {
+    return `
+      <div class="auth-field">
+        <label for="${id}">${label}</label>
+        <input
+          id="${id}"
+          name="${id}"
+          type="${type}"
+          required
+          ${extra}
+        >
+      </div>
+    `;
+  }
+
+  function password() {
+    return (
+      field(
+        'password',
+        '密碼（至少 12 個字元）',
+        'password',
+        'minlength="12" maxlength="128" autocomplete="new-password"'
+      ) +
+      field(
+        'password2',
+        '再次輸入密碼',
+        'password',
+        'minlength="12" maxlength="128" autocomplete="new-password"'
+      )
+    );
+  }
+
+  function email() {
+    return field(
+      'email',
+      '電子信箱',
+      'email',
+      'maxlength="254" autocomplete="email"'
+    );
+  }
+
+  function button(label) {
+    return `<button type="submit" data-submit>${label}</button>`;
+  }
+
+  const side = `
+    <aside class="auth-card auth-aside">
+      <h2>從提問出發，持續探索</h2>
+      <p>數學、物理與化學，從理解概念到說明自己的推理。</p>
+      <ol>
+        <li>建立帳號並驗證信箱。</li>
+        <li>教師可提交資格申請。</li>
+        <li>管理員核准後取得教師身分。</li>
+      </ol>
+      <p>公開影片與教材可直接瀏覽。作業繳交與教學管理將另行開放。</p>
+      <a href="science.html">先探索三學科 →</a>
+    </aside>
+  `;
+
+  function form(body) {
+    root.innerHTML = `
+      <div class="auth-grid">
+        <section class="auth-card">
+          <form id="auth-form">${body}</form>
+        </section>
+        ${side}
+      </div>
+    `;
+  }
+
   function errorText(err) {
     const s = String(err?.message || err);
-    if (/Invalid login credentials/i.test(s)) return '信箱或密碼不正確，請重新確認。';
-    if (/Email not confirmed/i.test(s)) return '信箱尚未驗證，請先開啟驗證信，或前往信箱驗證頁重新寄送。';
-    if (/rate limit|too many|security purposes/i.test(s)) return '操作過於頻繁，請稍後再試。';
-    if (/fetch|network|timeout/i.test(s)) return '無法連線，請確認網路後再試。';
-    if (/expired|invalid.*token/i.test(s)) return '連結已失效，請重新申請驗證信或密碼重設信。';
-    if (/rise:/i.test(s)) return s.slice(s.indexOf('rise:')+5);
+
+    if (/Invalid login credentials/i.test(s)) {
+      return '信箱或密碼不正確，請重新確認。';
+    }
+
+    if (/Email not confirmed/i.test(s)) {
+      return '信箱尚未驗證，請先開啟驗證信，或前往信箱驗證頁重新寄送。';
+    }
+
+    if (/rate limit|too many|security purposes/i.test(s)) {
+      return '操作過於頻繁，請稍後再試。';
+    }
+
+    if (/fetch|network|timeout/i.test(s)) {
+      return '無法連線，請確認網路後再試。';
+    }
+
+    if (/expired|invalid.*token/i.test(s)) {
+      return '連結已失效，請重新申請驗證信或密碼重設信。';
+    }
+
+    if (/rise:/i.test(s)) {
+      return s.slice(s.indexOf('rise:') + 5);
+    }
+
     return '操作未完成。請確認帳號服務、資料庫與寄信設定，稍後重試。';
   }
+
   function bindForm(action) {
-    $('#auth-form').addEventListener('submit',async event => {
+    $('#auth-form').addEventListener('submit', async event => {
       event.preventDefault();
-      if (!client) {report('帳號服務尚未啟用，資料未送出。',true);return;}
+
+      if (!client) {
+        report('帳號服務尚未啟用，資料未送出。', true);
+        return;
+      }
+
       const b = event.target.querySelector('[data-submit]');
+
       if (b.disabled) return;
-      b.disabled = true; report('處理中…');
-      try {await action(new FormData(event.target));} catch(err) {report(errorText(err),true);} finally {if (b.isConnected) b.disabled=false;}
+
+      b.disabled = true;
+      report('處理中…');
+
+      try {
+        await action(new FormData(event.target));
+      } catch (err) {
+        report(errorText(err), true);
+      } finally {
+        if (b.isConnected) b.disabled = false;
+      }
     });
   }
-  function checkPassword(f) {if(f.get('password') !== f.get('password2')) throw Error('rise:兩次輸入的密碼不一致。');}
-  function redirect(file) {return new URL(file,cfg.siteURL).href;}
-  function checked(result) {if(result.error) throw result.error;return result.data;}
+
+  function checkPassword(f) {
+    if (f.get('password') !== f.get('password2')) {
+      throw Error('rise:兩次輸入的密碼不一致。');
+    }
+  }
+
+  function redirect(file) {
+    return new URL(file, cfg.siteURL).href;
+  }
+
+  function checked(result) {
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
   async function loadUser() {
-    const {data,error} = await client.auth.getUser();
-    if(error && error.name !== 'AuthSessionMissingError') throw error;
+    const { data, error } = await client.auth.getUser();
+
+    if (error && error.name !== 'AuthSessionMissingError') {
+      throw error;
+    }
+
     user = data?.user;
-    if(!user) {root.innerHTML='<section class="auth-card"><h2>請先登入</h2><p>登入後才能查看帳號與申請資料。</p><a class="auth-button" href="login.html">前往登入</a></section>';return false;}
-    if(!user.email_confirmed_at) {root.innerHTML='<p>請先完成信箱驗證。</p><a href="verify-email.html">信箱驗證</a>';return false;}
-    profile = checked(await client.from('rise_profiles').select('*').eq('id',user.id).single());
+
+    if (!user) {
+      root.innerHTML = `
+        <section class="auth-card">
+          <h2>請先登入</h2>
+          <p>登入後才能查看帳號與申請資料。</p>
+          <a class="auth-button" href="login.html">前往登入</a>
+        </section>
+      `;
+      return false;
+    }
+
+    if (!user.email_confirmed_at) {
+      root.innerHTML = `
+        <p>請先完成信箱驗證。</p>
+        <a href="verify-email.html">信箱驗證</a>
+      `;
+      return false;
+    }
+
+    profile = checked(
+      await client
+        .from('rise_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+    );
+
     return true;
   }
+
   function renderPublic() {
-    if(page === 'register') {
-      form(field('name','姓名','text','maxlength="80" autocomplete="name"')+email()+password()+`<fieldset><legend>使用身分</legend><div class="auth-options"><label><input type="radio" name="kind" value="student" checked> 學生／學習者</label><label><input type="radio" name="kind" value="teacher"> 教師（須審核）</label></div></fieldset><p class="auth-help">選擇教師只代表申請意願，不會直接取得教師權限。助教與管理員由計畫團隊指派。</p><p><label><input type="checkbox" name="consent" required> 我已閱讀並同意<span id="privacy-label">個人資料蒐集告知事項（待團隊提供）</span></label></p>${button('建立帳號')}<p>已有帳號？<a href="login.html">前往登入</a></p>`);
+    if (page === 'register') {
+      form(
+        field(
+          'name',
+          '姓名',
+          'text',
+          'maxlength="80" autocomplete="name"'
+        ) +
+        email() +
+        password() +
+        `
+          <fieldset>
+            <legend>使用身分</legend>
+            <div class="auth-options">
+              <label>
+                <input
+                  type="radio"
+                  name="kind"
+                  value="student"
+                  checked
+                >
+                學生／學習者
+              </label>
+              <label>
+                <input type="radio" name="kind" value="teacher">
+                教師（須審核）
+              </label>
+            </div>
+          </fieldset>
+
+          <p class="auth-help">
+            選擇教師只代表申請意願，不會直接取得教師權限。
+            助教與管理員由計畫團隊指派。
+          </p>
+
+          <p>
+            <label>
+              <input type="checkbox" name="consent" required>
+              我已閱讀並同意
+              <span id="privacy-label">
+                個人資料蒐集告知事項（待團隊提供）
+              </span>
+            </label>
+          </p>
+
+          ${button('建立帳號')}
+
+          <p>已有帳號？<a href="login.html">前往登入</a></p>
+        `
+      );
+
       bindForm(async f => {
-        if (!cfg.privacyURL) throw Error('rise:計畫團隊尚未完成個資告知設定，目前不開放註冊。');
+        if (!cfg.privacyURL) {
+          throw Error(
+            'rise:計畫團隊尚未完成個資告知設定，目前不開放註冊。'
+          );
+        }
+
         checkPassword(f);
-        const data=checked(await client.auth.signUp({email:f.get('email').trim(),password:f.get('password'),options:{emailRedirectTo:redirect('verify-email.html'),data:{display_name:f.get('name').trim(),requested_kind:f.get('kind')}}}));
-        $('#password').value='';$('#password2').value='';
-        if(data.session) {report('帳號已登入。請至會員中心查看資料；教師仍需提交資格申請。');}
-        else report('若此信箱可建立帳號，將收到驗證信。請檢查收件匣與垃圾郵件；已有帳號可直接登入。');
-        const a=document.createElement('a');a.href='account.html';a.textContent='前往會員中心';status.append(document.createElement('br'),a);
+
+        const data = checked(
+          await client.auth.signUp({
+            email: f.get('email').trim(),
+            password: f.get('password'),
+            options: {
+              emailRedirectTo: redirect('verify-email.html'),
+              data: {
+                display_name: f.get('name').trim(),
+                requested_kind: f.get('kind')
+              }
+            }
+          })
+        );
+
+        $('#password').value = '';
+        $('#password2').value = '';
+
+        if (data.session) {
+          report(
+            '帳號已登入。請至會員中心查看資料；教師仍需提交資格申請。'
+          );
+        } else {
+          report(
+            '若此信箱可建立帳號，將收到驗證信。請檢查收件匣與垃圾郵件；已有帳號可直接登入。'
+          );
+        }
+
+        const a = document.createElement('a');
+        a.href = 'account.html';
+        a.textContent = '前往會員中心';
+        status.append(document.createElement('br'), a);
       });
-    } else if(page === 'login') {
-      form(email()+field('password','密碼','password','autocomplete="current-password"')+button('登入')+'<p><a href="forgot-password.html">忘記密碼</a> · <a href="verify-email.html">重寄驗證信</a></p><p>還沒有帳號？<a href="register.html">建立帳號</a></p>');
-      bindForm(async f => {checked(await client.auth.signInWithPassword({email:f.get('email').trim(),password:f.get('password')}));$('#password').value='';location.assign('account.html');});
-    } else if(page === 'forgot') {
-      form(email()+button('寄送密碼重設信')+'<p><a href="login.html">返回登入</a></p>');
-      bindForm(async f => {checked(await client.auth.resetPasswordForEmail(f.get('email').trim(),{redirectTo:redirect('reset-password.html')}));report('若此信箱有可重設的帳號，將收到重設信。請檢查收件匣與垃圾郵件。');});
-    } else if(page === 'verify') {
-      form('<p>已點擊驗證信？完成後可前往會員中心。連結失效時，可重新寄送。</p>'+email()+button('重新寄送驗證信')+'<p><a href="login.html">前往登入</a> · <a href="account.html">會員中心</a></p>');
-      bindForm(async f => {checked(await client.auth.resend({type:'signup',email:f.get('email').trim(),options:{emailRedirectTo:redirect('verify-email.html')}}));report('若此信箱有待驗證的申請，將收到新的驗證信。');});
-    } else if(page === 'reset') {
-      form(password()+button('更新密碼')+'<p><a href="forgot-password.html">重新申請密碼重設信</a></p>');
+
+    } else if (page === 'login') {
+      form(
+        email() +
+        field(
+          'password',
+          '密碼',
+          'password',
+          'autocomplete="current-password"'
+        ) +
+        button('登入') +
+        `
+          <p>
+            <a href="forgot-password.html">忘記密碼</a> ·
+            <a href="verify-email.html">重寄驗證信</a>
+          </p>
+          <p>還沒有帳號？<a href="register.html">建立帳號</a></p>
+        `
+      );
+
       bindForm(async f => {
-        if(!recovery) throw Error('rise:請從密碼重設信中的有效連結進入此頁。');
-        checkPassword(f);checked(await client.auth.updateUser({password:f.get('password')}));
-        $('#auth-form').reset();recovery=false;
-        checked(await client.auth.signOut());report('密碼已更新，請使用新密碼重新登入。');
-        root.innerHTML='<section class="auth-card"><a class="auth-button" href="login.html">重新登入</a></section>';
+        checked(
+          await client.auth.signInWithPassword({
+            email: f.get('email').trim(),
+            password: f.get('password')
+          })
+        );
+
+        $('#password').value = '';
+        location.assign('account.html');
+      });
+
+    } else if (page === 'forgot') {
+      form(
+        email() +
+        button('寄送密碼重設信') +
+        '<p><a href="login.html">返回登入</a></p>'
+      );
+
+      bindForm(async f => {
+        checked(
+          await client.auth.resetPasswordForEmail(
+            f.get('email').trim(),
+            {
+              redirectTo: redirect('reset-password.html')
+            }
+          )
+        );
+
+        report(
+          '若此信箱有可重設的帳號，將收到重設信。請檢查收件匣與垃圾郵件。'
+        );
+      });
+
+    } else if (page === 'verify') {
+      form(
+        `
+          <p>
+            已點擊驗證信？完成後可前往會員中心。
+            連結失效時，可重新寄送。
+          </p>
+        ` +
+        email() +
+        button('重新寄送驗證信') +
+        `
+          <p>
+            <a href="login.html">前往登入</a> ·
+            <a href="account.html">會員中心</a>
+          </p>
+        `
+      );
+
+      bindForm(async f => {
+        checked(
+          await client.auth.resend({
+            type: 'signup',
+            email: f.get('email').trim(),
+            options: {
+              emailRedirectTo: redirect('verify-email.html')
+            }
+          })
+        );
+
+        report('若此信箱有待驗證的申請，將收到新的驗證信。');
+      });
+
+    } else if (page === 'reset') {
+      form(
+        password() +
+        button('更新密碼') +
+        `
+          <p>
+            <a href="forgot-password.html">重新申請密碼重設信</a>
+          </p>
+        `
+      );
+
+      bindForm(async f => {
+        if (!recovery) {
+          throw Error(
+            'rise:請從密碼重設信中的有效連結進入此頁。'
+          );
+        }
+
+        checkPassword(f);
+
+        checked(
+          await client.auth.updateUser({
+            password: f.get('password')
+          })
+        );
+
+        $('#auth-form').reset();
+        recovery = false;
+
+        checked(await client.auth.signOut());
+        report('密碼已更新，請使用新密碼重新登入。');
+
+        root.innerHTML = `
+          <section class="auth-card">
+            <a class="auth-button" href="login.html">重新登入</a>
+          </section>
+        `;
       });
     }
   }
-  const applicationFields = `<div class="auth-field"><label for="school">任職學校／單位</label><input id="school" name="school" required maxlength="160" autocomplete="organization"></div><div class="auth-field"><label for="subject">任教學科</label><select id="subject" name="subject"><option value="math">數學</option><option value="physics">物理</option><option value="chemistry">化學</option><option value="multiple">跨學科</option></select></div><div class="auth-field"><label for="reason">任職資訊與申請說明</label><textarea id="reason" name="reason" required maxlength="2000" placeholder="請說明任教職務與使用計畫資源的目的。不必填寫身分證字號或學生個資。"></textarea></div>`;
-  async function application() {return checked(await client.from('rise_teacher_applications').select('*').eq('user_id',user.id).maybeSingle());}
+
+  const applicationFields = `
+    <div class="auth-field">
+      <label for="school">任職學校／單位</label>
+      <input
+        id="school"
+        name="school"
+        required
+        maxlength="160"
+        autocomplete="organization"
+      >
+    </div>
+
+    <div class="auth-field">
+      <label for="subject">任教學科</label>
+      <select id="subject" name="subject">
+        <option value="math">數學</option>
+        <option value="physics">物理</option>
+        <option value="chemistry">化學</option>
+        <option value="multiple">跨學科</option>
+      </select>
+    </div>
+
+    <div class="auth-field">
+      <label for="reason">任職資訊與申請說明</label>
+      <textarea
+        id="reason"
+        name="reason"
+        required
+        maxlength="2000"
+        placeholder="請說明任教職務與使用計畫資源的目的。不必填寫身分證字號或學生個資。"
+      ></textarea>
+    </div>
+  `;
+
+  async function application() {
+    return checked(
+      await client
+        .from('rise_teacher_applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle()
+    );
+  }
+
   async function history(id) {
-    const rows=checked(await client.from('rise_application_events').select('*').eq('application_id',id).order('created_at',{ascending:false}).limit(30));
-    return rows.map(r=>`<div class="auth-record"><strong>${esc(r.action)}</strong><br>${esc(new Date(r.created_at).toLocaleString('zh-TW'))}<br>${esc(r.note)}</div>`).join('') || '<p>尚無紀錄。</p>';
+    const rows = checked(
+      await client
+        .from('rise_application_events')
+        .select('*')
+        .eq('application_id', id)
+        .order('created_at', { ascending: false })
+        .limit(30)
+    );
+
+    return rows.map(r => `
+      <div class="auth-record">
+        <strong>${esc(r.action)}</strong><br>
+        ${esc(new Date(r.created_at).toLocaleString('zh-TW'))}<br>
+        ${esc(r.note)}
+      </div>
+    `).join('') || '<p>尚無紀錄。</p>';
   }
+
   async function accountPage() {
-    if(!await loadUser())return;
-    const a=await application();
-    root.innerHTML=`<div class="auth-grid"><section class="auth-card"><h2>${esc(profile.display_name)}</h2><span class="auth-badge">${esc(roles[profile.role])}</span><dl><dt>信箱</dt><dd>${esc(user.email)}</dd><dt>信箱驗證</dt><dd>已驗證</dd><dt>教師申請</dt><dd>${a?esc(labels[a.status]):'尚未提交'}</dd></dl>${a?`<p>審核意見：${esc(a.review_note||'尚無')}</p>`:''}<div class="auth-actions">${profile.role==='student'?'<a class="auth-button" href="teacher-apply.html">教師資格申請／補件</a>':''}${profile.role==='admin'?'<a class="auth-button" href="admin-review.html">教師申請審核</a>':''}<button id="logout" class="secondary">登出</button></div><p class="auth-help">此會員中心尚未串接作業繳交、雲端學習紀錄或課程管理。既有本機草稿仍只存在原瀏覽器。</p>${a?'<h2>申請與審核紀錄</h2>'+await history(a.id):''}</section>${side}</div>`;
-    $('#logout').onclick=async()=>{try{checked(await client.auth.signOut());location.assign('login.html');}catch(e){report(errorText(e),true);}};
+    if (!await loadUser()) return;
+
+    const isAdmin = profile.role === 'admin';
+    const hasTeacherAccess = ['admin', 'teacher'].includes(profile.role);
+    const a = await application();
+
+    const qualification = isAdmin
+      ? '已具備教師資格（管理員免申請）'
+      : hasTeacherAccess
+        ? '已具備教師資格'
+        : a ? esc(labels[a.status]) : '尚未提交申請';
+
+    const accountSide = hasTeacherAccess
+      ? `
+        <aside class="auth-card auth-aside">
+          <h2>
+            ${isAdmin ? '管理與教學，同一個帳號' : '教師資格已啟用'}
+          </h2>
+          <p>
+            ${isAdmin
+              ? '管理員自動具備教師資格，無須填寫教師申請；原有審核權限仍然保留。'
+              : '你已具備教師資格，無須再次提交申請。'}
+          </p>
+          <p>
+            可前往教師與助教資源。
+            作業批閱與課程管理功能尚未開放。
+          </p>
+          <a href="support.html">教師與助教資源 →</a>
+        </aside>
+      `
+      : side;
+
+    root.innerHTML = `
+      <div class="auth-grid">
+        <section class="auth-card">
+          <h2>${esc(profile.display_name)}</h2>
+
+          <span class="auth-badge">
+            ${isAdmin ? '管理員／教師' : esc(roles[profile.role])}
+          </span>
+
+          <dl>
+            <dt>信箱</dt>
+            <dd>${esc(user.email)}</dd>
+
+            <dt>信箱驗證</dt>
+            <dd>已驗證</dd>
+
+            <dt>教師資格</dt>
+            <dd>${qualification}</dd>
+          </dl>
+
+          ${a && !hasTeacherAccess
+            ? `<p>審核意見：${esc(a.review_note || '尚無')}</p>`
+            : ''}
+
+          <div class="auth-actions">
+            ${hasTeacherAccess
+              ? '<a class="auth-button" href="support.html">教師與助教資源</a>'
+              : ''}
+
+            ${profile.role === 'student'
+              ? '<a class="auth-button" href="teacher-apply.html">教師資格申請／補件</a>'
+              : ''}
+
+            ${isAdmin
+              ? '<a class="auth-button" href="admin-review.html">教師申請審核</a>'
+              : ''}
+
+            <button id="logout" class="secondary">登出</button>
+          </div>
+
+          <p class="auth-help">
+            此會員中心尚未串接作業繳交、雲端學習紀錄或課程管理。
+            既有本機草稿仍只存在原瀏覽器。
+          </p>
+
+          ${a
+            ? '<h2>歷次申請與審核紀錄</h2>' + await history(a.id)
+            : ''}
+        </section>
+
+        ${accountSide}
+      </div>
+    `;
+
+    $('#logout').onclick = async () => {
+      try {
+        checked(await client.auth.signOut());
+        location.assign('login.html');
+      } catch (err) {
+        report(errorText(err), true);
+      }
+    };
   }
+
   async function teacherPage() {
-    if(!await loadUser())return;
-    const a=await application();
-    if(profile.role !== 'student') {root.innerHTML=`<section class="auth-card"><p>目前身分：${esc(roles[profile.role])}，不需重複申請。</p><a href="account.html">會員中心</a></section>`;return;}
-    if(a && !['returned'].includes(a.status)) {
-      root.innerHTML=`<section class="auth-card"><h2>${esc(labels[a.status])}</h2><p>${esc(a.review_note||'申請已送出，請等待管理員審核。')}</p><p>${a.status==='rejected'?'如需再次申請，請透過計畫正式聯絡管道處理。':''}</p><a href="account.html">查看會員中心與紀錄</a></section>`;return;
+    if (!await loadUser()) return;
+
+    const a = await application();
+
+    if (profile.role !== 'student') {
+      root.innerHTML = `
+        <section class="auth-card">
+          <p>
+            目前身分：${esc(roles[profile.role])}。
+            ${profile.role === 'admin'
+              ? '管理員已自動具備教師資格，免申請，並保留管理員權限。'
+              : '目前帳號不需重複申請。'}
+          </p>
+          <a href="account.html">會員中心</a>
+        </section>
+      `;
+      return;
     }
-    form(`${a?`<div class="auth-notice">補件要求：${esc(a.review_note)}</div>`:''}${applicationFields}<p class="auth-help">尚未提供證明文件上傳功能；如需補件，請依管理員意見處理。提交本表不代表教師資格已核准。</p>${button(a?'重新送審':'提交教師資格申請')}<p><a href="account.html">返回會員中心</a></p>`);
-    if(a){$('#school').value=a.school;$('#subject').value=a.subject;$('#reason').value=a.reason;}
-    bindForm(async f => {checked(await client.rpc('rise_submit_teacher_application',{p_school:f.get('school').trim(),p_subject:f.get('subject'),p_reason:f.get('reason').trim(),p_expected_version:a?.version||0}));report('教師申請已送出。可在會員中心查看審核狀態。');await teacherPage();});
+
+    if (a && !['returned'].includes(a.status)) {
+      root.innerHTML = `
+        <section class="auth-card">
+          <h2>${esc(labels[a.status])}</h2>
+          <p>
+            ${esc(a.review_note || '申請已送出，請等待管理員審核。')}
+          </p>
+          <p>
+            ${a.status === 'rejected'
+              ? '如需再次申請，請透過計畫正式聯絡管道處理。'
+              : ''}
+          </p>
+          <a href="account.html">查看會員中心與紀錄</a>
+        </section>
+      `;
+      return;
+    }
+
+    form(`
+      ${a
+        ? `<div class="auth-notice">補件要求：${esc(a.review_note)}</div>`
+        : ''}
+
+      ${applicationFields}
+
+      <p class="auth-help">
+        尚未提供證明文件上傳功能；如需補件，請依管理員意見處理。
+        提交本表不代表教師資格已核准。
+      </p>
+
+      ${button(a ? '重新送審' : '提交教師資格申請')}
+
+      <p><a href="account.html">返回會員中心</a></p>
+    `);
+
+    if (a) {
+      $('#school').value = a.school;
+      $('#subject').value = a.subject;
+      $('#reason').value = a.reason;
+    }
+
+    bindForm(async f => {
+      checked(
+        await client.rpc('rise_submit_teacher_application', {
+          p_school: f.get('school').trim(),
+          p_subject: f.get('subject'),
+          p_reason: f.get('reason').trim(),
+          p_expected_version: a?.version || 0
+        })
+      );
+
+      report('教師申請已送出。可在會員中心查看審核狀態。');
+      await teacherPage();
+    });
   }
+
   async function adminPage() {
-    if(!await loadUser())return;
-    if(profile.role !== 'admin') {root.innerHTML='<section class="auth-card"><h2>此頁僅供管理員使用</h2><p>你的帳號沒有教師資格審核權限。</p><a href="account.html">返回會員中心</a></section>';return;}
-    root.innerHTML=`<section class="auth-card"><div class="auth-field"><label for="review-filter">審核狀態</label><select id="review-filter"><option value="pending">待審核</option><option value="returned">待補件</option><option value="approved">已核准</option><option value="rejected">未核准</option></select></div><div id="review-list"></div><div class="auth-actions"><button id="previous" class="secondary">上一頁</button><button id="next" class="secondary">下一頁</button><button id="refresh" class="secondary">重新整理</button><span id="page-count"></span></div></section><dialog id="review-dialog" aria-labelledby="dialog-title"><h2 id="dialog-title">確認審核決定</h2><p id="dialog-description"></p><p class="auth-help">審核意見會顯示給申請人。目前不會寄送審核通知信。</p><div class="auth-actions"><button id="review-confirm">確認送出</button><button id="review-cancel" class="secondary">取消</button></div></dialog>`;
-    let offset=0,rows=[],decision=null;const size=20;
-    async function refresh() {
-      report('讀取申請中…');$('#review-list').innerHTML='';
-      rows=checked(await client.from('rise_teacher_applications').select('*').eq('status',$('#review-filter').value).order('created_at',{ascending:false}).order('id').range(offset,offset+size));
-      const hasNext=rows.length>size;rows=rows.slice(0,size);
-      $('#review-list').innerHTML=rows.length?rows.map(a=>`<article class="auth-record"><h2>${esc(a.applicant_name)}</h2><span class="auth-badge">${esc(labels[a.status])}</span><dl><dt>信箱</dt><dd>${esc(a.email)}</dd><dt>學校／單位</dt><dd>${esc(a.school)}</dd><dt>學科</dt><dd>${esc({math:'數學',physics:'物理',chemistry:'化學',multiple:'跨學科'}[a.subject])}</dd><dt>申請說明</dt><dd>${esc(a.reason)}</dd><dt>案件編號</dt><dd>${esc(a.id)} · 第 ${a.version} 版</dd><dt>審核意見</dt><dd>${esc(a.review_note||'尚無')}</dd></dl><button class="secondary" data-history="${a.id}">查看紀錄</button><div id="history-${a.id}"></div>${a.status==='pending'?`<label for="note-${a.id}">審核意見（補件／未核准必填）</label><textarea id="note-${a.id}" maxlength="2000"></textarea><div class="auth-actions"><button data-id="${a.id}" data-decision="approved">核准</button><button class="secondary" data-id="${a.id}" data-decision="returned">退回補件</button><button class="secondary" data-id="${a.id}" data-decision="rejected">不予核准</button></div>`:''}</article>`).join(''):'<p>此狀態目前沒有申請。</p>';
-      $('#previous').disabled=offset===0;$('#next').disabled=!hasNext;$('#page-count').textContent=`第 ${offset/size+1} 頁`;report('申請資料已更新。');
+    if (!await loadUser()) return;
+
+    if (profile.role !== 'admin') {
+      root.innerHTML = `
+        <section class="auth-card">
+          <h2>此頁僅供管理員使用</h2>
+          <p>你的帳號沒有教師資格審核權限。</p>
+          <a href="account.html">返回會員中心</a>
+        </section>
+      `;
+      return;
     }
-    const safeRefresh=()=>refresh().catch(e=>report(errorText(e),true));
-    $('#review-filter').onchange=()=>{offset=0;safeRefresh();};$('#refresh').onclick=safeRefresh;
-    $('#previous').onclick=()=>{offset=Math.max(0,offset-size);safeRefresh();};$('#next').onclick=()=>{offset+=size;safeRefresh();};
-    $('#review-list').onclick=async e=>{
-      const h=e.target.closest('[data-history]');if(h){try{$('#history-'+h.dataset.history).innerHTML=await history(h.dataset.history);}catch(err){report(errorText(err),true);}return;}
-      const b=e.target.closest('[data-decision]');if(!b)return;
-      const a=rows.find(r=>r.id===b.dataset.id),note=$('#note-'+a.id).value.trim();
-      if(b.dataset.decision!=='approved'&&!note){report('請填寫補件要求或未核准原因。',true);$('#note-'+a.id).focus();return;}
-      decision={p_application_id:a.id,p_decision:b.dataset.decision,p_note:note,p_expected_version:a.version};
-      $('#dialog-description').textContent=`${a.applicant_name}：${labels[decision.p_decision]}。${note}`;$('#review-dialog').showModal();
+
+    root.innerHTML = `
+      <section class="auth-card">
+        <div class="auth-field">
+          <label for="review-filter">審核狀態</label>
+          <select id="review-filter">
+            <option value="pending">待審核</option>
+            <option value="returned">待補件</option>
+            <option value="approved">已核准</option>
+            <option value="rejected">未核准</option>
+          </select>
+        </div>
+
+        <div id="review-list"></div>
+
+        <div class="auth-actions">
+          <button id="previous" class="secondary">上一頁</button>
+          <button id="next" class="secondary">下一頁</button>
+          <button id="refresh" class="secondary">重新整理</button>
+          <span id="page-count"></span>
+        </div>
+      </section>
+
+      <dialog id="review-dialog" aria-labelledby="dialog-title">
+        <h2 id="dialog-title">確認審核決定</h2>
+        <p id="dialog-description"></p>
+        <p class="auth-help">
+          審核意見會顯示給申請人。目前不會寄送審核通知信。
+        </p>
+        <div class="auth-actions">
+          <button id="review-confirm">確認送出</button>
+          <button id="review-cancel" class="secondary">取消</button>
+        </div>
+      </dialog>
+    `;
+
+    let offset = 0;
+    let rows = [];
+    let decision = null;
+    const size = 20;
+
+    async function refresh() {
+      report('讀取申請中…');
+      $('#review-list').innerHTML = '';
+
+      rows = checked(
+        await client
+          .from('rise_teacher_applications')
+          .select('*')
+          .eq('status', $('#review-filter').value)
+          .order('created_at', { ascending: false })
+          .order('id')
+          .range(offset, offset + size)
+      );
+
+      const hasNext = rows.length > size;
+      rows = rows.slice(0, size);
+
+      $('#review-list').innerHTML = rows.length
+        ? rows.map(a => `
+          <article class="auth-record">
+            <h2>${esc(a.applicant_name)}</h2>
+            <span class="auth-badge">${esc(labels[a.status])}</span>
+
+            <dl>
+              <dt>信箱</dt>
+              <dd>${esc(a.email)}</dd>
+
+              <dt>學校／單位</dt>
+              <dd>${esc(a.school)}</dd>
+
+              <dt>學科</dt>
+              <dd>
+                ${esc({
+                  math: '數學',
+                  physics: '物理',
+                  chemistry: '化學',
+                  multiple: '跨學科'
+                }[a.subject])}
+              </dd>
+
+              <dt>申請說明</dt>
+              <dd>${esc(a.reason)}</dd>
+
+              <dt>案件編號</dt>
+              <dd>${esc(a.id)} · 第 ${a.version} 版</dd>
+
+              <dt>審核意見</dt>
+              <dd>${esc(a.review_note || '尚無')}</dd>
+            </dl>
+
+            <button class="secondary" data-history="${a.id}">
+              查看紀錄
+            </button>
+            <div id="history-${a.id}"></div>
+
+            ${a.status === 'pending' ? `
+              <label for="note-${a.id}">
+                審核意見（補件／未核准必填）
+              </label>
+
+              <textarea
+                id="note-${a.id}"
+                maxlength="2000"
+              ></textarea>
+
+              <div class="auth-actions">
+                <button data-id="${a.id}" data-decision="approved">
+                  核准
+                </button>
+
+                <button
+                  class="secondary"
+                  data-id="${a.id}"
+                  data-decision="returned"
+                >
+                  退回補件
+                </button>
+
+                <button
+                  class="secondary"
+                  data-id="${a.id}"
+                  data-decision="rejected"
+                >
+                  不予核准
+                </button>
+              </div>
+            ` : ''}
+          </article>
+        `).join('')
+        : '<p>此狀態目前沒有申請。</p>';
+
+      $('#previous').disabled = offset === 0;
+      $('#next').disabled = !hasNext;
+      $('#page-count').textContent = `第 ${offset / size + 1} 頁`;
+
+      report('申請資料已更新。');
+    }
+
+    const safeRefresh = () => {
+      return refresh().catch(e => report(errorText(e), true));
     };
-    $('#review-cancel').onclick=()=>{decision=null;$('#review-dialog').close();};$('#review-dialog').addEventListener('cancel',()=>{decision=null;});
-    $('#review-confirm').onclick=async()=>{
-      if(!decision||$('#review-confirm').disabled)return;$('#review-confirm').disabled=true;
-      try{checked(await client.rpc('rise_review_teacher_application',decision));decision=null;$('#review-dialog').close();await refresh();report('審核已保存。申請人可在會員中心查看結果；尚未寄送通知信。');}
-      catch(e){$('#review-dialog').close();decision=null;report(errorText(e),true);}
-      finally{$('#review-confirm').disabled=false;}
+
+    $('#review-filter').onchange = () => {
+      offset = 0;
+      safeRefresh();
     };
+
+    $('#refresh').onclick = safeRefresh;
+
+    $('#previous').onclick = () => {
+      offset = Math.max(0, offset - size);
+      safeRefresh();
+    };
+
+    $('#next').onclick = () => {
+      offset += size;
+      safeRefresh();
+    };
+
+    $('#review-list').onclick = async e => {
+      const h = e.target.closest('[data-history]');
+
+      if (h) {
+        try {
+          $('#history-' + h.dataset.history).innerHTML =
+            await history(h.dataset.history);
+        } catch (err) {
+          report(errorText(err), true);
+        }
+        return;
+      }
+
+      const b = e.target.closest('[data-decision]');
+      if (!b) return;
+
+      const a = rows.find(r => r.id === b.dataset.id);
+      const note = $('#note-' + a.id).value.trim();
+
+      if (b.dataset.decision !== 'approved' && !note) {
+        report('請填寫補件要求或未核准原因。', true);
+        $('#note-' + a.id).focus();
+        return;
+      }
+
+      decision = {
+        p_application_id: a.id,
+        p_decision: b.dataset.decision,
+        p_note: note,
+        p_expected_version: a.version
+      };
+
+      $('#dialog-description').textContent =
+        `${a.applicant_name}：${labels[decision.p_decision]}。${note}`;
+
+      $('#review-dialog').showModal();
+    };
+
+    $('#review-cancel').onclick = () => {
+      decision = null;
+      $('#review-dialog').close();
+    };
+
+    $('#review-dialog').addEventListener('cancel', () => {
+      decision = null;
+    });
+
+    $('#review-confirm').onclick = async () => {
+      if (!decision || $('#review-confirm').disabled) return;
+
+      $('#review-confirm').disabled = true;
+
+      try {
+        checked(
+          await client.rpc(
+            'rise_review_teacher_application',
+            decision
+          )
+        );
+
+        decision = null;
+        $('#review-dialog').close();
+
+        await refresh();
+
+        report(
+          '審核已保存。申請人可在會員中心查看結果；尚未寄送通知信。'
+        );
+      } catch (e) {
+        $('#review-dialog').close();
+        decision = null;
+        report(errorText(e), true);
+      } finally {
+        $('#review-confirm').disabled = false;
+      }
+    };
+
     await refresh();
   }
-  function loadSDK() {return new Promise((resolve,reject)=>{const s=document.createElement('script');const timeout=setTimeout(()=>reject(Error('timeout')),15000);s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';s.onload=()=>{clearTimeout(timeout);resolve();};s.onerror=()=>{clearTimeout(timeout);reject(Error('network'));};document.head.append(s);});}
+
+  function loadSDK() {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+
+      const timeout = setTimeout(() => {
+        reject(Error('timeout'));
+      }, 15000);
+
+      s.src =
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+
+      s.onload = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+
+      s.onerror = () => {
+        clearTimeout(timeout);
+        reject(Error('network'));
+      };
+
+      document.head.append(s);
+    });
+  }
+
   async function init() {
     renderPublic();
-    const inputs=()=>root.querySelectorAll('input,select,textarea,[data-submit]');
-    inputs().forEach(i=>i.disabled=true);
-    if(!cfg.url || !cfg.publishableKey) {notice.textContent='帳號服務尚未啟用。此頁已備妥，但尚未連接後端；不會送出資料、建立帳號或寄信。';if(!root.innerHTML)root.innerHTML='<section class="auth-card"><p>後端設定完成後，登入即可使用此頁。</p><a href="register.html">查看註冊頁</a> · <a href="login.html">查看登入頁</a></section>';return;}
-    try {
-      const url=new URL(cfg.url),base=new URL(cfg.siteURL);
-      if(url.protocol!=='https:' || base.protocol!=='https:')throw Error('rise:帳號服務與網站網址需使用 HTTPS。');
-      await loadSDK();
-      client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-      client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')recovery=true;});
-      checked(await client.auth.getSession());
-      notice.hidden=true;
-      if(page==='register') {
-        let policy;try{policy=new URL(cfg.privacyURL);if(policy.protocol!=='https:')policy=null;}catch{}
-        if(!policy){notice.hidden=false;notice.textContent='個人資料蒐集告知事項尚未完成，註冊暫未開放。';return;}
-        $('#privacy-label').innerHTML=`<a href="${esc(policy.href)}" target="_blank" rel="noopener noreferrer">個人資料蒐集告知事項</a>`;
+
+    const inputs = () => root.querySelectorAll(
+      'input,select,textarea,[data-submit]'
+    );
+
+    inputs().forEach(i => {
+      i.disabled = true;
+    });
+
+    if (!cfg.url || !cfg.publishableKey) {
+      notice.textContent =
+        '帳號服務尚未啟用。此頁已備妥，但尚未連接後端；不會送出資料、建立帳號或寄信。';
+
+      if (!root.innerHTML) {
+        root.innerHTML = `
+          <section class="auth-card">
+            <p>後端設定完成後，登入即可使用此頁。</p>
+            <a href="register.html">查看註冊頁</a> ·
+            <a href="login.html">查看登入頁</a>
+          </section>
+        `;
       }
-      inputs().forEach(i=>i.disabled=false);
-      if(page==='verify') {
-        const result=await client.auth.getUser();
-        report(result.data?.user?.email_confirmed_at?'目前登入帳號的信箱已驗證，可前往會員中心。':'若連結已失效，請重新寄送驗證信；已驗證者可直接登入。');
-      } else if(page==='reset'&&!recovery) {report('請從最新的密碼重設信連結進入。重新整理後可能需要重新申請連結。',true);$('[data-submit]').disabled=true;}
-      else if(page==='account')await accountPage();
-      else if(page==='teacher')await teacherPage();
-      else if(page==='admin')await adminPage();
-    } catch(err) {report(errorText(err),true);notice.hidden=false;notice.textContent='帳號服務未完成載入。請確認設定與網路；不影響公開教材頁面。';}
+
+      return;
+    }
+
+    try {
+      const url = new URL(cfg.url);
+      const base = new URL(cfg.siteURL);
+
+      if (url.protocol !== 'https:' || base.protocol !== 'https:') {
+        throw Error('rise:帳號服務與網站網址需使用 HTTPS。');
+      }
+
+      await loadSDK();
+
+      client = window.supabase.createClient(
+        cfg.url,
+        cfg.publishableKey,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        }
+      );
+
+      client.auth.onAuthStateChange(event => {
+        if (event === 'PASSWORD_RECOVERY') recovery = true;
+      });
+
+      checked(await client.auth.getSession());
+      notice.hidden = true;
+
+      if (page === 'register') {
+        let policy;
+
+        try {
+          policy = new URL(cfg.privacyURL);
+          if (policy.protocol !== 'https:') policy = null;
+        } catch {}
+
+        if (!policy) {
+          notice.hidden = false;
+          notice.textContent =
+            '個人資料蒐集告知事項尚未完成，註冊暫未開放。';
+          return;
+        }
+
+        $('#privacy-label').innerHTML = `
+          <a
+            href="${esc(policy.href)}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            個人資料蒐集告知事項
+          </a>
+        `;
+      }
+
+      inputs().forEach(i => {
+        i.disabled = false;
+      });
+
+      if (page === 'verify') {
+        const result = await client.auth.getUser();
+
+        report(
+          result.data?.user?.email_confirmed_at
+            ? '目前登入帳號的信箱已驗證，可前往會員中心。'
+            : '若連結已失效，請重新寄送驗證信；已驗證者可直接登入。'
+        );
+
+      } else if (page === 'reset' && !recovery) {
+        report(
+          '請從最新的密碼重設信連結進入。重新整理後可能需要重新申請連結。',
+          true
+        );
+
+        $('[data-submit]').disabled = true;
+
+      } else if (page === 'account') {
+        await accountPage();
+
+      } else if (page === 'teacher') {
+        await teacherPage();
+
+      } else if (page === 'admin') {
+        await adminPage();
+      }
+
+    } catch (err) {
+      report(errorText(err), true);
+      notice.hidden = false;
+      notice.textContent =
+        '帳號服務未完成載入。請確認設定與網路；不影響公開教材頁面。';
+    }
   }
+
   init();
 })();
