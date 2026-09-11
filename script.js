@@ -163,6 +163,7 @@
           : ""
       }
 
+      <div style="background:#132d4c;color:white"><nav class="container" aria-label="帳號導覽" style="display:flex;justify-content:flex-end;gap:20px;padding-top:8px;padding-bottom:8px"><a style="color:white" href="register.html">註冊</a><a style="color:white" href="login.html">登入</a><a style="color:white" href="account.html">會員中心</a></nav></div>
       <header class="site-header">
         <div class="container nav-wrap">
           <a class="brand" href="index.html" aria-label="RISE 首頁">
@@ -1195,3 +1196,4 @@
 })();
 
   
+
