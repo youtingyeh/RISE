@@ -1,11 +1,14 @@
 "use strict";
 
-(() => {
+(async () => {
   const D = window.RISE_DATA;
   if (!D || !Array.isArray(D.videos)) return;
 
   // 只處理個別影片頁。
   if (document.body.dataset.page !== "video") return;
+
+  const learning = window.RISE_LEARNING;
+  if (!learning || !await learning.ready) return;
 
   const id = new URLSearchParams(location.search).get("id");
   const video = D.videos.find(item => item.id === id);
@@ -141,6 +144,34 @@
   player.after(links);
   links.after(status);
 
+  const watchStatus = document.createElement('p');
+  watchStatus.className = 'muted'; watchStatus.setAttribute('role', 'status');
+  watchStatus.textContent = '播放後會儲存觀看紀錄。另開 YouTube 或影片檔案的觀看不會被本站記錄。';
+  status.after(watchStatus);
+  const savedPromise = learning.recent(video.id).catch(() => {
+    watchStatus.textContent = '目前無法讀取觀看紀錄；請確認網路或觀看紀錄資料庫設定。';return null;
+  });
+  let tracking;
+  const saveButton = document.createElement('button');
+  saveButton.type = 'button'; saveButton.className = 'button secondary';
+  saveButton.textContent = '儲存觀看紀錄'; saveButton.disabled = true; links.append(saveButton);
+  saveButton.onclick = () => tracking?.save();
+  const resumeButton = document.createElement('button');
+  resumeButton.type = 'button'; resumeButton.className = 'button secondary';
+  resumeButton.textContent = '從上次位置續播'; resumeButton.hidden = true; links.append(resumeButton);
+  async function track(adapter, seek, pause) {
+    tracking = learning.tracker(video, adapter, text => { watchStatus.textContent = text; });
+    saveButton.disabled = false;
+    window.addEventListener('rise-session-ended', pause, {once:true});
+    const saved = await savedPromise;
+    if (saved && Number(saved.position_seconds) > 0) {
+      resumeButton.hidden = false;
+      const seconds = Number(saved.position_seconds);
+      resumeButton.textContent = '從上次位置續播（' + Math.floor(seconds / 60) + ':' + String(Math.floor(seconds % 60)).padStart(2, '0') + '）';
+      resumeButton.onclick = () => seek(seconds);
+    }
+  }
+
   function addExternalLink(url, label) {
     const anchor = document.createElement("a");
     anchor.className = "text-link";
@@ -216,6 +247,15 @@
     player.style.padding = "0";
     player.replaceChildren(media);
 
+    track(() => ({position:media.currentTime,duration:media.duration,playing:!media.paused&&!media.ended&&!media.seeking&&media.readyState>=3,rate:media.playbackRate}), seconds => {
+      if (!Number.isFinite(media.duration)) return;
+      media.currentTime = Math.min(seconds, Math.max(0, media.duration - 1));
+      media.play().catch(()=>{watchStatus.textContent='已跳至上次位置，請按播放。';});
+    }, () => media.pause());
+    media.addEventListener('play',()=>{tracking?.change();});
+    media.addEventListener('pause',()=>tracking?.save());
+    media.addEventListener('ended',()=>tracking?.finish());
+
     addExternalLink(fileURL, "另開影片檔案 ↗");
 
     // 自有影片章節：直接跳到播放器指定秒數。
@@ -273,14 +313,34 @@
   playButton.textContent = "播放影片";
   player.appendChild(playButton);
 
-  function loadYouTube(seconds = 0, autoplay = false) {
+  let ytPlayer, ytLoading = false;
+  function youtubeAPI() {
+    if (window.YT?.Player) return Promise.resolve();
+    return new Promise((resolve,reject) => {
+      const timer=setTimeout(()=>reject(Error('YouTube 播放器載入逾時，請重試。')),15000);
+      const previous=window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady=()=>{clearTimeout(timer);if(typeof previous==='function')previous();resolve();};
+      const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';
+      s.onerror=()=>{clearTimeout(timer);reject(Error('YouTube 播放器無法載入，請檢查網路。'));};
+      document.head.append(s);
+    });
+  }
+  async function loadYouTube(seconds = 0, autoplay = false) {
+    if (ytPlayer) {ytPlayer.seekTo(seconds,true);if(autoplay)ytPlayer.playVideo();return;}
+    if (ytLoading) return;
+    ytLoading=true;playButton.disabled=true;
+    try {
+    await youtubeAPI();
     const frame = document.createElement("iframe");
+    frame.id = 'rise-youtube-player';
 
     const url = new URL(
       "https://www.youtube-nocookie.com/embed/" + youtubeId
     );
 
     url.searchParams.set("playsinline", "1");
+    url.searchParams.set('enablejsapi', '1');
+    url.searchParams.set('origin', location.origin);
 
     if (seconds > 0) {
       url.searchParams.set("start", String(seconds));
@@ -314,6 +374,23 @@
 
     player.style.padding = "0";
     player.replaceChildren(frame);
+    ytPlayer = new YT.Player(frame, {events: {
+      onReady: event => {
+        const yt = event.target;
+        track(() => ({position:yt.getCurrentTime(),duration:yt.getDuration(),playing:yt.getPlayerState()===1,rate:yt.getPlaybackRate()}), t => {
+          yt.seekTo(Math.min(t,Math.max(0,yt.getDuration()-1)),true);yt.playVideo();
+        }, () => yt.pauseVideo());
+        if(autoplay)yt.playVideo();
+      },
+      onStateChange: event => {
+        if(event.data===1)tracking?.change();
+        if(event.data===2)tracking?.save();
+        if(event.data===0)tracking?.finish();
+      },
+      onError: () => {status.hidden=false;status.textContent='YouTube 無法播放此影片。若改在 YouTube 開啟，本站無法記錄那段觀看。';}
+    }});
+    } catch(error) {status.hidden=false;status.textContent=error.message;}
+    finally{ytLoading=false;playButton.disabled=false;}
   }
 
   playButton.addEventListener("click", () => {
