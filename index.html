@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>RISE｜國立臺灣大學數思新生計畫</title>
+
+  <!-- 即使外部樣式沒有載入，首頁也不會全白。 -->
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+      color: #172c43;
+      background: #f3f6f8;
+      line-height: 1.8;
+    }
+
+    #fallback-home {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 30px;
+    }
+
+    #fallback-home h1 {
+      color: #132d4c;
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    #fallback-home nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0;
+    }
+
+    #fallback-home nav a {
+      display: inline-block;
+      padding: 10px 16px;
+      color: white;
+      background: #132d4c;
+      border-radius: 5px;
+      text-decoration: none;
+    }
+
+    #load-status {
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
+      border: 1px solid #c99435;
+      border-left: 5px solid #c99435;
+      background: #fff8e8;
+      color: #49391b;
+      box-sizing: border-box;
+      overflow-wrap: anywhere;
+    }
+
+    #load-status[hidden] {
+      display: none;
+    }
+
+    #load-status h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    #error-details {
+      white-space: pre-wrap;
+      font-family: inherit;
+    }
+  </style>
+
+  <!-- 診斷程式必須放在外部檔案之前。 -->
+  <script>
+    window.riseProblems = [];
+
+    window.riseReport = function (message) {
+      if (!window.riseProblems.includes(message)) {
+        window.riseProblems.push(message);
+      }
+
+      var panel = document.getElementById("load-status");
+      var details = document.getElementById("error-details");
+
+      if (panel && details) {
+        panel.hidden = false;
+        details.textContent = window.riseProblems.join("\n\n");
+      }
+    };
+
+    window.addEventListener("error", function (event) {
+      // 收集 JavaScript 語法及執行錯誤。
+      if (event.message) {
+        var file = event.filename
+          ? event.filename.split("/").pop()
+          : "未知檔案";
+
+        window.riseReport(
+          "程式執行錯誤：" + event.message +
+          "\n檔案：" + file +
+          "\n行數：" + (event.lineno || "未知")
+        );
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", function () {
+      if (window.riseProblems.length) {
+        window.riseReport(window.riseProblems[0]);
+      }
+    });
+
+    window.addEventListener("load", function () {
+      if (!window.RISE_DATA) {
+        window.riseReport(
+          "content.js 沒有成功提供網站資料。\n" +
+          "請確認檔名是 content.js，且內容已完整儲存。"
+        );
+      }
+
+      if (document.getElementById("fallback-home")) {
+        window.riseReport(
+          "首頁仍處於備用畫面，script.js 尚未完成網站渲染。\n" +
+          "請確認使用的是上一則「15 個檔案版本」的 script.js，" +
+          "不是之前下載套件中的舊版。"
+        );
+      }
+    });
+  </script>
+
+  <link
+    rel="stylesheet"
+    href="./style.css"
+    onerror="riseReport('找不到 style.css。請確認檔名與所在資料夾。')"
+  >
+
+  <script
+    defer
+    src="./content.js"
+    onerror="riseReport('無法載入 content.js。請確認它與 index.html 放在同一個資料夾。')"
+  ></script>
+
+  <script
+    defer
+    src="./script.js"
+    onerror="riseReport('無法載入 script.js。請確認檔名不是 script(1).js 或 script.js.txt。')"
+  ></script>
+</head>
+
+<body data-page="home">
+
+  <!-- 錯誤提示獨立放置，不會被網站程式覆蓋。 -->
+  <section id="load-status" role="alert" hidden>
+    <h2>網站尚未完整載入</h2>
+    <p>請將下方錯誤文字複製給我，便能針對原因修正。</p>
+    <div id="error-details"></div>
+  </section>
+
+  <!-- 正常載入後，script.js 會替換這個區塊。 -->
+  <div id="app">
+    <main id="fallback-home">
+      <h1>RISE</h1>
+      <h2>國立臺灣大學數思新生計畫</h2>
+
+      <p>Reasoning and Inquiry for Science Education</p>
+      <p>從提問出發，探索數學、物理與化學。</p>
+
+      <nav aria-label="網站導覽">
+        <a href="about.html">關於計畫</a>
+        <a href="explore.html">影音探索</a>
+        <a href="science.html">科學探索</a>
+        <a href="resources.html">教學資源</a>
+        <a href="schedule.html">重要日程</a>
+        <a href="team.html">核心團隊</a>
+      </nav>
+
+      <p>這是備用首頁，完整網站載入後會自動替換。</p>
+
+      <noscript>
+        <p>
+          你的瀏覽器目前停用了 JavaScript，
+          請開啟後重新整理頁面。
+        </p>
+      </noscript>
+    </main>
+  </div>
+
+</body>
+</html>
