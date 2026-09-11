@@ -101,7 +101,7 @@
         <li>教師可提交資格申請。</li>
         <li>管理員核准後取得教師身分。</li>
       </ol>
-      <p>公開影片與教材可直接瀏覽。作業繳交與教學管理將另行開放。</p>
+      <p>影片播放、數理學習與提問工作台需先登入。觀看紀錄會存至你的帳號。</p>
       <a href="science.html">先探索三學科 →</a>
     </aside>
   `;
@@ -349,7 +349,7 @@
         );
 
         $('#password').value = '';
-        location.assign('account.html');
+        location.assign(safeLearningReturn());
       });
 
     } else if (page === 'forgot') {
@@ -510,6 +510,46 @@
     `).join('') || '<p>尚無紀錄。</p>';
   }
 
+  function safeLearningReturn() {
+    const raw = new URLSearchParams(location.search).get('next');
+    if (!raw) return 'account.html';
+    try {
+      const base = new URL('./', location.href);
+      const target = new URL(raw, base);
+      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html'];
+      if (target.origin !== base.origin || !allowed.some(name => target.pathname === base.pathname + name)) return 'account.html';
+      return target.pathname + target.search;
+    } catch { return 'account.html'; }
+  }
+
+  async function renderWatchHistory() {
+    const box = $('#watch-history');
+    if (!box) return;
+    let offset = 0;
+    const time = n => { const s = Math.max(0, Math.floor(Number(n) || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+    async function draw() {
+      box.textContent = '正在讀取觀看紀錄…';
+      try {
+        const rows = checked(await client.from('rise_watch_history').select('*').eq('user_id', user.id).order('last_watched_at', {ascending: false}).order('video_id').range(offset, offset + 10));
+        box.innerHTML = rows.length ? rows.slice(0,10).map(r => `
+          <article class="auth-record"><h3>${esc(r.video_title)}</h3>
+          <p>最近觀看：${esc(new Date(r.last_watched_at).toLocaleString('zh-TW'))}</p>
+          <p>上次位置 ${time(r.position_seconds)}${Number(r.duration_seconds) > 0 ? '／' + time(r.duration_seconds) : ''} · 累計播放時間 ${time(r.watched_seconds)}</p>
+          <p class="auth-help">${r.reached_end ? '曾播放至片尾；不代表完整看完每個段落。' : '尚無播放至片尾的紀錄。'}</p>
+          <a class="auth-button" href="video-detail.html?id=${encodeURIComponent(r.video_id)}">繼續觀看</a></article>`).join('') : '<p>尚無觀看紀錄。登入後在本站播放影片，即會開始記錄。</p>';
+        const controls = document.createElement('div'); controls.className = 'auth-actions';
+        const prev = document.createElement('button'), next = document.createElement('button');
+        prev.textContent = '上一頁'; next.textContent = '下一頁'; prev.disabled = offset === 0; next.disabled = rows.length <= 10;
+        prev.onclick = () => { offset = Math.max(0, offset - 10); draw(); };
+        next.onclick = () => { offset += 10; draw(); };
+        controls.append(prev, next); box.append(controls);
+      } catch {
+        box.textContent = '觀看紀錄暫時無法讀取。請確認網路，或請管理員完成觀看紀錄資料庫設定。';
+      }
+    }
+    await draw();
+  }
+
   async function accountPage() {
     if (!await loadUser()) return;
 
@@ -584,9 +624,11 @@
           </div>
 
           <p class="auth-help">
-            此會員中心尚未串接作業繳交、雲端學習紀錄或課程管理。
-            既有本機草稿仍只存在原瀏覽器。
+            觀看紀錄會儲存至帳號。提問與推理草稿仍保存在目前瀏覽器，尚未送交教師或助教。
           </p>
+
+          <h2>我的觀看紀錄</h2>
+          <div id="watch-history" aria-live="polite"></div>
 
           ${a
             ? '<h2>歷次申請與審核紀錄</h2>' + await history(a.id)
@@ -597,6 +639,7 @@
       </div>
     `;
 
+    renderWatchHistory();
     $('#logout').onclick = async () => {
       try {
         checked(await client.auth.signOut());
