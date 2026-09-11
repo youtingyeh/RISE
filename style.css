@@ -15,6 +15,37 @@
   --chemistry: #844565;
 }
 
+/* 雙軌培育：學習過程與可編輯草稿 */
+.learning-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 24px;
+  padding-left: 24px;
+  margin-block: 30px;
+}
+.learning-steps li { padding: 18px; border-top: 3px solid var(--gold); }
+.draft-panel { margin-top: 36px; }
+.draft-field { margin: 24px 0; }
+.draft-field label { display: block; font-weight: 700; }
+.draft-field p { margin: 6px 0 10px; }
+.draft-field textarea {
+  display: block;
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid #a7b6c5;
+  border-radius: 5px;
+  font: inherit;
+  line-height: 1.8;
+  color: var(--ink);
+  background: white;
+}
+.draft-field textarea:focus-visible { outline: 3px solid #b67824; outline-offset: 3px; }
+#draft-status { margin-top: 20px; color: var(--red); }
+.site-header .main-nav { gap: 4px 18px; }
+@media (min-width: 1101px) { .site-header .main-nav { max-width: 800px; } }
+
 * {
   box-sizing: border-box;
 }
