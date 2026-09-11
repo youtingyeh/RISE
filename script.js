@@ -131,6 +131,9 @@
 
   const navigation = [
     ["home", "index.html", "首頁"],
+    ["learning", "learning.html", "學習路徑"],
+    ["inquiry", "inquiry.html", "提問工作台"],
+    ["support", "support.html", "教師與助教"],
     ["about", "about.html", "關於計畫"],
     ["videos", "explore.html", "影音探索"],
     ["science", "science.html", "科學探索"],
@@ -953,17 +956,7 @@
         "活動日期與參與資訊確認後，將在這裡公布。"
       );
 
-      if (D.demo) {
-        content += `
-          <article class="schedule-row">
-            <div><span class="badge">範例欄位</span></div>
-            <div>
-              <h2>活動名稱待填</h2>
-              <p>日期、地點與活動說明待填。</p>
-            </div>
-          </article>
-        `;
-      }
+
     }
 
     return `
@@ -1019,7 +1012,100 @@
 
   /* ===== 顯示頁面並啟動 ===== */
 
+  /* 計畫書 2025-11-05：雙軌入口、在此裝置保存的練習草稿。 */
+  function programHomePage() {
+    return `${heading("REASONING × QUESTIONING", "練習推理，也練習提出好問題", "數思新生以數理能力與提問力雙軌培育，陪你從理解概念、寫出思路，到修正問題與展開對話。")}
+      <section class="section container"><div class="card-grid two">
+      <article class="subject-card math"><p class="eyebrow">TRACK 01 / REASONING</p><h2>數理能力</h2><p>先理解概念，再寫出每一步的理由；從錯誤中修正推理。</p>${link("learning.html", "查看學習路徑", "button")}</article>
+      <article class="subject-card physics"><p class="eyebrow">TRACK 02 / QUESTIONING</p><h2>提問力</h2><p>說明你觀察到什麼、為什麼想問，以及這個問題值得探索的原因。</p>${link("inquiry.html", "開始整理我的問題", "button")}</article></div>
+      <div class="note"><h2>第一次來？</h2><p>對數理有興趣的高中生，可以先看學習路徑；想練習把想法問清楚，也可以直接使用提問工作台。範例階段尚未開放正式教材、作業繳交與助教批閱。</p></div>
+      ${sectionHeading("DISCIPLINES", "學科探索", "science.html", "查看三學科 →")}<div class="card-grid">${subjectCards()}</div></section>
+      <section class="section soft"><div class="container">${sectionHeading("LEARNING CYCLE", "看懂之後，把思路留下來")}
+      <ol class="learning-steps"><li><strong>理解概念</strong><p>查看先備概念、核心講義與教學影片。</p></li><li><strong>寫出推理</strong><p>記錄解題策略、理由與卡住的位置。</p></li><li><strong>修正想法</strong><p>對照回饋，說明修改了什麼、為什麼。</p></li><li><strong>提出新問題</strong><p>把學到的概念轉成可探索的問題。</p></li></ol>
+      <div class="actions">${link("explore.html", "影音與單元導讀")}${link("support.html", "教師與助教支持", "button secondary")}</div></div></section>
+      <section class="section container">${sectionHeading("PROGRAM INFORMATION", "計畫資訊")}<div class="info-grid">${[["about.html","關於計畫"],["team.html","核心團隊"],["schedule.html","重要日程"],["resources.html","教學資源"]].map(([url,label])=>`<a class="info-card" href="${url}"><h3>${label}</h3><span class="text-link">查看內容 →</span></a>`).join("")}</div></section>`;
+  }
+
+  function learningPage() {
+    return `${heading("LEARNING PATHWAYS", "我的學習起點", "先知道要練什麼能力，再選擇單元。下列是計畫主題，不代表教材已上線，也不是固定先修順序。")}
+      <section class="section container"><div class="note"><h2>一個單元怎麼學？</h2><p>計畫規劃每堂課以 30 分鐘為限，搭配 3–5 題練習；教材分為核心講義、延伸閱讀與挑戰題。學習重點是完整演算、思考註記與修改理由。</p><p>正式教材與單元先備條件尚待課程團隊提供。</p></div>
+      ${D.subjects.map(s=>`<section class="content-section"><p class="eyebrow">${e(s.english)}</p><h2>${e(s.name)}</h2><p>${e(s.description)}</p><div class="card-grid two">${(s.topics||[]).map(t=>`<article class="member ${e(s.id)}"><span class="badge">規劃主題・教材待提供</span><h3>${e(t.title)}</h3><p>${e(t.description)}</p></article>`).join("")||emptyState("課程範圍待確認","保留學科入口，待課程團隊提供正式規劃。")}</div><div class="actions">${link(s.id+".html", "查看"+s.name+"探索", "button secondary")}${link("explore.html?subject="+s.id,"查看影音範例","text-link")}</div></section>`).join("")}</section>`;
+  }
+
+  const questionFields = [
+    ["background","我觀察到什麼？","描述現象、教材段落或問題出現的情境。"],
+    ["question","我真正想問什麼？","把問題寫成一句具體、可以討論的問句。"],
+    ["motivation","為什麼我想問？","說明你的疑惑，以及它與已學內容的關係。"],
+    ["assumptions","我用了哪些假設？","哪些是已知事實？哪些還只是猜想？"],
+    ["evidence","我可以怎麼探索？","列出需要的證據、比較方式或驗證方法。"],
+    ["impact","如果釐清了，能幫助我們理解什麼？","說明問題的可能影響，不必誇大。"],
+    ["revision","這次改了什麼？","記錄相較上一版的修改與理由。"]
+  ];
+
+  function draftPanel(kind, fields, contextLabel) {
+    return `<section class="draft-panel" data-draft-kind="${kind}" data-draft-context="${e(contextLabel)}"><h2>${kind==="question"?"我的問題草稿":"我的推理紀錄"}</h2>
+      <p class="note">這是草稿工具：只有按「保存版本」才會儲存在此瀏覽器，不會上傳，也不會送交助教。共用電腦請匯出後清除此份紀錄；清除瀏覽器資料也會刪除紀錄。</p>
+      <form id="draft-form">${fields.map(([id,label,hint])=>`<div class="draft-field"><label for="draft-${id}">${label}</label><p id="hint-${id}" class="small muted">${hint}</p><textarea id="draft-${id}" name="${id}" rows="4" maxlength="12000" aria-describedby="hint-${id}"></textarea></div>`).join("")}
+      <div class="actions"><button type="submit" class="button">保存版本</button><button type="button" id="export-draft" class="button secondary">匯出目前草稿</button><button type="button" id="clear-draft" class="button secondary">清除此份紀錄</button></div></form>
+      <p id="draft-status" role="status" aria-live="polite"></p><h3>此裝置上的版本</h3><div id="draft-history"></div></section>`;
+  }
+
+  function inquiryPage() {
+    return `${heading("QUESTION WORKSHOP", "把疑問變成值得探索的問題", "先留下想法，再檢查背景、假設與證據。問題可以修改，不必第一次就問得完整。")}
+      <section class="section container"><div class="content-layout"><aside class="section-index"><h2>提問自我檢查</h2><p>這些提示是依計畫設計的練習輔助，不是自動評分。</p><ul><li>我在問事實、關係，還是假設是否成立？</li><li>問題的範圍是否清楚？</li><li>是否存在其他解釋？</li><li>什麼證據會讓我改變想法？</li></ul><p class="small muted">計畫中的競賽關注創新性、深度、適切性與啟發性；目前未開放投稿。</p></aside>
+      <div>${draftPanel("question",questionFields,"提問練習")}</div></div></section>`;
+  }
+
+  function supportPage() {
+    return `${heading("TEACHING & FEEDBACK", "教師與助教支持", "共同關注學生怎麼想，以及下一次能怎麼改進。以下為計畫機制說明，尚未開放線上批閱。")}
+      <section class="section container"><div class="card-grid"><article class="member"><p class="eyebrow">01</p><h2>思路分析</h2><p>指出推理中使用的概念、成立的步驟與發生斷層的位置。</p></article><article class="member"><p class="eyebrow">02</p><h2>改進建議</h2><p>給出能實際採取的下一步，協助學生重新整理推理。</p></article><article class="member"><p class="eyebrow">03</p><h2>延伸提問</h2><p>透過再提問，引導學生檢查假設、比較方法與拓展理解。</p></article></div>
+      <section class="note"><h2>學生怎麼準備求助？</h2><p>留下題目或單元、已嘗試的方法、完整推理與卡住的位置。你可以在影片導讀頁保存推理紀錄，再匯出草稿。</p></section>
+      <section class="content-section"><h2>助教培訓與回饋品質</h2><p>計畫規劃教學溝通、錯誤診斷、批閱標準與學生回饋倫理等培訓，並透過試批考核與教師抽查維持品質。招募時間、資格與正式聯絡管道尚待公告。</p></section>
+      <section class="content-section"><h2>教師共備與學者對談</h2><p>教師共備聚焦教材、教案與學習案例；學者對談以學生事先整理的問題為出發點。未來可將問題、回應與延伸閱讀整理為開放資源。</p>${link("inquiry.html","先整理一份問題摘要","button secondary")}</section>
+      <section class="note"><h2>尚未開放的服務</h2><p>帳號登入、作業上傳、助教分派、批閱回覆、跨裝置歷程、AI 問題顧問及競賽投稿尚未啟用。目前不接收學生作業或個人資料。</p></section></section>`;
+  }
+
+  function addLearningRecord() {
+    if(page!=="video" || !selectedVideo())return;
+    const v=selectedVideo(), article=document.querySelector(".detail-layout > article");
+    if(!article)return;
+    const tasks=Array.isArray(v.exercises)?v.exercises:[];
+    article.insertAdjacentHTML("beforeend",`<section class="note"><h2>單元練習</h2><p>先備概念：${e(v.prerequisites||"待課程團隊提供")}</p>${tasks.length?`<ol>${tasks.map(t=>`<li>${e(typeof t==="string"?t:t.prompt)}</li>`).join("")}</ol>`:"<p>正式練習題尚未提供。計畫規劃每單元 3–5 題；下方可先試用推理紀錄，不代表已完成正式課程。</p>"}</section>${draftPanel("reasoning",[["task","題目或討論的問題","記下你正在處理的題目。"],["strategy","我的推理與理由","列出已知條件、使用的概念，以及每一步為什麼成立。"],["stuck","我卡在哪裡？","指出不確定的概念、步驟或假設。"],["revision","修改與反思","說明你修改了什麼，以及修改的依據。"]],v.id)}`);
+  }
+
+  function setupDrafts() {
+    const panel=document.querySelector("[data-draft-kind]");if(!panel)return;
+    const form=document.getElementById("draft-form"),status=document.getElementById("draft-status"),historyBox=document.getElementById("draft-history");
+    const inputs=[...form.querySelectorAll("textarea")];
+    const key="rise-draft-v1:"+panel.dataset.draftKind+":"+panel.dataset.draftContext;
+    let versions=[],dirty=false,storageAvailable=true;
+    try{const stored=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(stored))throw Error("invalid");versions=stored.filter(v=>v&&typeof v.time==="string"&&v.values&&typeof v.values==="object").slice(-20);}catch{storageAvailable=false;status.textContent="無法讀取本機紀錄。請使用匯出保留本次草稿。";}
+    function values(){return Object.fromEntries(inputs.map(input=>[input.name,input.value]));}
+    function fill(v){inputs.forEach(input=>input.value=typeof v[input.name]==="string"?v[input.name]:"");}
+    function history(){historyBox.replaceChildren();if(!versions.length){historyBox.textContent="尚無保存版本。";return;}versions.forEach((v,i)=>{const row=document.createElement("p"),button=document.createElement("button");button.type="button";button.className="button secondary";button.textContent="載入版本 "+(i+1)+" · "+new Date(v.time).toLocaleString();button.onclick=()=>{if(dirty&&!confirm("載入舊版會替換目前未保存文字，是否繼續？"))return;fill(v.values);dirty=false;status.textContent="已載入版本 "+(i+1)+"。編輯後可另存新版本。";};row.append(button);historyBox.append(row);});}
+    if(versions.length)fill(versions[versions.length-1].values);history();
+    form.addEventListener("input",()=>{dirty=true;status.textContent="有未保存的修改。";});
+    form.onsubmit=event=>{event.preventDefault();const v=values();if(!Object.values(v).some(x=>x.trim())){status.textContent="請先寫下內容。";return;}if(!storageAvailable){status.textContent="本機儲存不可用，請匯出草稿。";return;}const next=[...versions,{time:new Date().toISOString(),values:v}].slice(-20);try{localStorage.setItem(key,JSON.stringify(next));versions=next;dirty=false;history();status.textContent="已保存於此瀏覽器（最多保留 20 個版本），尚未送交任何人。";}catch{status.textContent="儲存失敗，請匯出草稿保留內容。";}};
+    document.getElementById("export-draft").onclick=()=>{const lines=["RISE 學習草稿",panel.dataset.draftContext,"匯出時間："+new Date().toLocaleString(),"此檔為個人草稿，不代表繳交、批閱或課程完成。",...inputs.flatMap(input=>["",form.querySelector('label[for="'+input.id+'"]').textContent,input.value])];const url=URL.createObjectURL(new Blob(["\uFEFF"+lines.join("\n")],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="RISE-draft.txt";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent="已產生目前草稿的文字檔；保存版本仍留在此瀏覽器。";};
+    document.getElementById("clear-draft").onclick=()=>{if(!confirm("確定清除此份草稿及其所有本機版本？"))return;try{localStorage.removeItem(key);}catch{status.textContent="無法清除本機儲存，請至瀏覽器設定處理。";return;}versions=[];fill({});dirty=false;history();status.textContent="已清除此份本機紀錄。";};
+    window.addEventListener("beforeunload",event=>{if(dirty){event.preventDefault();event.returnValue="";}});
+  }
+
+  function programTeamPage() {
+    if(team.length)return teamPage();
+    const roles=[["主持人與共同主持人","總體規劃、資源整合、年度策略與進度監督。"],["行政統籌","行政作業管理與法規行政支援。"],["課程組","數理教材重構、提問課程與影音製作。"],["助教組","助教招募培訓、任務管理與批閱制度。"],["活動組","營隊、提問競賽、講座與學者對談。"],["媒體與出版組","影片、文字紀錄、年鑑與平台維運。"],["諮詢委員會","教育策略、品質監控與成效檢討。"]];
+    return `${heading("PROGRAM TEAM","核心團隊","以下為計畫書規劃的職責架構；營運中心與實際成員名單尚待確認。")}
+      <section class="section container"><div class="card-grid">${roles.map(([name,description])=>`<article class="member"><span class="badge">規劃職責</span><h2>${name}</h2><p>${description}</p><p class="small muted">成員待公布</p></article>`).join("")}</div></section>`;
+  }
+
+  function programSchedulePage() {
+    return schedulePage()+`<section class="section container"><h2>計畫里程碑</h2><p>依 2025 年 11 月版計畫書整理。以下為相對年度規劃，尚未指定啟動年，不是當前進度或活動日期。</p><ol class="learning-steps"><li><strong>第 1 年</strong><p>建置數學模組、助教制度與試行平台；規劃試用、活動及助教招募培訓。</p></li><li><strong>第 2 年</strong><p>推出數學模組、建置物理模組，推動提問競賽、社群與跨校共備。</p></li><li><strong>第 3 年</strong><p>計畫規劃教材平台全面開放；正文另述第三年啟動物理部分，正式時程仍待確認。</p></li></ol></section>`;
+  }
+
   const titles = {
+    learning: "學習路徑",
+    inquiry: "提問工作台",
+    support: "教師與助教",
     home: "首頁",
     about: "關於計畫",
     videos: "影音探索",
@@ -1035,7 +1121,10 @@
   };
 
   const renderers = {
-    home: homePage,
+    home: programHomePage,
+    learning: learningPage,
+    inquiry: inquiryPage,
+    support: supportPage,
     about: aboutPage,
     videos: videosPage,
     science: sciencePage,
@@ -1044,8 +1133,8 @@
     chemistry: () => subjectPage("chemistry"),
     video: videoDetailPage,
     resources: resourcesPage,
-    team: teamPage,
-    schedule: schedulePage,
+    team: programTeamPage,
+    schedule: programSchedulePage,
     notfound: notFoundPage
   };
 
@@ -1093,8 +1182,16 @@
     if (event.target.closest("a")) closeMenu();
   });
 
+  addLearningRecord();
+  setupDrafts();
   setupFilters();
   setupPlayer();
+  if(page === "video") {
+    const mediaScript=document.createElement("script");
+    mediaScript.src=new URL("./media.js", document.currentScript ? document.currentScript.src : document.baseURI).href;
+    mediaScript.onerror=()=>{const p=document.createElement("p");p.textContent="影片加強功能載入失敗，請確認 media.js。";document.querySelector("#player")?.after(p);};
+    document.head.append(mediaScript);
+  }
 })();
 
   
