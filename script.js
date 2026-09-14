@@ -1333,7 +1333,7 @@ function setupCalendar() {
   }
 
   function programSchedulePage() {
-    return schedulePage()+`<section class="section container"><h2>計畫里程碑</h2><p>依 2025 年 11 月版計畫書整理。以下為相對年度規劃，尚未指定啟動年，不是當前進度或活動日期。</p><ol class="learning-steps"><li><strong>第 1 年</strong><p>建置數學模組、助教制度與試行平台；規劃試用、活動及助教招募培訓。</p></li><li><strong>第 2 年</strong><p>推出數學模組、建置物理模組，推動提問競賽、社群與跨校共備。</p></li><li><strong>第 3 年</strong><p>計畫規劃教材平台全面開放；正文另述第三年啟動物理部分，正式時程仍待確認。</p></li></ol></section>`;
+  return schedulePage();
   }
 
   const titles = {
@@ -1441,6 +1441,7 @@ function setupCalendar() {
   addLearningRecord();
   setupDrafts();
   setupFilters();
+  setupCalendar();
   // 播放器只由 media.js 建立，避免舊播放器繞過觀看紀錄。
   if(page === "video") {
     const mediaScript=document.createElement("script");
