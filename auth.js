@@ -382,19 +382,41 @@
         $('#password2').value = '';
 
         if (data.session) {
-          report(
-            '帳號已登入。請至會員中心查看資料；教師仍需提交資格申請。'
-          );
-        } else {
-          report(
-            '若此信箱可建立帳號，將收到驗證信。請檢查收件匣與垃圾郵件；已有帳號可直接登入。'
-          );
+          report('帳號建立成功，正在前往會員中心。');
+          location.assign('account.html');
+          return;
         }
 
-        const a = document.createElement('a');
-        a.href = 'account.html';
-        a.textContent = '前往會員中心';
-        status.append(document.createElement('br'), a);
+        const registeredEmail = f.get('email').trim();
+
+        report('註冊資料已送出，請到信箱完成驗證。');
+
+        root.innerHTML = `
+          <div class="auth-grid">
+            <section class="auth-card" aria-labelledby="registration-complete">
+              <p class="eyebrow">REGISTRATION RECEIVED</p>
+              <h2 id="registration-complete">請檢查你的電子信箱</h2>
+              <p>
+                RISE 已將驗證信寄至
+                <strong>${esc(registeredEmail)}</strong>。
+              </p>
+              <ol>
+                <li>開啟標題含有「RISE 數思新生計畫」的信件。</li>
+                <li>點選信中的「驗證電子信箱」按鈕。</li>
+                <li>驗證完成後回到 RISE 登入。</li>
+              </ol>
+              <p class="auth-help">
+                幾分鐘後仍未收到時，請查看垃圾郵件或促銷郵件。
+                同一信箱已註冊時不會重複建立帳號。
+              </p>
+              <div class="auth-actions">
+                <a class="auth-button" href="verify-email.html">重新寄送驗證信</a>
+                <a class="auth-button secondary" href="login.html">前往登入</a>
+              </div>
+            </section>
+            ${side}
+          </div>
+        `;
       });
 
     } else if (page === 'login') {
@@ -1262,11 +1284,37 @@
       if (page === 'verify') {
         const result = await client.auth.getUser();
 
-        report(
-          result.data?.user?.email_confirmed_at
-            ? '目前登入帳號的信箱已驗證，可前往會員中心。'
-            : '若連結已失效，請重新寄送驗證信；已驗證者可直接登入。'
-        );
+        if (result.data?.user?.email_confirmed_at) {
+          report('電子信箱驗證成功。');
+
+          root.innerHTML = `
+            <div class="auth-grid">
+              <section class="auth-card" aria-labelledby="verification-complete">
+                <p class="eyebrow">EMAIL VERIFIED</p>
+                <h2 id="verification-complete">信箱驗證完成</h2>
+                <p>你的 RISE 帳號已啟用，可以開始使用學習與提問功能。</p>
+                <div class="auth-actions">
+                  <a class="auth-button" href="account.html">進入會員中心</a>
+                  <a class="auth-button secondary" href="index.html">返回首頁</a>
+                </div>
+              </section>
+              ${side}
+            </div>
+          `;
+        } else {
+          const params = new URLSearchParams(
+            location.search || location.hash.replace(/^#/, '?')
+          );
+          const authError =
+            params.get('error_description') || params.get('error');
+
+          report(
+            authError
+              ? '驗證連結無效或已過期，請在下方重新寄送驗證信。'
+              : '請開啟驗證信中的連結；若連結已失效，可在下方重新寄送。',
+            Boolean(authError)
+          );
+        }
 
       } else if (page === 'reset' && !recovery) {
         report(
