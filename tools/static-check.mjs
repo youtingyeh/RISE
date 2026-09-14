@@ -73,7 +73,7 @@ if (!script.includes('id="site-account-nav"')) failures.push('script.js 缺少 #
 
 for (const file of files.filter(file => extname(file) === '.js')) {
   const source = await readFile(file, 'utf8');
-  const name = relative(root, file).replaceAll('\\\\', '/');
+  const name = relative(root, file).replaceAll('\\', '/');
   try {
     new vm.Script(source, { filename: name });
   } catch (error) {
