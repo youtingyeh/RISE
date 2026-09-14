@@ -41,8 +41,18 @@ for (const file of files.filter(file => extname(file) === '.html')) {
     if (ids.filter(value => value === id).length > 1) failures.push(`${relative(root, file)}：重複 id ${id}`);
   }
 
+  const inlineScripts = [...html.matchAll(/<script(?![^>]*\bsrc\s*=)[^>]*>([\s\S]*?)<\/script>/gi)];
+  for (const [index, match] of inlineScripts.entries()) {
+    try {
+      new vm.Script(match[1], { filename: `${name} inline script ${index + 1}` });
+    } catch (error) {
+      failures.push(`${name}：內嵌 JavaScript 語法錯誤（${error.message}）`);
+    }
+  }
+
   for (const match of html.matchAll(/\b(?:href|src)\s*=\s*["']([^"']+)["']/gi)) {
     const reference = match[1];
+    if (reference.includes('${')) continue;
     if (/^(?:[a-z]+:|#|\/\/)/i.test(reference)) continue;
     const pathname = reference.split(/[?#]/, 1)[0];
     if (!pathname) continue;
@@ -63,6 +73,12 @@ if (!script.includes('id="site-account-nav"')) failures.push('script.js 缺少 #
 
 for (const file of files.filter(file => extname(file) === '.js')) {
   const source = await readFile(file, 'utf8');
+  const name = relative(root, file).replaceAll('\\\\', '/');
+  try {
+    new vm.Script(source, { filename: name });
+  } catch (error) {
+    failures.push(`${name}：JavaScript 語法錯誤（${error.message}）`);
+  }
   if (/sb_secret_[A-Za-z0-9_-]+/.test(source)) failures.push(`${relative(root, file)}：疑似包含 Supabase secret key`);
   if (/@supabase\/supabase-js@2(?:\/|['"])/.test(source)) failures.push(`${relative(root, file)}：Supabase SDK 使用浮動主版本`);
 }
