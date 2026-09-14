@@ -119,6 +119,23 @@
 
   function errorText(err) {
     const s = String(err?.message || err);
+    const code = String(err?.code || '');
+
+    if (/Error sending (confirmation|recovery|magic link) email|smtp/i.test(s)) {
+      return '驗證或通知信寄送失敗，請聯絡管理員檢查 SMTP 寄信設定。';
+    }
+    if (/Database error saving new user/i.test(s)) {
+      return '帳號資料建立失敗，請聯絡管理員檢查資料庫註冊設定。';
+    }
+    if (code === 'weak_password' || /password.*(weak|least|contain)/i.test(s)) {
+      return '密碼不符合帳號服務要求，請使用至少 12 個字元並混合大小寫字母、數字及符號。';
+    }
+    if (code === 'user_already_exists' || /already registered/i.test(s)) {
+      return '此信箱已註冊，請前往登入或重設密碼。';
+    }
+    if (code === 'signup_disabled') {
+      return '帳號服務目前未開放註冊，請聯絡管理員。';
+    }
 
     if (/Invalid login credentials/i.test(s)) {
       return '信箱或密碼不正確，請重新確認。';
@@ -144,7 +161,10 @@
       return s.slice(s.indexOf('rise:') + 5);
     }
 
-    return '操作未完成。請確認帳號服務、資料庫與寄信設定，稍後重試。';
+    const diagnostic = /^[a-z0-9_]{1,80}$/i.test(code) ? code : '';
+    const httpStatus = Number(err?.status);
+    const details = [diagnostic, Number.isInteger(httpStatus) && httpStatus >= 400 && httpStatus <= 599 ? 'HTTP ' + httpStatus : ''].filter(Boolean).join('／');
+    return '操作未完成，請聯絡管理員。' + (details ? '錯誤代碼：' + details : '請提供操作時間以便查詢紀錄。');
   }
 
   function bindForm(action) {
