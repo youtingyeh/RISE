@@ -4,7 +4,7 @@ window.RISE_AUTH_CONFIG = Object.freeze({
   url: "https://pgksyiqvicvapcmrhhhs.supabase.co",
   publishableKey: "sb_publishable_LXCUHgNzS7gRinvkN-ADOw_Xp1CRJ4M",
   siteURL: "https://youtingyeh.github.io/RISE/",
-  // 團隊完成個資告知內容後填入網址；未填前不開放註冊。
-  privacyURL: ""
+  // 正式個人資料蒐集告知事項。
+  privacyURL: "https://youtingyeh.github.io/RISE/privacy.html"
 });
 
