@@ -1202,7 +1202,29 @@
   mainNav.addEventListener("click", event => {
     if (event.target.closest("a")) closeMenu();
   });
+  // 讀取 Supabase 登入狀態並更新最上方帳號列
+  const accountScript = document.createElement("script");
 
+  accountScript.src = new URL(
+    "./account-nav.js",
+    document.currentScript
+      ? document.currentScript.src
+      : document.baseURI
+  ).href;
+
+  accountScript.onerror = () => {
+    const accountNav = document.getElementById("site-account-nav");
+
+    if (accountNav) {
+      accountNav.innerHTML = `
+        <a style="color:white" href="register.html">註冊</a>
+        <a style="color:white" href="login.html">登入</a>
+      `;
+    }
+  };
+
+  document.head.append(accountScript);
+  
   addLearningRecord();
   setupDrafts();
   setupFilters();
