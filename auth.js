@@ -1134,6 +1134,13 @@
       });
 
       checked(await client.auth.getSession());
+
+      const identity = await client.auth.getUser();
+
+      updateAccountNavigation(
+        identity.data?.user || null
+      );
+
       notice.hidden = true;
 
       if (page === 'register') {
