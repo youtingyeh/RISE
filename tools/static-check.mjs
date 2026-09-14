@@ -64,7 +64,8 @@ for (const file of files.filter(file => extname(file) === '.html')) {
 const required = [
   'index.html', 'style.css', 'content.js', 'script.js', 'auth-config.js',
   'auth.js', 'account-nav.js', 'learning-session.js', 'media.js',
-  'backend/setup.sql', 'backend/watch-history.sql'
+  'privacy.html', 'backend/setup.sql', 'backend/watch-history.sql',
+  'backend/delete-account.sql'
 ];
 for (const file of required) if (!relativeFiles.has(file)) failures.push(`缺少必要檔案：${file}`);
 
