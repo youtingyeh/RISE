@@ -1121,8 +1121,16 @@
         }
       );
 
-      client.auth.onAuthStateChange(event => {
-        if (event === 'PASSWORD_RECOVERY') recovery = true;
+      client.auth.onAuthStateChange((event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          recovery = true;
+        }
+
+        if (event === "SIGNED_OUT" || !session?.user) {
+          updateAccountNavigation(null);
+        } else {
+          updateAccountNavigation(session.user);
+        }
       });
 
       checked(await client.auth.getSession());
