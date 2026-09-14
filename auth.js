@@ -335,8 +335,15 @@
               <input type="checkbox" name="consent" required>
               我已閱讀並同意
               <span id="privacy-label">
-                個人資料蒐集告知事項（待團隊提供）
+                個人資料蒐集告知事項
               </span>
+            </label>
+          </p>
+
+          <p>
+            <label>
+              <input type="checkbox" name="age-confirmation" required>
+              我確認已年滿十八歲；如未滿十八歲，已由法定代理人陪同閱讀並取得其同意。
             </label>
           </p>
 
@@ -363,7 +370,9 @@
               emailRedirectTo: redirect('verify-email.html'),
               data: {
                 display_name: f.get('name').trim(),
-                requested_kind: f.get('kind')
+                requested_kind: f.get('kind'),
+                privacy_notice_version: '2026-09-14',
+                privacy_consent_at: new Date().toISOString()
               }
             }
           })
