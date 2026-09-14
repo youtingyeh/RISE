@@ -2,15 +2,910 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="RISE 國立臺灣大學數思新生計畫範例網站，提供高中生數學、物理、化學、推理與提問學習資源。">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="RISE 公開活動月曆，提供已確認的活動日期與參與資訊。"
+  >
+
   <title>重要日程｜RISE</title>
+
+  <!-- 保留全站原本樣式 -->
   <link rel="stylesheet" href="style.css">
+
+  <!-- 讀取公開活動資料 -->
   <script defer src="content.js"></script>
-  <script defer src="script.js"></script>
+
+  <style>
+    /* 此頁專用樣式，不依賴原本月曆 CSS */
+
+    .rise-calendar-page {
+      --calendar-navy: #132d4c;
+      --calendar-ink: #172c43;
+      --calendar-muted: #647386;
+      --calendar-line: #dce3ea;
+      --calendar-soft: #f4f6f8;
+      --calendar-gold: #e6be66;
+      --calendar-red: #922c43;
+    }
+
+    .rise-calendar-hero {
+      padding: 66px 0 58px;
+      border-bottom: 1px solid var(--calendar-line);
+      background:
+        linear-gradient(
+          135deg,
+          rgba(19, 45, 76, 0.98),
+          rgba(28, 65, 103, 0.95)
+        );
+      color: white;
+    }
+
+    .rise-calendar-hero-inner {
+      width: min(1180px, calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .rise-calendar-eyebrow {
+      margin: 0 0 14px;
+      color: var(--calendar-gold);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+    }
+
+    .rise-calendar-hero h1 {
+      margin: 0;
+      color: white;
+      font-size: clamp(2.5rem, 6vw, 4.8rem);
+      line-height: 1.15;
+    }
+
+    .rise-calendar-hero-description {
+      max-width: 680px;
+      margin: 20px 0 0;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 1.05rem;
+    }
+
+    .rise-calendar-main {
+      padding: 64px 0 88px;
+      background: #f6f4ef;
+    }
+
+    .rise-calendar-container {
+      width: min(1180px, calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .rise-calendar-card {
+      overflow: hidden;
+      border: 1px solid var(--calendar-line);
+      border-radius: 18px;
+      background: white;
+      box-shadow: 0 20px 60px rgba(19, 45, 76, 0.1);
+    }
+
+    .rise-calendar-toolbar {
+      display: grid;
+      grid-template-columns: 52px 1fr 52px;
+      align-items: center;
+      gap: 20px;
+      padding: 22px 28px;
+      background: white;
+    }
+
+    .rise-calendar-month {
+      margin: 0;
+      color: var(--calendar-navy);
+      font-size: 1.65rem;
+      text-align: center;
+    }
+
+    .rise-calendar-button {
+      display: grid;
+      width: 46px;
+      height: 46px;
+      padding: 0;
+      place-items: center;
+      border: 1px solid var(--calendar-line);
+      border-radius: 50%;
+      color: var(--calendar-navy);
+      background: white;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition:
+        color 0.2s ease,
+        border-color 0.2s ease,
+        background 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .rise-calendar-button:hover {
+      border-color: var(--calendar-gold);
+      color: var(--calendar-navy);
+      background: var(--calendar-gold);
+      transform: translateY(-2px);
+    }
+
+    .rise-calendar-button:focus-visible {
+      outline: 3px solid rgba(230, 190, 102, 0.55);
+      outline-offset: 3px;
+    }
+
+    .rise-calendar-weekdays,
+    .rise-calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .rise-calendar-weekdays {
+      border-top: 1px solid var(--calendar-line);
+      border-bottom: 1px solid var(--calendar-line);
+      color: var(--calendar-muted);
+      background: var(--calendar-soft);
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .rise-calendar-weekdays span {
+      padding: 13px 4px;
+    }
+
+    .rise-calendar-weekdays span:first-child,
+    .rise-calendar-weekdays span:last-child {
+      color: var(--calendar-red);
+    }
+
+    .rise-calendar-day {
+      position: relative;
+      min-height: 118px;
+      padding: 12px;
+      border-right: 1px solid var(--calendar-line);
+      border-bottom: 1px solid var(--calendar-line);
+      background: white;
+    }
+
+    .rise-calendar-day:nth-child(7n) {
+      border-right: 0;
+    }
+
+    .rise-calendar-day.is-empty {
+      background:
+        repeating-linear-gradient(
+          -45deg,
+          #fafbfc,
+          #fafbfc 7px,
+          #f7f8fa 7px,
+          #f7f8fa 14px
+        );
+    }
+
+    .rise-calendar-date {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--calendar-ink);
+      font-weight: 700;
+    }
+
+    .rise-calendar-day.is-today {
+      background: #fffdf6;
+    }
+
+    .rise-calendar-day.is-today .rise-calendar-date {
+      color: var(--calendar-navy);
+      background: var(--calendar-gold);
+    }
+
+    .rise-calendar-day.has-event::before {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 4px;
+      background: var(--calendar-red);
+      content: "";
+    }
+
+    .rise-calendar-event-list {
+      margin: 9px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .rise-calendar-event {
+      overflow: hidden;
+      margin-top: 5px;
+      padding: 4px 7px;
+      border-left: 3px solid var(--calendar-red);
+      border-radius: 2px;
+      color: var(--calendar-navy);
+      background: #f7edf0;
+      font-size: 0.76rem;
+      font-weight: 700;
+      line-height: 1.45;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .rise-calendar-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 24px;
+      color: var(--calendar-muted);
+      background: #fbfaf7;
+      font-size: 0.9rem;
+    }
+
+    .rise-calendar-legend {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .rise-calendar-legend::before {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--calendar-red);
+      content: "";
+    }
+
+    .rise-public-events {
+      margin-top: 46px;
+    }
+
+    .rise-public-events-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--calendar-navy);
+    }
+
+    .rise-public-events-heading p {
+      margin: 0 0 5px;
+      color: var(--calendar-red);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+    }
+
+    .rise-public-events-heading h2 {
+      margin: 0;
+      color: var(--calendar-navy);
+      font-size: 1.8rem;
+    }
+
+    .rise-calendar-empty {
+      margin-top: 22px;
+      padding: 36px;
+      border: 1px solid var(--calendar-line);
+      border-radius: 12px;
+      background: white;
+      text-align: center;
+    }
+
+    .rise-calendar-empty-mark {
+      display: grid;
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 16px;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--calendar-navy);
+      background: #f1e5c8;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .rise-calendar-empty h3 {
+      margin-bottom: 8px;
+      color: var(--calendar-navy);
+    }
+
+    .rise-calendar-empty p {
+      margin: 0;
+      color: var(--calendar-muted);
+    }
+
+    .rise-event-row {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr);
+      gap: 28px;
+      padding: 28px 4px;
+      border-bottom: 1px solid var(--calendar-line);
+    }
+
+    .rise-event-date {
+      color: var(--calendar-red);
+      font-weight: 700;
+    }
+
+    .rise-event-row h3 {
+      margin: 0 0 8px;
+      color: var(--calendar-navy);
+    }
+
+    .rise-event-row p {
+      margin: 4px 0;
+      color: var(--calendar-muted);
+    }
+
+    .rise-event-link {
+      display: inline-block;
+      margin-top: 8px;
+      color: var(--calendar-red);
+      font-weight: 700;
+    }
+
+    @media (max-width: 760px) {
+      .rise-calendar-hero {
+        padding: 46px 0 42px;
+      }
+
+      .rise-calendar-main {
+        padding: 34px 0 60px;
+      }
+
+      .rise-calendar-container,
+      .rise-calendar-hero-inner {
+        width: min(100% - 28px, 1180px);
+      }
+
+      .rise-calendar-toolbar {
+        grid-template-columns: 42px 1fr 42px;
+        gap: 8px;
+        padding: 15px;
+      }
+
+      .rise-calendar-month {
+        font-size: 1.25rem;
+      }
+
+      .rise-calendar-button {
+        width: 40px;
+        height: 40px;
+      }
+
+      .rise-calendar-day {
+        min-height: 68px;
+        padding: 5px;
+      }
+
+      .rise-calendar-date {
+        width: 27px;
+        height: 27px;
+        font-size: 0.82rem;
+      }
+
+      .rise-calendar-event {
+        width: 8px;
+        height: 8px;
+        margin: 5px auto 0;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        color: transparent;
+        background: var(--calendar-red);
+      }
+
+      .rise-calendar-footer {
+        display: block;
+        padding: 14px 16px;
+      }
+
+      .rise-calendar-footer p {
+        margin-bottom: 8px;
+      }
+
+      .rise-event-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+    }
+  </style>
 </head>
-<body data-page="schedule">
-  <div id="app"></div>
-  <noscript>請開啟瀏覽器的 JavaScript 功能以瀏覽網站。</noscript>
+
+<body class="rise-calendar-page">
+
+  <a class="skip-link" href="#main">跳至主要內容</a>
+
+  <div class="demo-bar">
+    範例網站
+    <span>｜公開活動資訊尚未正式公布</span>
+  </div>
+
+  <!-- 登入狀態 -->
+  <div style="background:#132d4c;color:white">
+    <nav
+      class="container"
+      id="site-account-nav"
+      aria-label="帳號導覽"
+      aria-live="polite"
+      style="
+        display:flex;
+        justify-content:flex-end;
+        align-items:center;
+        flex-wrap:wrap;
+        gap:12px 20px;
+        padding-top:8px;
+        padding-bottom:8px;
+      "
+    >
+      <span>確認登入狀態…</span>
+    </nav>
+  </div>
+
+  <!-- 全站導覽 -->
+  <header class="site-header">
+    <div class="container nav-wrap">
+
+      <a class="brand" href="index.html" aria-label="RISE 首頁">
+        <strong>RISE</strong>
+        <span>國立臺灣大學數思新生計畫</span>
+      </a>
+
+      <button
+        class="menu-button"
+        id="schedule-menu-button"
+        type="button"
+        aria-expanded="false"
+        aria-controls="schedule-main-nav"
+      >
+        選單
+      </button>
+
+      <nav
+        class="main-nav"
+        id="schedule-main-nav"
+        aria-label="主要導覽"
+      >
+        <a href="index.html">首頁</a>
+        <a href="learning.html">學習路徑</a>
+        <a href="inquiry.html">提問工作台</a>
+        <a href="support.html">教師與助教</a>
+        <a href="about.html">關於計畫</a>
+        <a href="explore.html">影音探索</a>
+        <a href="science.html">科學探索</a>
+        <a href="resources.html">教學資源</a>
+        <a href="schedule.html" aria-current="page">重要日程</a>
+        <a href="team.html">核心團隊</a>
+      </nav>
+
+    </div>
+  </header>
+
+  <main id="main">
+
+    <section class="rise-calendar-hero">
+      <div class="rise-calendar-hero-inner">
+        <p class="rise-calendar-eyebrow">
+          PUBLIC EVENTS
+        </p>
+
+        <h1>重要日程</h1>
+
+        <p class="rise-calendar-hero-description">
+          提供已確認並可公開的活動日期、地點與參與資訊。
+        </p>
+      </div>
+    </section>
+
+    <section class="rise-calendar-main">
+      <div class="rise-calendar-container">
+
+        <div class="rise-calendar-card">
+
+          <div class="rise-calendar-toolbar">
+
+            <button
+              class="rise-calendar-button"
+              id="calendar-previous"
+              type="button"
+              aria-label="顯示上一個月"
+            >
+              ←
+            </button>
+
+            <h2
+              class="rise-calendar-month"
+              id="calendar-month"
+              aria-live="polite"
+            ></h2>
+
+            <button
+              class="rise-calendar-button"
+              id="calendar-next"
+              type="button"
+              aria-label="顯示下一個月"
+            >
+              →
+            </button>
+
+          </div>
+
+          <div class="rise-calendar-weekdays" aria-hidden="true">
+            <span>日</span>
+            <span>一</span>
+            <span>二</span>
+            <span>三</span>
+            <span>四</span>
+            <span>五</span>
+            <span>六</span>
+          </div>
+
+          <div
+            class="rise-calendar-grid"
+            id="calendar-grid"
+          ></div>
+
+          <div class="rise-calendar-footer">
+            <span class="rise-calendar-legend">
+              公開活動
+            </span>
+
+            <span>
+              僅刊登已確認並可公開的活動
+            </span>
+          </div>
+
+        </div>
+
+        <section
+          class="rise-public-events"
+          aria-labelledby="public-events-title"
+        >
+          <div class="rise-public-events-heading">
+            <div>
+              <p>ANNOUNCEMENTS</p>
+              <h2 id="public-events-title">活動公告</h2>
+            </div>
+          </div>
+
+          <div id="public-events-list"></div>
+        </section>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a class="footer-brand" href="index.html">
+          RISE
+        </a>
+
+        <p>國立臺灣大學數思新生計畫</p>
+
+        <p class="small">
+          Reasoning and Inquiry for Science Education
+        </p>
+      </div>
+
+      <nav class="footer-nav" aria-label="頁尾導覽">
+        <a href="about.html">關於計畫</a>
+        <a href="explore.html">影音探索</a>
+        <a href="science.html">科學探索</a>
+        <a href="resources.html">教學資源</a>
+        <a href="schedule.html">重要日程</a>
+        <a href="team.html">核心團隊</a>
+      </nav>
+    </div>
+
+    <div class="container footer-bottom">
+      <span>數學 · 物理 · 化學</span>
+      <span>範例版 · 非正式活動公告</span>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const calendarGrid =
+        document.getElementById("calendar-grid");
+
+      const calendarMonth =
+        document.getElementById("calendar-month");
+
+      const previousButton =
+        document.getElementById("calendar-previous");
+
+      const nextButton =
+        document.getElementById("calendar-next");
+
+      const eventList =
+        document.getElementById("public-events-list");
+
+      const today = new Date();
+
+      let visibleDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        1
+      );
+
+      /*
+       * 從 content.js 讀取公開活動。
+       * 沒有資料時使用空陣列。
+       */
+      const events =
+        window.RISE_DATA &&
+        Array.isArray(window.RISE_DATA.events)
+          ? window.RISE_DATA.events.filter(function (event) {
+              return /^\d{4}-\d{2}-\d{2}$/.test(
+                event.date || ""
+              );
+            })
+          : [];
+
+      function escapeHTML(value) {
+        return String(value || "").replace(
+          /[&<>"']/g,
+          function (character) {
+            return {
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;"
+            }[character];
+          }
+        );
+      }
+
+      function safeURL(value) {
+        try {
+          const url = new URL(value);
+
+          return url.protocol === "https:"
+            ? url.href
+            : "";
+        } catch {
+          return "";
+        }
+      }
+
+      function renderCalendar() {
+        const year = visibleDate.getFullYear();
+        const month = visibleDate.getMonth();
+
+        const firstWeekday =
+          new Date(year, month, 1).getDay();
+
+        const dayCount =
+          new Date(year, month + 1, 0).getDate();
+
+        calendarMonth.textContent =
+          new Intl.DateTimeFormat("zh-TW", {
+            year: "numeric",
+            month: "long"
+          }).format(visibleDate);
+
+        const cells = [];
+
+        for (
+          let index = 0;
+          index < firstWeekday;
+          index += 1
+        ) {
+          cells.push(`
+            <div
+              class="rise-calendar-day is-empty"
+              aria-hidden="true"
+            ></div>
+          `);
+        }
+
+        for (let day = 1; day <= dayCount; day += 1) {
+          const dateKey =
+            year +
+            "-" +
+            String(month + 1).padStart(2, "0") +
+            "-" +
+            String(day).padStart(2, "0");
+
+          const dayEvents = events.filter(
+            function (event) {
+              return event.date === dateKey;
+            }
+          );
+
+          const isToday =
+            year === today.getFullYear() &&
+            month === today.getMonth() &&
+            day === today.getDate();
+
+          const eventItems = dayEvents
+            .slice(0, 2)
+            .map(function (event) {
+              return `
+                <li
+                  class="rise-calendar-event"
+                  title="${escapeHTML(event.title)}"
+                >
+                  ${escapeHTML(event.title)}
+                </li>
+              `;
+            })
+            .join("");
+
+          cells.push(`
+            <div class="
+              rise-calendar-day
+              ${isToday ? "is-today" : ""}
+              ${dayEvents.length ? "has-event" : ""}
+            ">
+              <time
+                class="rise-calendar-date"
+                datetime="${dateKey}"
+              >
+                ${day}
+              </time>
+
+              ${
+                dayEvents.length
+                  ? `
+                    <ul class="rise-calendar-event-list">
+                      ${eventItems}
+                    </ul>
+                  `
+                  : ""
+              }
+            </div>
+          `);
+        }
+
+        calendarGrid.innerHTML = cells.join("");
+      }
+
+      function renderEventList() {
+        const sortedEvents = [...events].sort(
+          function (first, second) {
+            return first.date.localeCompare(second.date);
+          }
+        );
+
+        if (!sortedEvents.length) {
+          eventList.innerHTML = `
+            <div class="rise-calendar-empty">
+              <div
+                class="rise-calendar-empty-mark"
+                aria-hidden="true"
+              >
+                日
+              </div>
+
+              <h3>目前尚無公開活動</h3>
+
+              <p>
+                活動日期與參與方式確認後，將統一公布於此。
+              </p>
+            </div>
+          `;
+
+          return;
+        }
+
+        eventList.innerHTML = sortedEvents
+          .map(function (event) {
+            const link = safeURL(event.url);
+
+            return `
+              <article class="rise-event-row">
+                <div class="rise-event-date">
+                  <time datetime="${escapeHTML(event.date)}">
+                    ${escapeHTML(event.date)}
+                  </time>
+                </div>
+
+                <div>
+                  <h3>${escapeHTML(event.title)}</h3>
+
+                  ${
+                    event.location
+                      ? `<p>${escapeHTML(event.location)}</p>`
+                      : ""
+                  }
+
+                  ${
+                    event.description
+                      ? `<p>${escapeHTML(event.description)}</p>`
+                      : ""
+                  }
+
+                  ${
+                    link
+                      ? `
+                        <a
+                          class="rise-event-link"
+                          href="${escapeHTML(link)}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          查看活動資訊 ↗
+                        </a>
+                      `
+                      : ""
+                  }
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      previousButton.addEventListener(
+        "click",
+        function () {
+          visibleDate = new Date(
+            visibleDate.getFullYear(),
+            visibleDate.getMonth() - 1,
+            1
+          );
+
+          renderCalendar();
+        }
+      );
+
+      nextButton.addEventListener(
+        "click",
+        function () {
+          visibleDate = new Date(
+            visibleDate.getFullYear(),
+            visibleDate.getMonth() + 1,
+            1
+          );
+
+          renderCalendar();
+        }
+      );
+
+      const menuButton =
+        document.getElementById("schedule-menu-button");
+
+      const mainNav =
+        document.getElementById("schedule-main-nav");
+
+      if (menuButton && mainNav) {
+        menu menuButton.addEventListener(
+          "click",
+          function () {
+            const isOpen =
+              mainNav.classList.toggle("open");
+
+            menuButton.setAttribute(
+              "aria-expanded",
+              String(isOpen)
+            );
+
+            menuButton.textContent =
+              isOpen ? "關閉選單" : "選單";
+          }
+        );
+      }
+
+      renderCalendar();
+      renderEventList();
+    });
+  </script>
+
+  <!-- 登入帳號列 -->
+  <script defer src="account-nav.js"></script>
+
 </body>
 </html>
