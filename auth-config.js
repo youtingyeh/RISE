@@ -7,3 +7,4 @@ window.RISE_AUTH_CONFIG = Object.freeze({
   // 團隊完成個資告知內容後填入網址；未填前不開放註冊。
   privacyURL: ""
 });
+

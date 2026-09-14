@@ -76,7 +76,7 @@
     if (/^https?:\/\//i.test(raw)) {
       try {
         const url = new URL(raw);
-        return ["http:", "https:"].includes(url.protocol)
+        return url.protocol === "https:"
           ? url.href
           : "";
       } catch {
@@ -183,7 +183,17 @@
           : ""
       }
 
-      <div style="background:#132d4c;color:white"><nav class="container" aria-label="帳號導覽" style="display:flex;justify-content:flex-end;gap:20px;padding-top:8px;padding-bottom:8px"><a style="color:white" href="register.html">註冊</a><a style="color:white" href="login.html">登入</a><a style="color:white" href="account.html">會員中心</a></nav></div>
+      <div style="background:#132d4c;color:white">
+        <nav
+          class="container"
+          id="site-account-nav"
+          aria-label="帳號導覽"
+          aria-live="polite"
+          style="display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:12px 20px;padding-top:8px;padding-bottom:8px"
+        >
+          <span>確認登入狀態…</span>
+        </nav>
+      </div>
       <header class="site-header">
         <div class="container nav-wrap">
           <a class="brand" href="index.html" aria-label="RISE 首頁">
@@ -1083,7 +1093,7 @@
       <section class="note"><h2>學生怎麼準備求助？</h2><p>留下題目或單元、已嘗試的方法、完整推理與卡住的位置。你可以在影片導讀頁保存推理紀錄，再匯出草稿。</p></section>
       <section class="content-section"><h2>助教培訓與回饋品質</h2><p>計畫規劃教學溝通、錯誤診斷、批閱標準與學生回饋倫理等培訓，並透過試批考核與教師抽查維持品質。招募時間、資格與正式聯絡管道尚待公告。</p></section>
       <section class="content-section"><h2>教師共備與學者對談</h2><p>教師共備聚焦教材、教案與學習案例；學者對談以學生事先整理的問題為出發點。未來可將問題、回應與延伸閱讀整理為開放資源。</p>${link("inquiry.html","先整理一份問題摘要","button secondary")}</section>
-      <section class="note"><h2>尚未開放的服務</h2><p>帳號登入、作業上傳、助教分派、批閱回覆、跨裝置歷程、AI 問題顧問及競賽投稿尚未啟用。目前不接收學生作業或個人資料。</p></section></section>`;
+      <section class="note"><h2>尚未開放的服務</h2><p>作業上傳、助教分派、批閱回覆、草稿跨裝置同步、AI 問題顧問及競賽投稿尚未啟用。目前登入僅用於學習工具與個人觀看紀錄，不代表已開放作業繳交。</p></section></section>`;
   }
 
   function addLearningRecord() {

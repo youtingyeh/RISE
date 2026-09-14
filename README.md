@@ -1,53 +1,97 @@
-使用說明
-# RISE 登入限制與觀看紀錄更新
+# RISE｜國立臺灣大學數思新生計畫（範例網站）
 
-以本次從 youtingyeh/RISE 讀取的 auth.js、script.js、media.js 為基礎。保留管理員自動具備教師資格。
+Reasoning and Inquiry for Science Education
 
-## 安裝順序
+此儲存庫是依計畫書方向建立的網站範例，服務對象以高中生為主，內容涵蓋數學、物理、化學、提問訓練、影片導讀與教師審核流程。網站目前仍是範例版本；正式教材、團隊名單、日程、聯絡資訊與個資告知內容須由計畫團隊確認。
 
-1. Supabase → SQL Editor → 新增查詢，貼入 watch-history.sql 全部內容，按 Run。這是新增觀看紀錄，不要重跑舊的 setup.sql。watch-history.sql 可重複執行，不刪除既有會員或觀看資料。
-2. GitHub RISE 根目錄整份替換 script.js、auth.js、media.js。
-3. 同一層新增 learning-session.js。檔名大小寫保持一致，不能是 learning-session(1).js。
-4. 保留 auth-config.js 中你已設定的 Project URL 與 Publishable key。content.js、HTML、CSS 不需修改。
-5. GitHub Pages 部署完成後按 Ctrl+F5，再測試。
+## 網站架構
 
-COPY-CODE.html 提供全部 5 個程式檔的獨立複製按鈕。SQL 貼在 Supabase，其餘 JavaScript 貼到 GitHub 同名檔案。ZIP 是更新包，並非整個網站；不要用它刪除網站原有檔案。
+- 公開頁面：首頁、關於計畫、三學科探索、影音目錄、教學資源、日程與團隊。
+- 登入後頁面：學習路徑、提問工作台、個別影片與個人觀看紀錄。
+- 帳號頁面：註冊、登入、信箱驗證、密碼重設、會員中心與教師資格申請。
+- 管理頁面：教師申請審核；真正權限由 Supabase 資料庫角色與 RLS 判斷，不信任前端字串。
 
-## 更新行為
+## 首次安裝
 
-- 首頁、影片目錄、學科介紹與計畫資訊保持可瀏覽。
-- learning.html（數理學習路徑）、inquiry.html（提問工作台）、video-detail.html（影片導讀／播放）必須先登入並驗證信箱。直接輸入網址也會檢查。
-- 登入後回到原本的學習頁或原影片，保留影片 id。返回網址只允許本站指定學習頁，避免跳到外站。
-- 登出或偵測到換帳號時，清除學習頁並停止播放器。
-- 推理／提問草稿的本機儲存鍵加入帳號 ID。舊版未歸戶的草稿不會自動指派給任何人，也沒有刪除；若需取回，另行匯出處理。尚未新增草稿雲端保存或作業繳交。
-- 會員中心新增觀看紀錄：影片、最近觀看時間、上次播放位置、累計播放時間、是否曾到片尾，以及繼續觀看入口。
-- 個別影片頁新增「儲存觀看紀錄」、「從上次位置續播」。續播由使用者點擊啟動。
+1. 建立 Supabase 專案。
+2. 在 Supabase SQL Editor 執行 `backend/setup.sql`，建立帳號資料、教師申請、審核事件與權限規則。
+3. 再執行 `backend/watch-history.sql`，建立個人觀看紀錄與儲存函式。此檔可重複執行，不會刪除既有觀看資料。
+4. 在 Supabase Authentication 開啟 Email provider 與 Confirm email，密碼最低長度建議設為 12。
+5. 設定 Site URL 與 Redirect URLs，詳細步驟見 `backend/ACCOUNT-SETUP.md`。
+6. 在 `auth-config.js` 只填 Project URL、publishable／anon key、正式網站網址與已核定的個資告知頁網址。
+7. 使用者完成註冊及信箱驗證後，才可登入受保護的學習頁面。
 
-## 紀錄的意義
+## 安全注意事項
 
-- 開啟影片頁但沒有播放，不建立觀看紀錄。
-- HTML5 影片與 YouTube IFrame API 都可回報播放狀態與位置。
-- 計算前景播放時的經過時間；暫停、緩衝、拖曳、直接跳章節不直接增加觀看秒數。
-- 每約 15 秒同步，暫停、播放結束、頁面隱藏時也嘗試同步；可手動儲存。直接關閉、斷網時末段紀錄仍可能未送達，畫面不宣稱同步成功。
-- 拖到最後或曾到片尾，不代表看完全部內容；不產生完成課程或測驗合格證明。
-- 計時資料由瀏覽器回報，供個人學習參考，不是防作弊的出席／成績認證。
-- 另開 YouTube 或影片檔案的觀看不能由本站記錄。
+- 可以公開：Project URL、publishable key 或 legacy anon key。
+- 禁止放入 GitHub：`service_role`、secret key、資料庫密碼、SMTP 密碼或任何管理憑證。
+- GitHub Pages 是公開靜態網站。若 MP4 放在公開儲存庫，知道網址的人仍能下載；真正私密影片須改用私有儲存與後端短效網址。
+- 前端登入閘門改善使用流程，但真正資料權限必須由 Supabase RLS 與 RPC 驗證。
+- `privacyURL` 未設定時，註冊會保持停用，避免在個資告知內容尚未核定前蒐集資料。
 
-## 權限與技術範圍
+## 新增影片
 
-新增 rise_watch_sessions 表、rise_watch_history 檢視表與 rise_save_watch 函式。RLS 只允許使用者讀取自己的紀錄，包括管理員也不因此取得全體學生紀錄。寫入必須使用已驗證的登入身分；函式從 auth.uid() 取得使用者，不接受前端指定別人的帳號 ID。
+在 `content.js` 的 `videos` 陣列新增物件。每筆 `id` 必須唯一，`subject` 使用 `math`、`physics` 或 `chemistry`。
 
-每次播放器使用獨立 session_id，同一 session 以累計值與遞增序號保存，重試不重複累加，較舊更新不覆蓋新更新。
+YouTube 範例：
 
-這次限制的是本站學習與播放操作。GitHub Pages 上的公開原始碼、公開 MP4 或 YouTube 原始網址，不會因此變成私人資源。若課程影片必須真正保密，需要搬到私有儲存並由後端核發短效播放網址。
+```javascript
+{
+  id: "math-001",
+  subject: "math",
+  title: "影片標題",
+  summary: "影片簡介",
+  speaker: "講者姓名",
+  level: "入門",
+  duration: "20 分鐘",
+  source: "youtube",
+  youtubeId: "YouTube影片ID",
+  question: "觀看前問題",
+  reflection: "觀看後反思",
+  chapters: [
+    { seconds: 0, title: "開始" }
+  ],
+  demo: false
+}
+```
 
-## 驗收
+自有影片範例：
 
-1. 無痕視窗未登入，直接開 learning.html、inquiry.html 或帶有效 id 的 video-detail.html，應轉至登入頁。
-2. 從影片轉登入，登入後應回到同一部影片。
-3. 播放有實際來源的影片約 20 秒後暫停，確認提示已同步；會員中心應出現該影片紀錄。
-4. 回影片按續播，應回到保存位置。拖曳不應直接算成已觀看整段。
-5. 換另一個帳號，不能看到前一帳號的觀看紀錄或新版本本機草稿。
-6. 確認原有管理員／教師顯示及教師審核入口正常。
+```javascript
+{
+  id: "physics-001",
+  subject: "physics",
+  title: "影片標題",
+  summary: "影片簡介",
+  source: "file",
+  videoUrl: "videos/physics-001.mp4",
+  poster: "images/physics-001.jpg",
+  chapters: [],
+  demo: false
+}
+```
 
-已完成 JavaScript 語法檢查；模擬環境測試未登入轉址、返回網址限制、播放／暫停／拖曳計時與登出清除；本機 PostgreSQL 相容環境測試 SQL 重複執行、RLS 隔離、未驗證阻擋、重試去重與跨次播放累加。尚未在你的 Supabase 執行 migration，也尚未發布到 GitHub 或實際驗收你的影片。
+## 自動檢查
+
+每次推送至 `main` 或建立 Pull Request 時，GitHub Actions 會執行：
+
+- 全部 JavaScript 語法檢查。
+- HTML 本機連結與重複 `id` 檢查。
+- 必要檔案檢查。
+- `content.js` 學科與影片資料關聯檢查。
+- `script.js` 動態帳號列掛載點檢查。
+
+本機可執行：
+
+```bash
+find . -type f -name '*.js' -not -path './.git/*' -print0 | xargs -0 -n1 node --check
+node tools/static-check.mjs
+```
+
+## 上線前驗收
+
+1. 無痕視窗未登入，直接開啟 `learning.html`、`inquiry.html`、`video-detail.html?id=...`，應導向登入頁。
+2. 登入後，頁首應顯示帳號信箱、會員中心與登出按鈕。
+3. 播放影片約 20 秒後暫停，會員中心應出現觀看紀錄。
+4. 不同帳號不能讀取彼此的申請、審核紀錄或觀看紀錄。
+5. 一般使用者不能呼叫管理員審核 RPC；管理員自動具備教師資格，無須提交教師申請。

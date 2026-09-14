@@ -121,21 +121,24 @@
 
       if (!window.supabase) {
         await loadScript(
-          "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
+          "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"
         );
       }
 
-      const client = window.supabase.createClient(
-        config.url,
-        config.publishableKey,
-        {
-          auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true
+      // 受保護頁面已建立登入客戶端時直接共用，避免同頁出現兩個
+      // GoTrueClient 同時操作相同瀏覽器工作階段。
+      const client = window.RISE_LEARNING?.client ||
+        window.supabase.createClient(
+          config.url,
+          config.publishableKey,
+          {
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+              detectSessionInUrl: true
+            }
           }
-        }
-      );
+        );
 
       const {
         data,

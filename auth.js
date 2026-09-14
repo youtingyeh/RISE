@@ -1055,7 +1055,7 @@
       }, 15000);
 
       s.src =
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
 
       s.onload = () => {
         clearTimeout(timeout);

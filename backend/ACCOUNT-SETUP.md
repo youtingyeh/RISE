@@ -1,16 +1,18 @@
-# RISE 註冊、登入與教師審核更新
+# RISE 帳號與 Supabase 設定
 
-本次以 GitHub `youtingyeh/RISE` 的 main 版本為基礎，保留既有課程、影片與版面。
-尚未推送 GitHub、建立 Supabase 專案、執行正式資料庫設定或寄出郵件。
+本文件說明目前網站的帳號、教師審核與觀看紀錄設定。網站已接上 Supabase 公開設定，但資料庫 migration、郵件寄送與正式環境驗收仍須由專案管理者在自己的 Supabase 後台確認。
 
 ## 1. 一次需要更換／新增的檔案
 
-只替換下列 2 個現有檔案，不要把片段加到檔案尾端：
+目前 GitHub 根目錄的共用核心檔案如下：
 
 | 檔案 | 修改 |
 | --- | --- |
-| index.html | 備用首頁加入註冊、登入、會員中心入口 |
-| script.js | 所有既有頁面的共用頁首加入註冊、登入、會員中心入口 |
+| index.html | 首頁與載入失敗時的備用畫面 |
+| script.js | 公開頁面、學習頁面與共用導覽 |
+| account-nav.js | 依 Supabase 工作階段切換帳號列與登出鍵 |
+| learning-session.js | 學習頁登入閘門與觀看紀錄介面 |
+| media.js | YouTube／自有影片播放器與觀看紀錄追蹤 |
 
 新增下列檔案，與 index.html 放同一層。若你已建立舊版 admin-review.html，請用這次版本整份替換。
 
@@ -28,9 +30,9 @@
 | auth.js | 所有帳號頁面共同使用的操作程式 |
 | auth-config.js | 公開的帳號服務設定 |
 
-另有 `backend/setup.sql`：在 Supabase 後台執行，不能當成網頁 JavaScript 貼入。
+另有 `backend/setup.sql` 與 `backend/watch-history.sql`：兩者都在 Supabase SQL Editor 執行，不能當成網頁 JavaScript 貼入。
 `ACCOUNT-SETUP.md` 是這份說明，不是網站必需檔案。
-現有 style.css、content.js、media.js 與其他教材頁面不需改動，也不包含在更新包中。
+`style.css`、`content.js` 與各 HTML 頁面必須和上述檔案放在同一個 GitHub Pages 根目錄。
 
 ## 2. 訪客與角色流程
 
@@ -56,7 +58,7 @@
 ## 4. 完整啟用順序
 
 1. 使用計畫團隊可持續管理的帳號建立 Supabase 專案。
-2. 在 SQL Editor 執行 `backend/setup.sql` 一次。此檔供首次安裝；已有同名表時不要刪表重跑。
+2. 在 SQL Editor 執行 `backend/setup.sql` 一次。此檔供首次安裝；已有同名表時不要刪表重跑。接著執行可重複套用的 `backend/watch-history.sql`。
 3. 在 Authentication 開啟 Email provider、允許註冊，並開啟 Confirm email。
 4. 將 Auth 密碼最低長度設為 12；本頁也會檢查兩次密碼一致。
 5. URL Configuration 設定：
@@ -91,12 +93,12 @@
 
 ## 6. 技術交接
 
-- 新增 3 張表：rise_profiles、rise_teacher_applications、rise_application_events。
+- 帳號與審核使用 3 張表：rise_profiles、rise_teacher_applications、rise_application_events；觀看紀錄另使用 rise_watch_sessions 與 rise_watch_history 檢視表。
 - 所有一般使用者只能 SELECT 自己的資料；沒有直接 INSERT／UPDATE／DELETE 授權。
 - 寫入只走兩個具權限驗證的 RPC：rise_submit_teacher_application、rise_review_teacher_application。
 - 審核、角色變更、紀錄在同一交易內完成；版本參數與列鎖防止重複審核或覆寫新版本。
 - roles 不由 raw_user_meta_data 決定；requested_kind 只是註冊意願。
-- 目前以 public Supabase JS v2 CDN 載入 SDK；部署團隊可在驗收後鎖定已驗證版本或自行託管。CDN 失敗會顯示載入錯誤。
+- 目前以固定版本的 Supabase JS v2 CDN 載入 SDK；CDN 失敗會顯示載入錯誤。
 - 沒有自行儲存密碼。Supabase SDK 管理瀏覽器工作階段；不要將登入權限替換成 localStorage 裡的 role 字串。
 - 未新增第三方追蹤程式。舊的本機學習草稿不會自動歸戶或同步。
 
@@ -110,4 +112,4 @@ https://supabase.com/docs/guides/database/postgres/row-level-security
 
 通過 JavaScript 語法檢查、檔案連結檢查，以及模擬 DOM 的註冊與未設定後端狀態檢查。
 使用本機 PGlite（PostgreSQL）與模擬 Supabase 身分環境，驗證 SQL 建表、信箱驗證門檻、資料隔離、升權阻擋、補件重送、版本衝突、核准角色與紀錄同步。
-尚未連接真正的 Supabase 專案，尚未進行實際郵件點擊、正式環境端到端測試或瀏覽器視覺驗收。
+靜態檔案通過語法與連結檢查；實際郵件點擊、Supabase RLS、跨帳號隔離與正式瀏覽器流程仍應在每次資料庫或登入功能變更後重新驗收。

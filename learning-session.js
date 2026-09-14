@@ -23,14 +23,14 @@
     if(!window.RISE_AUTH_CONFIG)await load('auth-config.js');
     const c=window.RISE_AUTH_CONFIG||{};
     if(!c.url||!c.publishableKey)throw Error('登入服務尚未設定，暫時無法進入學習功能。');
-    if(!window.supabase)await load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js');
+    if(!window.supabase)await load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js');
     client=window.supabase.createClient(c.url,c.publishableKey);
     const result=await client.auth.getUser();
     user=result.data?.user;
     if(!user){if(result.error&&result.error.name!=='AuthSessionMissingError'&&!/session|jwt|token/i.test(result.error.message))throw Error('無法確認登入狀態，請檢查網路並重試。');leave();return false;}
     if(!user.email_confirmed_at){leave();return false;}
     client.auth.onAuthStateChange((event,session)=>{
-      if(event==='SIGNED_OUT'||(session?.user&&session.user.id!==user.id))leave();
+      if(event==='SIGNED_OUT'||!session?.user||session.user.id!==user.id)leave();
     });
     // 從上一頁快取返回時也重新確認身分，防止登出後恢復舊頁。
     window.addEventListener('pageshow',async e=>{

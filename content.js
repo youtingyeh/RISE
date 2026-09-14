@@ -138,3 +138,4 @@ window.RISE_DATA = {
   // {subject:"math", title:"教材名稱", type:"PDF", description:"說明", url:""}
   resources: []
 };
+

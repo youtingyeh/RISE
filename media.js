@@ -80,7 +80,7 @@
       try {
         const url = new URL(text);
 
-        return ["http:", "https:"].includes(url.protocol)
+        return url.protocol === "https:"
           ? url.href
           : "";
       } catch {

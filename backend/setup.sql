@@ -145,3 +145,4 @@ commit;
 -- where id='替換成你自己的使用者UUID'::uuid
 -- and exists(select 1 from auth.users u where u.id=rise_profiles.id and u.email_confirmed_at is not null);
 -- 助教同理由團隊手動指派 role='ta'，不提供自行註冊升權。
+
