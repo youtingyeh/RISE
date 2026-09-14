@@ -11,3 +11,8 @@
 .auth-shell dialog{border:0;border-radius:10px;padding:28px;width:calc(100% - 40px);max-width:540px;color:#132d4c}.auth-shell dialog::backdrop{background:#132d4c99}
 @media(max-width:760px){.auth-grid{grid-template-columns:1fr}.auth-shell{padding:30px 16px}.auth-card{padding:22px}.auth-shell dl{grid-template-columns:1fr;gap:3px}.auth-shell dd{margin-bottom:12px}}
 
+.auth-danger-zone{margin-top:38px;padding:24px;border:1px solid #d9a6b1;border-radius:8px;background:#fff8f9}
+.auth-danger-zone h2{margin-bottom:8px;color:#7f1f35}
+.auth-danger-zone p{color:#5d3a43}
+.auth-shell button.danger{border-color:#8f243d;background:#8f243d;color:#fff}
+.auth-shell button.danger:hover:not(:disabled){border-color:#6f172b;background:#6f172b}
