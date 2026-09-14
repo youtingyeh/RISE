@@ -1287,16 +1287,16 @@ function setupCalendar() {
   function inquiryPage() {
     return `${heading("QUESTION WORKSHOP", "把疑問變成值得探索的問題", "先留下想法，再檢查背景、假設與證據。問題可以修改，不必第一次就問得完整。")}
       <section class="section container"><div class="content-layout"><aside class="section-index"><h2>提問自我檢查</h2><p>這些提示是依計畫設計的練習輔助，不是自動評分。</p><ul><li>我在問事實、關係，還是假設是否成立？</li><li>問題的範圍是否清楚？</li><li>是否存在其他解釋？</li><li>什麼證據會讓我改變想法？</li></ul><p class="small muted">計畫中的競賽關注創新性、深度、適切性與啟發性；目前未開放投稿。</p></aside>
-      <div>${draftPanel("question",questionFields,"提問練習")}</div></div></section>`;
+      <div><section class="note"><h2>需要教師或助教協助？</h2><p>本頁保留提問草稿；整理好之後，可到學生問答頁提交問題，並查看回覆。</p>${link("questions.html","提交問題／查看回覆","button")}</section>${draftPanel("question",questionFields,"提問練習")}</div></div></section>`;
   }
 
   function supportPage() {
-    return `${heading("TEACHING & FEEDBACK", "教師與助教支持", "共同關注學生怎麼想，以及下一次能怎麼改進。以下為計畫機制說明，尚未開放線上批閱。")}
+    return `${heading("TEACHING & FEEDBACK", "教師與助教支持", "共同關注學生怎麼想，以及下一次能怎麼改進。已核准的教師與助教可進入學生問答工作台。")}
       <section class="section container"><div class="card-grid"><article class="member"><p class="eyebrow">01</p><h2>思路分析</h2><p>指出推理中使用的概念、成立的步驟與發生斷層的位置。</p></article><article class="member"><p class="eyebrow">02</p><h2>改進建議</h2><p>給出能實際採取的下一步，協助學生重新整理推理。</p></article><article class="member"><p class="eyebrow">03</p><h2>延伸提問</h2><p>透過再提問，引導學生檢查假設、比較方法與拓展理解。</p></article></div>
       <section class="note"><h2>學生怎麼準備求助？</h2><p>留下題目或單元、已嘗試的方法、完整推理與卡住的位置。你可以在影片導讀頁保存推理紀錄，再匯出草稿。</p></section>
       <section class="content-section"><h2>助教培訓與回饋品質</h2><p>計畫規劃教學溝通、錯誤診斷、批閱標準與學生回饋倫理等培訓，並透過試批考核與教師抽查維持品質。招募時間、資格與正式聯絡管道尚待公告。</p></section>
       <section class="content-section"><h2>教師共備與學者對談</h2><p>教師共備聚焦教材、教案與學習案例；學者對談以學生事先整理的問題為出發點。未來可將問題、回應與延伸閱讀整理為開放資源。</p>${link("inquiry.html","先整理一份問題摘要","button secondary")}</section>
-      <section class="note"><h2>尚未開放的服務</h2><p>作業上傳、助教分派、批閱回覆、草稿跨裝置同步、AI 問題顧問及競賽投稿尚未啟用。目前登入僅用於學習工具與個人觀看紀錄，不代表已開放作業繳交。</p></section></section>`;
+      <section class="note"><h2>學生問答</h2><p>教師、助教與管理員可查看學生提交的問題並回覆。作業繳交、助教分派、草稿同步與競賽投稿尚未開放。</p>${link("questions.html","進入學生問答","button")}</section></section>`;
   }
 
   function addLearningRecord() {
@@ -1452,3 +1452,4 @@ function setupCalendar() {
 })();
 
   
+

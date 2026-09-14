@@ -98,8 +98,8 @@
       <p>數學、物理與化學，從理解概念到說明自己的推理。</p>
       <ol>
         <li>建立帳號並驗證信箱。</li>
-        <li>教師可提交資格申請。</li>
-        <li>管理員核准後取得教師身分。</li>
+        <li>教師與助教可提交資格申請。</li>
+        <li>管理員核准後取得相應身分。</li>
       </ol>
       <p>影片播放、數理學習與提問工作台需先登入。觀看紀錄會存至你的帳號。</p>
       <a href="science.html">先探索三學科 →</a>
@@ -135,6 +135,10 @@
     }
     if (code === 'signup_disabled') {
       return '帳號服務目前未開放註冊，請聯絡管理員。';
+    }
+
+    if (['PGRST202', 'PGRST205', '42P01', '42703'].includes(code) || /Bucket not found/i.test(s)) {
+      return '此功能的後端尚未完成設定，請管理員執行 backend/staff-upgrade.sql 後重試。';
     }
 
     if (/Invalid login credentials/i.test(s)) {
@@ -289,7 +293,7 @@
         <section class="auth-card">
           <h2>請先登入</h2>
           <p>登入後才能查看帳號與申請資料。</p>
-          <a class="auth-button" href="login.html">前往登入</a>
+          <a class="auth-button" href="login.html?next=${encodeURIComponent(location.pathname.split('/').pop())}">前往登入</a>
         </section>
       `;
       return false;
@@ -342,12 +346,13 @@
                 <input type="radio" name="kind" value="teacher">
                 教師（須審核）
               </label>
+              <label><input type="radio" name="kind" value="ta">助教（須審核，可協助回答學生問題）</label>
             </div>
           </fieldset>
 
           <p class="auth-help">
             選擇教師只代表申請意願，不會直接取得教師權限。
-            助教與管理員由計畫團隊指派。
+            教師與助教皆須提出資格申請並經管理員核准。
           </p>
 
           <p>
@@ -634,7 +639,7 @@
     try {
       const base = new URL('./', location.href);
       const target = new URL(raw, base);
-      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html'];
+      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html'];
       if (target.origin !== base.origin || !allowed.some(name => target.pathname === base.pathname + name)) return 'account.html';
       return target.pathname + target.search;
     } catch { return 'account.html'; }
@@ -679,7 +684,7 @@
       ? '已具備教師資格（管理員免申請）'
       : hasTeacherAccess
         ? '已具備教師資格'
-        : a ? esc(labels[a.status]) : '尚未提交申請';
+        : profile.role === 'ta' ? '助教資格已啟用' : a ? esc(labels[a.status]) : '尚未提交申請';
 
     const accountSide = hasTeacherAccess
       ? `
@@ -717,7 +722,7 @@
             <dt>信箱驗證</dt>
             <dd>已驗證</dd>
 
-            <dt>教師資格</dt>
+            <dt>教學資格</dt>
             <dd>${qualification}</dd>
           </dl>
 
@@ -731,20 +736,22 @@
               : ''}
 
             ${profile.role === 'student'
-              ? '<a class="auth-button" href="teacher-apply.html">教師資格申請／補件</a>'
+              ? '<a class="auth-button" href="teacher-apply.html">教師／助教資格申請與補件</a>'
               : ''}
 
             ${isAdmin
-              ? '<a class="auth-button" href="admin-review.html">教師申請審核</a>'
+              ? '<a class="auth-button" href="admin-review.html">教師／助教申請審核</a>'
               : ''}
 
+            <a class="auth-button" href="questions.html">學生問答</a>
             <button id="logout" class="secondary">登出</button>
           </div>
 
           <p class="auth-help">
-            觀看紀錄會儲存至帳號。提問與推理草稿仍保存在目前瀏覽器，尚未送交教師或助教。
+            觀看紀錄會儲存至帳號。提問與推理草稿仍保存在目前瀏覽器；需協助時請到「學生問答」提交，教師與助教才能查看及回覆。
           </p>
 
+          ${a ? '<h2>我的資格證明</h2><div id="my-evidence"></div>' : ''}
           <h2>我的觀看紀錄</h2>
           <div id="watch-history" aria-live="polite"></div>
 
@@ -758,7 +765,7 @@
               ? '<p>管理員帳號不可從前台自行刪除。請先確認系統仍有其他管理員，再由 Supabase 後台處理。</p>'
               : `
                 <p>
-                  此操作會永久刪除帳號、個人資料、教師資格申請及網站觀看紀錄，
+                  此操作會永久刪除帳號、個人資料、教師／助教資格申請、證明附件、問答及網站觀看紀錄，
                   且無法復原。儲存在目前瀏覽器的本機草稿也會一併清除。
                 </p>
                 <div class="auth-field">
@@ -784,6 +791,7 @@
       </div>
     `;
 
+    if (a) await showEvidence($('#my-evidence'), a.attachments || []);
     renderWatchHistory();
 
     const deleteInput = $('#delete-account-confirmation');
@@ -810,6 +818,12 @@
         report('正在永久刪除帳號，請勿關閉頁面。');
 
         try {
+          // Storage 檔案須透過 Storage API 移除，不能直接刪除資料庫中繼資料。
+          while (true) {
+            const files = checked(await client.storage.from('rise-credentials').list(user.id, { limit: 100 }));
+            if (!files.length) break;
+            checked(await client.storage.from('rise-credentials').remove(files.map(file => user.id + '/' + file.name)));
+          }
           checked(await client.rpc('rise_delete_my_account'));
 
           try {
@@ -888,37 +902,83 @@
         ? `<div class="auth-notice">補件要求：${esc(a.review_note)}</div>`
         : ''}
 
+      <div class="auth-field"><label for="requested-role">申請身分</label>
+      <select id="requested-role" name="requested-role"><option value="teacher">教師</option><option value="ta">助教（協助學生問答）</option></select></div>
       ${applicationFields}
+      <div class="auth-field"><label for="evidence">資格證明附件</label>
+      <input id="evidence" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" aria-describedby="evidence-help">
+      <p id="evidence-help">提供 1 至 3 份 PDF、JPG、PNG 或 WebP，每份不超過 5 MB。例如任職證明、教師證或助教聘任文件；請遮蔽身分證字號等不必要資料。補件如未選新檔案，會保留原附件；選新檔案則替換整組附件。</p></div>
+      <div id="existing-evidence"></div>
 
       <p class="auth-help">
-        尚未提供證明文件上傳功能；如需補件，請依管理員意見處理。
-        提交本表不代表教師資格已核准。
+        附件僅供本人與管理員查看。提交本表不代表資格已核准。
       </p>
 
-      ${button(a ? '重新送審' : '提交教師資格申請')}
+      ${button(a ? '重新送審' : '提交資格申請')}
 
       <p><a href="account.html">返回會員中心</a></p>
     `);
 
+    $('#requested-role').value = a?.requested_role || (profile.requested_kind === 'ta' ? 'ta' : 'teacher');
     if (a) {
+      await showEvidence($('#existing-evidence'), a.attachments || []);
       $('#school').value = a.school;
       $('#subject').value = a.subject;
       $('#reason').value = a.reason;
     }
 
     bindForm(async f => {
-      checked(
-        await client.rpc('rise_submit_teacher_application', {
-          p_school: f.get('school').trim(),
-          p_subject: f.get('subject'),
-          p_reason: f.get('reason').trim(),
-          p_expected_version: a?.version || 0
-        })
-      );
-
-      report('教師申請已送出。可在會員中心查看審核狀態。');
-      await teacherPage();
+      const files = [...$('#evidence').files];
+      const uploaded = [];
+      let committed = false;
+      try {
+        let attachments = a?.attachments || [];
+        if (files.length > 3) throw Error('rise:最多上傳三份附件。');
+        const types = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+        for (const file of files) {
+          if (!types[file.type] || !file.size || file.size > 5 * 1024 * 1024 || file.name.length > 255) throw Error('rise:附件須為 PDF、JPG、PNG 或 WebP，每份不超過 5 MB。');
+        }
+        if (!files.length && !attachments.length) throw Error('rise:請上傳至少一份資格證明。');
+        for (const file of files) {
+          const path = user.id + '/' + crypto.randomUUID() + '.' + types[file.type];
+          checked(await client.storage.from('rise-credentials').upload(path, file, { contentType: file.type, upsert: false }));
+          uploaded.push({ path, name: file.name });
+        }
+        if (files.length) attachments = uploaded;
+        checked(await client.rpc('rise_submit_staff_application', {
+          p_school: f.get('school').trim(), p_subject: f.get('subject'),
+          p_reason: f.get('reason').trim(), p_expected_version: a?.version || 0,
+          p_requested_role: f.get('requested-role'), p_attachments: attachments
+        }));
+        committed = true;
+        report('資格申請與附件已送出，可至會員中心查看審核狀態。');
+        await teacherPage();
+      } catch (error) {
+        // RPC 回應遺失時不能刪除可能已成功提交的附件；保留供重試／刪帳時清除。
+        if (uploaded.length && !committed) report('上傳檔案已保留；請至會員中心確認申請狀態後再重試。', true);
+        throw error;
+      }
     });
+  }
+
+  async function showEvidence(box, attachments) {
+    if (!attachments.length) { box.textContent = '此申請尚無證明附件。'; return; }
+    box.textContent = '證明附件（僅本人與管理員可查看）';
+    for (const file of attachments) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'secondary'; button.textContent = file.name;
+      button.onclick = async () => {
+        button.disabled = true;
+        try {
+          const data = checked(await client.storage.from('rise-credentials').download(file.path));
+          const url = URL.createObjectURL(data), a = document.createElement('a');
+          a.href = url; a.download = file.name; a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (err) { report(errorText(err), true); }
+        finally { button.disabled = false; }
+      };
+      const row = document.createElement('p'); row.append(button); box.append(row);
+    }
   }
 
   async function adminPage() {
@@ -1018,6 +1078,7 @@
               <dt>申請說明</dt>
               <dd>${esc(a.reason)}</dd>
 
+              <dt>申請身分</dt><dd>${esc(roles[a.requested_role || "teacher"])}</dd>
               <dt>案件編號</dt>
               <dd>${esc(a.id)} · 第 ${a.version} 版</dd>
 
@@ -1025,6 +1086,7 @@
               <dd>${esc(a.review_note || '尚無')}</dd>
             </dl>
 
+            <div id="evidence-${a.id}"></div>
             <button class="secondary" data-history="${a.id}">
               查看紀錄
             </button>
@@ -1066,6 +1128,7 @@
         `).join('')
         : '<p>此狀態目前沒有申請。</p>';
 
+      for (const a of rows) await showEvidence($('#evidence-' + a.id), a.attachments || []);
       $('#previous').disabled = offset === 0;
       $('#next').disabled = !hasNext;
       $('#page-count').textContent = `第 ${offset / size + 1} 頁`;
@@ -1172,6 +1235,84 @@
     };
 
     await refresh();
+  }
+
+  async function questionPage() {
+    const staff = ['teacher', 'ta', 'admin'].includes(profile.role);
+    let offset = 0;
+    const size = 20;
+    root.innerHTML = `<section class="auth-card">
+      <h2>${staff ? '學生問答工作台' : '我的問題'}</h2>
+      <p>問題與回覆會存入帳號，供提問者及已核准的教師、助教與管理員查看。請勿填寫他人個資。</p>
+      <form id="question-form">
+        <div class="auth-field"><label for="q-subject">學科</label><select id="q-subject"><option value="math">數學</option><option value="physics">物理</option><option value="chemistry">化學</option><option value="multiple">跨學科</option></select></div>
+        <div class="auth-field"><label for="q-title">問題標題</label><input id="q-title" required maxlength="160"></div>
+        <div class="auth-field"><label for="q-body">問題內容、已嘗試的方法與卡住的地方</label><textarea id="q-body" required maxlength="10000" rows="6"></textarea></div>
+        <button type="submit">送出問題</button>
+      </form>
+      <hr><div id="question-list"></div>
+      <div class="auth-actions"><button id="q-prev" type="button">上一頁</button><button id="q-next" type="button">下一頁</button><button id="q-refresh" type="button">重新整理</button></div>
+    </section>`;
+    async function draw() {
+      const box = $('#question-list'); box.textContent = '讀取中…';
+      const rows = checked(await client.from('rise_questions').select('*').order('created_at', {ascending:false}).order('id').range(offset, offset + size));
+      box.innerHTML = rows.length ? '' : '<p>目前沒有問題。</p>';
+      for (const q of rows.slice(0,size)) {
+        const article = document.createElement('article'); article.className = 'auth-record';
+        article.innerHTML = `<h3>${esc(q.title)}</h3><p>${esc(new Date(q.created_at).toLocaleString('zh-TW'))} · ${esc({math:'數學',physics:'物理',chemistry:'化學',multiple:'跨學科'}[q.subject])}</p><p style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(q.body)}</p>`;
+        const open = document.createElement('button'); open.type='button'; open.textContent='查看對話／回覆';
+        const thread = document.createElement('div');
+        open.onclick = async () => {
+          open.disabled = true;
+          try { await discussion(q, thread); } catch(err) {report(errorText(err),true);}
+          finally { open.disabled=false; }
+        };
+        article.append(open,thread); box.append(article);
+      }
+      $('#q-prev').disabled = offset === 0; $('#q-next').disabled = rows.length <= size;
+    }
+    async function discussion(q, box) {
+      box.innerHTML = '';
+      let answerOffset = 0;
+      const entries = document.createElement('div');
+      const more = document.createElement('button'); more.type='button'; more.textContent='載入更多回覆';
+      async function answers() {
+        more.disabled=true;
+        try {
+          const rows = checked(await client.from('rise_answers').select('*').eq('question_id',q.id).order('created_at').order('id').range(answerOffset,answerOffset+49));
+          for (const r of rows) {
+            const entry = document.createElement('div'); entry.className='auth-record';
+            entry.innerHTML=`<strong>${esc(r.author_name)} · ${esc(roles[r.author_role])}</strong><p>${esc(new Date(r.created_at).toLocaleString('zh-TW'))}</p><p style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(r.body)}</p>`;
+            entries.append(entry);
+          }
+          answerOffset+=rows.length; more.hidden=rows.length<50;
+          if (!answerOffset) entries.textContent='尚無回覆。';
+        } finally {more.disabled=false;}
+      }
+      more.onclick=()=>answers().catch(err=>report(errorText(err),true));
+      const form=document.createElement('form');
+      form.innerHTML=`<div class="auth-field"><label for="answer-${q.id}">${q.user_id===user.id?'補充問題／回覆':'回答學生'}</label><textarea id="answer-${q.id}" required maxlength="10000" rows="4"></textarea></div><button type="submit">送出回覆</button>`;
+      form.onsubmit=async event=>{
+        event.preventDefault();const b=form.querySelector('button');if(b.disabled)return;b.disabled=true;
+        try {
+          checked(await client.rpc('rise_answer_question',{p_question_id:q.id,p_body:form.querySelector('textarea').value.trim()}));
+          report('回覆已保存。'); await discussion(q,box);
+        } catch(err) {report(errorText(err),true);} finally {if(b.isConnected)b.disabled=false;}
+      };
+      box.append(entries,more,form);await answers();
+    }
+    const refresh = () => draw().catch(err=>report(errorText(err),true));
+    $('#q-prev').onclick=()=>{offset=Math.max(0,offset-size);refresh();};
+    $('#q-next').onclick=()=>{offset+=size;refresh();};
+    $('#q-refresh').onclick=refresh;
+    $('#question-form').onsubmit=async event=>{
+      event.preventDefault();const form=event.target,b=form.querySelector('button');if(b.disabled)return;b.disabled=true;
+      try {
+        checked(await client.from('rise_questions').insert({user_id:user.id,subject:$('#q-subject').value,title:$('#q-title').value.trim(),body:$('#q-body').value.trim()}));
+        form.reset();offset=0;report('問題已送出，教師與助教可在工作台查看。');await draw();
+      } catch(err) {report(errorText(err),true);} finally {b.disabled=false;}
+    };
+    await draw();
   }
 
   function loadSDK() {
@@ -1344,6 +1485,8 @@
 
         $('[data-submit]').disabled = true;
 
+      } else if (page === 'questions') {
+        if (await loadUser()) await questionPage();
       } else if (page === 'account') {
         await accountPage();
 
@@ -1364,3 +1507,4 @@
 
   init();
 })();
+

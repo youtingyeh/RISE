@@ -98,3 +98,17 @@ node tools/static-check.mjs
 4. 不同帳號不能讀取彼此的申請、審核紀錄或觀看紀錄。
 5. 一般使用者不能呼叫管理員審核 RPC；管理員自動具備教師資格，無須提交教師申請。
 6. 一般帳號輸入完整信箱後可永久刪除自己；不得刪除其他帳號，管理員帳號不得從前台自刪。
+
+## 教師附件、助教與學生問答升級
+
+已安裝的專案請在 SQL Editor 新增 snippet，執行 `backend/staff-upgrade.sql`。不要重跑 setup.sql。此 migration 可重複執行，保留既有帳號與案件。
+
+- 註冊學生、教師或助教；教師及助教先取得一般帳號，驗證信箱後到 teacher-apply.html 提交審核。
+- 證明附件 1–3 份，每份最多 5 MiB，PDF/JPEG/PNG/WebP；私有 rise-credentials bucket，本人及管理員可下載，不可覆寫。
+- 管理員在 admin-review.html 看附件並核准正確角色。舊申請預設為教師。
+- questions.html：學生僅查看自己的問題；教師、助教與管理員共用問答工作台。回覆不自動寄信。
+- 自助刪帳會先透過 Storage API 清除本人證明，再刪除 Auth 帳號。若刪帳中斷，附件可能已移除，帳號仍存在，可重試；不要直接 DELETE storage.objects。
+- 補件替換後的舊附件仍保留於本人私有目錄以供歷次審核追溯，於刪帳時一併移除。中斷上傳的檔案亦如此。
+
+驗收：以兩名學生、一名助教及一名管理員測試隔離、附件下載、退回補件、核准、回覆及刪帳。此版已在本機 PostgreSQL 相容測試環境驗證 migration 重複執行、跨帳號隔離、核准助教、角色撤銷及禁止舊 RPC 繞過附件要求；實際 SMTP 與 Storage 檔案操作仍須於 Supabase 安裝後驗收。
+
