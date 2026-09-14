@@ -950,53 +950,256 @@
     `;
   }
 
-  /* ===== 重要日程 ===== */
+/* ===== 重要日程 ===== */
 
-  function schedulePage() {
-    const sorted = [...events].sort((a, b) =>
-      String(a.date || "9999").localeCompare(String(b.date || "9999"))
+function schedulePage() {
+  const sorted = [...events]
+    .filter(event =>
+      /^\d{4}-\d{2}-\d{2}$/.test(event.date || "")
+    )
+    .sort((a, b) =>
+      String(a.date).localeCompare(String(b.date))
     );
 
-    let content = sorted.map(event => {
-      const url = safeURL(event.url);
-      const date = /^\d{4}-\d{2}-\d{2}$/.test(event.date || "")
-        ? `<time datetime="${e(event.date)}">${e(event.date)}</time>`
-        : "日期待定";
-
-      return `
-        <article class="schedule-row">
-          <div class="schedule-date">${date}</div>
-          <div>
-            <h2>${e(event.title)}</h2>
-            <p>${e(event.location)}</p>
-            <p class="preline">${e(event.description)}</p>
-            ${url ? `
-              <a class="text-link" href="${e(url)}"
-                target="_blank" rel="noopener noreferrer">
-                活動資訊 ↗
-              </a>
-            ` : ""}
-          </div>
-        </article>
-      `;
-    }).join("");
-
-    if (!sorted.length) {
-      content = emptyState(
-        "尚無正式日程",
-        "活動日期與參與資訊確認後，將在這裡公布。"
-      );
-
-
-    }
+  let content = sorted.map(event => {
+    const url = safeURL(event.url);
 
     return `
-      ${heading("DATES & EVENTS", "重要日程", "計畫活動、重要日期與參與資訊。")}
-      <section class="section container">${content}</section>
+      <article class="schedule-row">
+        <div class="schedule-date">
+          <time datetime="${e(event.date)}">
+            ${e(event.date)}
+          </time>
+        </div>
+
+        <div>
+          <h2>${e(event.title)}</h2>
+
+          ${event.location ? `
+            <p>${e(event.location)}</p>
+          ` : ""}
+
+          ${event.description ? `
+            <p class="preline">${e(event.description)}</p>
+          ` : ""}
+
+          ${url ? `
+            <a
+              class="text-link"
+              href="${e(url)}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              活動資訊 ↗
+            </a>
+          ` : ""}
+        </div>
+      </article>
     `;
+  }).join("");
+
+  if (!sorted.length) {
+    content = emptyState(
+      "目前尚無公開活動",
+      "活動日期及參與方式確認後，將統一公布於此。"
+    );
   }
 
-  /* ===== 教學資源 ===== */
+  return `
+    ${heading(
+      "PUBLIC CALENDAR",
+      "重要日程",
+      "公開活動日期與參與資訊將統一公告於此。"
+    )}
+
+    <section class="section container">
+      <div class="calendar" aria-labelledby="calendar-title">
+
+        <div class="calendar-toolbar">
+          <button
+            class="calendar-nav"
+            id="calendar-prev"
+            type="button"
+            aria-label="上一個月"
+          >
+            ←
+          </button>
+
+          <h2 id="calendar-title" aria-live="polite"></h2>
+
+          <button
+            class="calendar-nav"
+            id="calendar-next"
+            type="button"
+            aria-label="下一個月"
+          >
+            →
+          </button>
+        </div>
+
+        <div class="calendar-weekdays" aria-hidden="true">
+          ${["日", "一", "二", "三", "四", "五", "六"]
+            .map(day => `<span>${day}</span>`)
+            .join("")}
+        </div>
+
+        <div
+          class="calendar-grid"
+          id="calendar-grid"
+        ></div>
+
+        <p class="calendar-note">
+          本頁僅刊登已確認可公開的活動；內部規劃與未定案時程不在此顯示。
+        </p>
+      </div>
+    </section>
+
+    <section
+      class="section container public-events"
+      aria-labelledby="public-events-title"
+    >
+      <p class="eyebrow">PUBLIC EVENTS</p>
+      <h2 id="public-events-title">活動公告</h2>
+      ${content}
+    </section>
+  `;
+}
+
+function setupCalendar() {
+  const grid = document.getElementById("calendar-grid");
+  const title = document.getElementById("calendar-title");
+  const previous = document.getElementById("calendar-prev");
+  const next = document.getElementById("calendar-next");
+
+  if (!grid || !title || !previous || !next) return;
+
+  const today = new Date();
+
+  let visibleMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1
+  );
+
+  const publicEvents = events.filter(event =>
+    /^\d{4}-\d{2}-\d{2}$/.test(event.date || "")
+  );
+
+  function renderCalendar() {
+    const year = visibleMonth.getFullYear();
+    const month = visibleMonth.getMonth();
+
+    const firstWeekday = new Date(
+      year,
+      month,
+      1
+    ).getDay();
+
+    const dayCount = new Date(
+      year,
+      month + 1,
+      0
+    ).getDate();
+
+    title.textContent = new Intl.DateTimeFormat(
+      "zh-TW",
+      {
+        year: "numeric",
+        month: "long"
+      }
+    ).format(visibleMonth);
+
+    const cells = [];
+
+    for (
+      let index = 0;
+      index < firstWeekday;
+      index += 1
+    ) {
+      cells.push(`
+        <div
+          class="calendar-day is-empty"
+          aria-hidden="true"
+        ></div>
+      `);
+    }
+
+    for (let day = 1; day <= dayCount; day += 1) {
+      const dateKey =
+        `${year}-` +
+        `${String(month + 1).padStart(2, "0")}-` +
+        `${String(day).padStart(2, "0")}`;
+
+      const dayEvents = publicEvents.filter(
+        event => event.date === dateKey
+      );
+
+      const isToday =
+        year === today.getFullYear() &&
+        month === today.getMonth() &&
+        day === today.getDate();
+
+      const eventMarkup = dayEvents
+        .slice(0, 2)
+        .map(event => `
+          <li title="${e(event.title)}">
+            ${e(event.title)}
+          </li>
+        `)
+        .join("");
+
+      const moreCount = dayEvents.length - 2;
+
+      cells.push(`
+        <div class="
+          calendar-day
+          ${isToday ? "is-today" : ""}
+          ${dayEvents.length ? "has-event" : ""}
+        ">
+          <time datetime="${dateKey}">
+            ${day}
+          </time>
+
+          ${dayEvents.length ? `
+            <ul>
+              ${eventMarkup}
+
+              ${moreCount > 0 ? `
+                <li>另有 ${moreCount} 項</li>
+              ` : ""}
+            </ul>
+          ` : ""}
+        </div>
+      `);
+    }
+
+    grid.innerHTML = cells.join("");
+  }
+
+  previous.addEventListener("click", () => {
+    visibleMonth = new Date(
+      visibleMonth.getFullYear(),
+      visibleMonth.getMonth() - 1,
+      1
+    );
+
+    renderCalendar();
+  });
+
+  next.addEventListener("click", () => {
+    visibleMonth = new Date(
+      visibleMonth.getFullYear(),
+      visibleMonth.getMonth() + 1,
+      1
+    );
+
+    renderCalendar();
+  });
+
+  renderCalendar();
+}
+
+/* ===== 教學資源 ===== */
 
   function resourcesPage() {
     const content = D.subjects.map(subject => {
