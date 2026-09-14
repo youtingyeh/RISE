@@ -709,6 +709,33 @@
           ${a
             ? '<h2>歷次申請與審核紀錄</h2>' + await history(a.id)
             : ''}
+
+          <section class="auth-danger-zone" aria-labelledby="delete-account-title">
+            <h2 id="delete-account-title">刪除帳號</h2>
+            ${isAdmin
+              ? '<p>管理員帳號不可從前台自行刪除。請先確認系統仍有其他管理員，再由 Supabase 後台處理。</p>'
+              : `
+                <p>
+                  此操作會永久刪除帳號、個人資料、教師資格申請及網站觀看紀錄，
+                  且無法復原。儲存在目前瀏覽器的本機草稿也會一併清除。
+                </p>
+                <div class="auth-field">
+                  <label for="delete-account-confirmation">
+                    請輸入完整信箱 <strong>${esc(user.email)}</strong> 以確認
+                  </label>
+                  <input
+                    id="delete-account-confirmation"
+                    type="email"
+                    inputmode="email"
+                    autocomplete="off"
+                    spellcheck="false"
+                  >
+                </div>
+                <button id="delete-account" class="danger" type="button" disabled>
+                  永久刪除我的帳號
+                </button>
+              `}
+          </section>
         </section>
 
         ${accountSide}
@@ -716,6 +743,56 @@
     `;
 
     renderWatchHistory();
+
+    const deleteInput = $('#delete-account-confirmation');
+    const deleteButton = $('#delete-account');
+
+    if (deleteInput && deleteButton) {
+      const expectedEmail = String(user.email || '').trim().toLowerCase();
+
+      deleteInput.addEventListener('input', () => {
+        deleteButton.disabled =
+          deleteInput.value.trim().toLowerCase() !== expectedEmail;
+      });
+
+      deleteButton.addEventListener('click', async () => {
+        if (deleteButton.disabled) return;
+
+        if (!confirm(
+          '確定永久刪除這個 RISE 帳號？帳號資料與網站觀看紀錄將無法復原。'
+        )) return;
+
+        deleteButton.disabled = true;
+        deleteInput.disabled = true;
+        deleteButton.textContent = '正在刪除帳號…';
+        report('正在永久刪除帳號，請勿關閉頁面。');
+
+        try {
+          checked(await client.rpc('rise_delete_my_account'));
+
+          try {
+            const prefix = 'rise-draft-v2:' + user.id + ':';
+            for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+              const key = localStorage.key(index);
+              if (key && key.startsWith(prefix)) localStorage.removeItem(key);
+            }
+          } catch {}
+
+          try {
+            await client.auth.signOut({ scope: 'local' });
+          } catch {}
+
+          location.replace('index.html?account=deleted');
+        } catch (err) {
+          deleteInput.disabled = false;
+          deleteButton.textContent = '永久刪除我的帳號';
+          deleteButton.disabled =
+            deleteInput.value.trim().toLowerCase() !== expectedEmail;
+          report(errorText(err), true);
+        }
+      });
+    }
+
     $('#logout').onclick = async () => {
       try {
         checked(await client.auth.signOut());
