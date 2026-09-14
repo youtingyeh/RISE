@@ -187,7 +187,74 @@
     if (result.error) throw result.error;
     return result.data;
   }
+  
+  function updateAccountNavigation(currentUser) {
+    const nav = document.querySelector(".auth-nav");
 
+    if (!nav) return;
+
+    function makeLink(href, text) {
+      const link = document.createElement("a");
+
+      link.href = href;
+      link.textContent = text;
+
+      return link;
+    }
+
+    if (!currentUser) {
+      nav.replaceChildren(
+        makeLink("register.html", "註冊"),
+        makeLink("login.html", "登入")
+      );
+
+      return;
+    }
+
+    const email = document.createElement("span");
+
+    email.textContent = currentUser.email || "已登入帳號";
+    email.title = currentUser.email || "";
+    email.style.overflowWrap = "anywhere";
+
+    const logoutButton = document.createElement("button");
+
+    logoutButton.type = "button";
+    logoutButton.textContent = "登出";
+
+    logoutButton.style.cssText = `
+      font: inherit;
+      color: white;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: 4px;
+      padding: 3px 10px;
+      cursor: pointer;
+    `;
+
+    logoutButton.addEventListener("click", async () => {
+      if (logoutButton.disabled) return;
+
+      logoutButton.disabled = true;
+      logoutButton.textContent = "登出中…";
+
+      try {
+        checked(await client.auth.signOut());
+        location.assign("index.html");
+      } catch (error) {
+        logoutButton.disabled = false;
+        logoutButton.textContent = "登出";
+
+        report(errorText(error), true);
+      }
+    });
+
+    nav.replaceChildren(
+      email,
+      makeLink("account.html", "會員中心"),
+      logoutButton
+    );
+  }
   async function loadUser() {
     const { data, error } = await client.auth.getUser();
 
