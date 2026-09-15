@@ -639,7 +639,7 @@
     try {
       const base = new URL('./', location.href);
       const target = new URL(raw, base);
-      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html', 'support.html', 'staff-questions.html'];
+      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html', 'support.html', 'staff-questions.html', 'resources.html'];
       if (target.origin !== base.origin || !allowed.some(name => target.pathname === base.pathname + name)) return 'account.html';
       return target.pathname + target.search;
     } catch { return 'account.html'; }
@@ -765,7 +765,7 @@
               ? '<p>管理員帳號不可從前台自行刪除。請先確認系統仍有其他管理員，再由 Supabase 後台處理。</p>'
               : `
                 <p>
-                  此操作會永久刪除帳號、個人資料、教師／助教資格申請、證明附件、問答及網站觀看紀錄，
+                  此操作會永久刪除帳號、個人資料、教師／助教資格申請、證明附件、問答、本人建立的教學資源與上傳檔案及網站觀看紀錄，
                   且無法復原。儲存在目前瀏覽器的本機草稿也會一併清除。
                 </p>
                 <div class="auth-field">
@@ -839,6 +839,15 @@
               const images = checked(await client.storage.from('rise-question-images').list(user.id, { limit: 100 }));
               if (!images.length) break;
               checked(await client.storage.from('rise-question-images').remove(images.map(image => user.id + '/' + image.name)));
+            }
+          }
+          const teachingCheck = await client.from('rise_teaching_resources').select('id').limit(1);
+          if (!['PGRST205','42P01'].includes(teachingCheck.error?.code)) {
+            checked(teachingCheck);
+            while (true) {
+              const materials = checked(await client.storage.from('rise-teaching-files').list(user.id, {limit:100}));
+              if (!materials.length) break;
+              checked(await client.storage.from('rise-teaching-files').remove(materials.map(f=>user.id+'/'+f.name)));
             }
           }
           checked(await client.rpc('rise_delete_my_account'));
@@ -1689,6 +1698,7 @@
 
   init();
 })();
+
 
 
 
