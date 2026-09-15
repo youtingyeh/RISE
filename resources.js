@@ -92,7 +92,7 @@
       <div class="auth-field"><label for="res-upload">上傳教材／影片</label><input id="res-upload" type="file" multiple accept=".pdf,.docx,.pptx,.jpg,.jpeg,.png,.webp,.mp4,.webm"><p class="auth-help">最多5個附件，每個50 MB。支援 PDF、Word、PowerPoint、圖片、MP4、WebM。大型影片請使用 YouTube 連結。請確認有權公開教材。</p><div id="res-files"></div></div>
       <div class="auth-actions"><button type="submit" name="action" value="draft">儲存草稿${r?.status==='published'?'／下架':''}</button><button type="submit" name="action" value="published">${r?.status==='published'?'更新發布內容':'發布'}</button><button type="button" id="res-preview" class="secondary">預覽文字</button><button type="button" id="res-cancel" class="secondary">關閉編輯</button></div>
       <p id="res-save-status" role="status" aria-live="polite"></p><div id="res-text-preview" class="resource-article" hidden></div></form>`;
-    $('#res-destination').value=r?.destination||destination;
+    $('#res-destination').value='science';
     $('#res-subject').value=r?.subject||'math';$('#res-kind').value=r?.kind||'article';
     $('#res-form').oninput=()=>dirty=true;
     $('#res-preview').onclick=()=>{const p=$('#res-text-preview');p.hidden=false;p.textContent=$('#res-title').value+'\n\n'+$('#res-summary').value+'\n\n'+$('#res-body').value;};
