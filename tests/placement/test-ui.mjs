@@ -1,0 +1,16 @@
+import {JSDOM} from 'jsdom';import fs from 'node:fs';import assert from 'node:assert/strict';
+const id=n=>'10000000-0000-0000-0000-'+String(n).padStart(12,'0');
+for(const destination of ['science','learning']){
+ const d=new JSDOM(`<div data-resource-feed="${destination}"></div>`,{url:'https://youtingyeh.github.io/RISE/'+destination+'.html',runScripts:'outside-only'}),calls=[];
+ d.window.HTMLElement.prototype.scrollIntoView=()=>{};d.window.RISE_AUTH_CONFIG={url:'https://test.supabase.co',publishableKey:'public'};
+ d.window.supabase={createClient:()=>({rpc:async(name,args)=>{calls.push([name,args]);return {data:name==='rise_resource_groups'?[{owner_id:id(9),collection:'<img src=x>',subject:'math',item_count:20}]:[{id:id(1),title:'First',summary:'Text',kind:'article',item_order:1}]};}})};
+ d.window.eval(fs.readFileSync('../../resource-feed.js','utf8'));await new Promise(r=>setTimeout(r,20));assert.equal(calls[0][1].p_destination,destination);assert.equal(d.window.document.querySelectorAll('#feed-list article').length,1);assert.equal(d.window.document.querySelector('#feed-list img'),null);
+ d.window.document.querySelector('#feed-list button').click();await new Promise(r=>setTimeout(r,20));assert.equal(calls[1][0],'rise_resource_group_items');assert(d.window.document.querySelector('#feed-detail a').href.endsWith('resources.html?id='+id(1)));d.window.close();
+}
+const d=new JSDOM('<div class="auth-nav"></div><div id="auth-root"></div><p id="auth-status"></p>',{url:'https://youtingyeh.github.io/RISE/resources.html',runScripts:'outside-only'}),calls=[];
+d.window.HTMLElement.prototype.scrollIntoView=()=>{};d.window.RISE_AUTH_CONFIG={url:'https://test.supabase.co',publishableKey:'public'};
+const rows=[1,2].map(n=>({id:id(n),owner_id:'me',title:'Item '+n,collection:'Unit',destination:'science',subject:'math',kind:'article',status:'published',version:1,group_order:0,item_order:n,files:[],body:'text',updated_at:new Date().toISOString()}));
+d.window.supabase={createClient:()=>({auth:{getUser:async()=>({data:{user:{id:'me',email_confirmed_at:'now'}}}),onAuthStateChange(){}},rpc:async(name,args)=>{calls.push([name,args]);return {data:null};},from(){const q={select(){return q},eq(){return q},order(){return q},range:async()=>({data:rows}),single:async()=>({data:{role:'teacher'}})};return q;}})};
+d.window.eval(fs.readFileSync('../../resources.js','utf8'));await new Promise(r=>setTimeout(r,20));d.window.document.querySelector('#res-mode').click();await new Promise(r=>setTimeout(r,20));for(const box of d.window.document.querySelectorAll('#resource-list input[type=checkbox]'))box.click();d.window.document.querySelector('#res-organize').click();
+const move=d.window.document.querySelectorAll('#organize-list li')[1].querySelector('button');move.click();d.window.document.querySelector('#organize-destination').value='learning';const form=d.window.document.querySelector('#organize-form');await form.onsubmit({preventDefault(){},target:form});assert.equal(calls[0][0],'rise_organize_resources');assert.equal(calls[0][1].p_destination,'learning');assert.equal(calls[0][1].p_changes[0].id,id(2));d.window.close();
+console.log('PASS destination-specific group cards, safe text, group expansion, bulk selection and up/down ordering');

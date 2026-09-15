@@ -447,7 +447,7 @@
     return `${heading("SCIENCE EXPLORATION", "科學探索", "先找到你有興趣的學科與問題，再選擇文章、影片或教材。")}
       <section class="section container"><div class="card-grid">${subjectCards()}</div>
       <div class="note"><h2>選主題，還是安排學習？</h2><p>這裡適合自由探索數學、物理與化學；若想依閱讀、觀看與練習安排自己的學習，請前往學習路徑。</p>${link("learning.html","進入學習路徑 →","text-link")}</div>
-      <h2>探索已發布教材</h2><p>選擇學科與類型，找到老師提供的內容。</p><div data-resource-feed="science"></div></section>`;
+      <h2>已發布探索主題</h2><p>先選探索主題，再展開其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>`;
   }
 
   function subjectPage(id) {
@@ -1249,7 +1249,7 @@ function setupCalendar() {
       <article class="member"><p class="eyebrow">02 · WATCH</p><h2>影片學習</h2><p>觀看講解，暫停思考並整理推理步驟。</p><button class="button secondary" data-learning-kind="video">選擇影片</button></article>
       <article class="member"><p class="eyebrow">03 · PRACTICE</p><h2>教材練習</h2><p>使用講義或練習材料，留下解題過程與疑問。</p><button class="button secondary" data-learning-kind="material">選擇教材</button></article></div>
       <p class="small muted">這是建議的學習方式，可依教材說明調整順序；並非固定課程或先修要求。</p>
-      <h2>選擇你的學習內容</h2><div data-resource-feed="learning"></div>
+      <h2>選擇你的學習單元</h2><p>依老師安排的單元與教材順序學習；點開單元查看內容。</p><div data-resource-feed="learning"></div>
       <section class="note"><h2>遇到問題時</h2><p>把嘗試過的方法和卡住的地方整理好，可以附上題目或解題圖片，向教師與助教提問。</p>${link("questions.html","前往我的問題","button")}</section></section>`;
   }
 
@@ -1378,8 +1378,8 @@ function setupCalendar() {
   `;
 
   if (document.querySelector('[data-resource-feed]')) {
-    const css=document.createElement('link');css.rel='stylesheet';css.href='linked-resources.css?v=20260915';document.head.append(css);
-    const feed=document.createElement('script');feed.src='resource-feed.js?v=20260915';
+    const css=document.createElement('link');css.rel='stylesheet';css.href='linked-resources.css?v=placement-20260915';document.head.append(css);
+    const feed=document.createElement('script');feed.src='resource-feed.js?v=placement-20260915';
     feed.onerror=()=>{document.querySelector('[data-resource-feed]').textContent='教材列表無法載入，請重新整理。';};
     document.head.append(feed);
   }
@@ -1446,5 +1446,6 @@ function setupCalendar() {
 })();
 
   
+
 
 

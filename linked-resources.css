@@ -4,3 +4,7 @@
 [data-resource-feed]{scroll-margin-top:110px}
 [data-resource-feed] .member{overflow-wrap:anywhere;display:flex;flex-direction:column}
 [data-resource-feed] .member a{margin-top:auto;align-self:flex-start}
+
+#feed-detail[hidden]{display:none}
+#feed-detail li{padding:12px 0;border-bottom:1px solid #dce4ed}
+#feed-detail li a{font-weight:700}

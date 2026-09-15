@@ -1,13 +1,10 @@
 import {JSDOM} from 'jsdom';import fs from 'node:fs';import assert from 'node:assert/strict';
-const source=fs.readFileSync('../../resource-feed.js','utf8');
-for(const page of ['science','learning']){
- const calls=[];const dom=new JSDOM(`<div data-resource-feed="${page}"></div>`,{url:'https://youtingyeh.github.io/RISE/'+page+'.html?subject=physics',runScripts:'outside-only'});
- const rows=[{id:'10000000-0000-0000-0000-000000000001',title:'<img onerror=x>',summary:'description',subject:'physics',kind:'video'}];
- dom.window.RISE_AUTH_CONFIG={url:'https://test.supabase.co',publishableKey:'public'};
- dom.window.supabase={createClient:()=>({from(){const q={select(){return q},eq(k,v){calls.push([k,v]);return q},order(){return q},range:async()=>({data:rows})};return q;}})};
- dom.window.eval(source);await new Promise(r=>setTimeout(r,20));
- assert(calls.some(c=>c[0]==='status'&&c[1]==='published'));assert(calls.some(c=>c[0]==='subject'&&c[1]==='physics'));
- assert.equal(dom.window.document.querySelector('#feed-list img'),null);assert(dom.window.document.querySelector('#feed-list a').href.endsWith('resources.html?id='+rows[0].id));
- const selector=dom.window.document.querySelector('#feed-kind');selector.value='material';selector.onchange();await new Promise(r=>setTimeout(r,20));assert(calls.some(c=>c[0]==='kind'&&c[1]==='material'));dom.window.close();
+const id=n=>'10000000-0000-0000-0000-'+String(n).padStart(12,'0');
+for(const destination of ['science','learning']){
+ const d=new JSDOM(`<div data-resource-feed="${destination}"></div>`,{url:'https://youtingyeh.github.io/RISE/'+destination+'.html',runScripts:'outside-only'}),calls=[];
+ d.window.HTMLElement.prototype.scrollIntoView=()=>{};d.window.RISE_AUTH_CONFIG={url:'https://test.supabase.co',publishableKey:'public'};
+ d.window.supabase={createClient:()=>({rpc:async(name,args)=>{calls.push([name,args]);return {data:name==='rise_resource_groups'?[{owner_id:id(9),collection:'<img src=x>',subject:'math',item_count:20}]:[{id:id(1),title:'First',summary:'Text',kind:'article',item_order:1}]};}})};
+ d.window.eval(fs.readFileSync('../../resource-feed.js','utf8'));await new Promise(r=>setTimeout(r,20));assert.equal(calls[0][1].p_destination,destination);assert.equal(d.window.document.querySelectorAll('#feed-list article').length,1);assert.equal(d.window.document.querySelector('#feed-list img'),null);
+ d.window.document.querySelector('#feed-list button').click();await new Promise(r=>setTimeout(r,20));assert.equal(calls[1][0],'rise_resource_group_items');assert(d.window.document.querySelector('#feed-detail a').href.endsWith('resources.html?id='+id(1)));d.window.close();
 }
-console.log('PASS both feeds query published only, subject/type filtering, safe title rendering, direct resource links');
+console.log('PASS grouped feed and resource links');

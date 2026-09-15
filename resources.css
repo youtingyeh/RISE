@@ -9,3 +9,11 @@
 #res-files p{padding:10px;background:#f3f6fa;overflow-wrap:anywhere}
 #res-save-status{white-space:pre-wrap;line-height:1.7}
 @media(max-width:600px){.resource-fields{grid-template-columns:1fr}.auth-actions button{white-space:normal}}
+
+.resource-destinations{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}
+.resource-destinations button{background:white;color:#16324f;border:1px solid #a7b8ca}
+.resource-destinations button[aria-pressed=true]{background:#16324f;color:white}
+#resource-organizer[hidden]{display:none}
+.resource-organize-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:12px;border-bottom:1px solid #dbe4ee}
+.resource-organize-row span{flex:1;min-width:160px;overflow-wrap:anywhere}
+#resource-organizer input,#resource-organizer select{display:block;max-width:100%;font:inherit;padding:10px;border:1px solid #a7b8ca;border-radius:6px}
