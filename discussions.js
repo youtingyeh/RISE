@@ -21,7 +21,7 @@ window.RISE_DISCUSSIONS = async function({client,user,profile,root,report}) {
     .eq('topic_id', topic.id);
    const answers=checked(await answerQuery.order('created_at').order('id').range(answerPage*20,answerPage*20+20));
    if(seq!==detailSequence)return;topic=fresh;
-   box.innerHTML=`<h2>${esc(topic.title)}</h2><p style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(topic.body)}</p><p>${topic.closed?'已結束回答':'開放回答中'}</p><h3>${teacher?'學生回答':'我的回答'}</h3><div id="discussion-answers"></div>`;
+   box.innerHTML=`<h2>${esc(topic.title)}</h2><p style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(topic.body)}</p><p>${topic.closed?'已結束回答':'開放回答中'}</p><h3>討論串回覆</h3><div id="discussion-answers"></div>`;
    const list=$('#discussion-answers');
    for(const a of answers.slice(0,20)){
     const article=document.createElement('article');article.className='auth-record';
