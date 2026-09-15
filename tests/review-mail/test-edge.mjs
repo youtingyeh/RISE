@@ -14,3 +14,5 @@ valid=false;assert.equal((await handler(req())).status,401);valid=true;role='stu
 const job={id:'j1',user_id:'student',application_id:'a1',version:2,decision:'returned',requested_role:'ta',note:'請補件 <script>',attempts:1};jobs=[job];let r=await handler(req());assert.equal((await r.json()).sent,1);assert.equal(mails[0].to.address,'verified@example.org');assert(mails[0].subject.includes('助教'));assert(mails[0].text.includes('請補件'));assert.equal(updates[0].state,'sent');
 fail=true;jobs=[job];r=await handler(req());assert.equal((await r.json()).failed,1);assert.equal(updates.at(-1).state,'pending');assert(!JSON.stringify(updates).includes('smtp-secret'));
 console.log('PASS admin-only, verified identity, server-selected recipient/content, SMTP success/failure queue state');
+delete env.RISE_SMTP_USER;
+r=await handler(req());assert.equal(r.status,503);assert((await r.json()).error.includes('RISE_SMTP_USER'));console.log('PASS missing Secret identified without exposing secret values');

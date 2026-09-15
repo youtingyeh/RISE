@@ -1213,7 +1213,7 @@
         status.textContent = `本次 ${result.sent} 封已交由郵件伺服器接收；尚有 ${result.remaining} 封待寄。` +
           (result.failed ? ' 部分寄送失敗，請檢查 SMTP 設定，10 分鐘後可再按補寄。' : result.remaining ? ' 可稍後再按此按鈕處理其餘待寄通知。' : '');
       } catch (error) {
-        status.textContent = '審核結果已保存，通知信尚未確認寄出。' + errorText(error) + ' 後端設定完成後可按上方按鈕補寄。';
+        status.textContent = '通知信尚未確認寄出（不影響已保存的審核）。' + (String(error?.message || '').startsWith('rise:') ? String(error.message).slice(5) : errorText(error)) + ' 後端設定完成後可按上方按鈕補寄。';
       } finally { retry.disabled = false; }
     }
     $('#retry-review-mail').onclick = sendReviewMail;

@@ -1,8 +1,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0';
 import nodemailer from 'npm:nodemailer@10.0.10';
 
-const must=(name:string)=>{const v=Deno.env.get(name);if(!v)throw Error('missing configuration');return v;};
-const checked=(r:any)=>{if(r.error)throw Error('database operation failed');return r.data;};
+class SafeError extends Error {}
+const must=(name:string)=>{const v=Deno.env.get(name);if(!v)throw new SafeError('缺少 Edge Functions Secret：'+name+'。請到 Edge Functions → Secrets 新增。');return v;};
+const checked=(r:any)=>{if(r.error){if(['PGRST202','PGRST205','42P01'].includes(r.error.code))throw new SafeError('找不到通知信資料表或函式，請執行 backend/review-mail.sql。');throw new SafeError('通知信資料庫操作失敗，請查看 Edge Function Logs。');}return r.data;};
 export async function handler(req:Request):Promise<Response>{
  const origin=Deno.env.get('RISE_SITE_ORIGIN') || 'https://youtingyeh.github.io';
  const headers={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};
@@ -58,8 +59,8 @@ export async function handler(req:Request):Promise<Response>{
   const remaining=await db.from('rise_review_mail').select('id',{count:'exact',head:true}).neq('state','sent');
   if(remaining.error)throw Error('count failed');
   return reply({sent,failed,remaining:remaining.count||0});
- }catch{
-  return reply({error:'通知信服務尚未就緒。請確認 review-mail.sql 已執行，及 RISE_SMTP_USER、RISE_SMTP_PASSWORD 已設定。審核結果不受影響。'},503);
+ }catch(error){
+  return reply({error:error instanceof SafeError ? error.message : '通知信後端執行失敗，請查看 rise-review-mail 的 Logs。審核結果不受影響。'},503);
  }
 }
 Deno.serve(handler);
