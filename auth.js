@@ -1345,9 +1345,9 @@
     workbench = staff;
     const allQuestions=workbench&&(page==='questions'||new URLSearchParams(location.search).get('filter')==='all');
     const heading=document.querySelector('.auth-heading');
-    if(heading){heading.querySelector('h1').textContent=workbench?'教師與助教提問與回覆':'我的提問';const intro=heading.querySelector('h1 + p');if(intro)intro.textContent=workbench?'查看學生提出的問題，提供解題引導與回覆。':'提出問題，查看教師與助教的回覆。';}
-    root.innerHTML = `${staff ? '<nav class="auth-actions" aria-label="問答區域"><a class="auth-button" href="staff-questions.html" '+(!allQuestions?'aria-current="page"':'')+'>待答工作台</a><a class="auth-button" href="staff-questions.html?filter=all" '+(allQuestions?'aria-current="page"':'')+'>教師與助教提問</a></nav>' : ''}<section class="auth-card">
-      <h2>${workbench ? (allQuestions?'教師與助教提問':'待答工作台') : '我的提問'}</h2>
+    if(heading){heading.querySelector('h1').textContent=workbench?'學生問答工作台':'我的提問';const intro=heading.querySelector('h1 + p');if(intro)intro.textContent=workbench?'查看學生提出的問題，提供解題引導與回覆。':'提出問題，查看教師與助教的回覆。';}
+    root.innerHTML = `<section class="auth-card">
+      <h2>${workbench ? '待答工作台' : '我的提問'}</h2>
       <p>問題與回覆會存入帳號，供提問者及已核准的教師、助教與管理員查看。請勿填寫他人個資。</p>
       ${workbench ? '<div class="auth-field"><label for="q-filter">問題狀態</label><select id="q-filter"><option value="unanswered">待解答</option><option value="answered">已有教學回覆</option><option value="all">全部問題</option></select><p class="auth-help">待解答指尚未有教師、助教或管理員回覆；學生自己的補充不算解答。依提問時間由早到晚排列。</p></div>' : `
       <form id="question-form">
@@ -1678,7 +1678,7 @@
           if (!['teacher','ta','admin'].includes(profile.role)) {
             root.innerHTML = '<section class="auth-card"><h2>此頁僅限教師與助教</h2><p>需要已核准的教師、助教或管理員身分。</p><a class="auth-button" href="questions.html">前往我的問題</a> <a href="teacher-apply.html">申請教師／助教資格</a></section>';
           } else if (page === 'support') {
-            root.innerHTML = '<section class="auth-card"><h2>學生問題待答工作台</h2><p>優先查看尚未有教學人員回覆的問題，閱讀學生的解題過程與附圖，再提供引導。</p><a class="auth-button" href="staff-questions.html">查看待解答問題</a><p>僅限已核准的教師、助教與管理員使用。</p></section><section class="auth-card"><h2>教師與助教提問</h2><p>查看學生提交的全部問題與既有回覆，持續提供協助。</p><a class="auth-button" href="staff-questions.html?filter=all">查看教師與助教提問</a></section>';
+            root.innerHTML = '<section class="auth-card"><h2>學生問題待答工作台</h2><p>優先查看尚未有教學人員回覆的問題，閱讀學生的解題過程與附圖，再提供引導。</p><a class="auth-button" href="staff-questions.html">查看待解答問題</a><p>僅限已核准的教師、助教與管理員使用。</p></section>';
             if (['teacher','admin'].includes(profile.role)) root.innerHTML += '<section class="auth-card"><h2>教學資源管理</h2><p>新增文章、影片與教材，發布到科學探索，並以主題整理教材。</p><a class="auth-button" href="resources.html">科學探索教材管理</a></section>';
             if (['teacher','admin'].includes(profile.role)) root.innerHTML += '<section class="auth-card"><h2>討論題公告</h2><p>發布討論題，讓學生回答並查看他們的思考。</p><a class="auth-button" href="discussions.html">發布討論題與查看回答</a></section>';
           } else await questionPage(true);
