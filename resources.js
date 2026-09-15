@@ -2,7 +2,7 @@
   'use strict';
   const cfg=window.RISE_AUTH_CONFIG||{},root=document.querySelector('#auth-root'),status=document.querySelector('#auth-status');
   let db,user,profile,editing=null,files=[],pendingId=null,dirty=false,offset=0,mode='published',busy=false;
-  let destination=new URLSearchParams(location.search).get('destination')==='learning'?'learning':'science',selected=[];
+  let destination='science',selected=[];
   const types={'pdf':'application/pdf','docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','pptx':'application/vnd.openxmlformats-officedocument.presentationml.presentation','jpg':'image/jpeg','jpeg':'image/jpeg','png':'image/png','webp':'image/webp','mp4':'video/mp4','webm':'video/webm'};
   const labels={math:'數學',physics:'物理',chemistry:'化學',multiple:'跨學科',article:'文章',material:'教材',video:'影片',draft:'草稿',published:'已發布'};
   const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
