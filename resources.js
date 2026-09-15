@@ -22,7 +22,7 @@
     if(!rows.length)box.textContent=mode==='published'?'尚無已發布資源。':'尚未建立內容，請按「新增資源」。';
     for(const r of rows.slice(0,12)){
       const card=document.createElement('article');card.className='auth-card';
-      card.innerHTML=`<p class="eyebrow">${r.destination==='learning'?'學習路徑':'科學探索'} · ${esc(r.collection)} · ${esc(labels[r.subject])} · ${esc(labels[r.kind])} · ${esc(labels[r.status])}</p><h2>${esc(r.title)}</h2><p>${esc(r.summary)}</p><p class="auth-help">更新：${esc(new Date(r.updated_at).toLocaleDateString('zh-TW'))}</p>`;
+      card.innerHTML=`<p class="eyebrow">科學探索· ${esc(r.collection)} · ${esc(labels[r.subject])} · ${esc(labels[r.kind])} · ${esc(labels[r.status])}</p><h2>${esc(r.title)}</h2><p>${esc(r.summary)}</p><p class="auth-help">更新：${esc(new Date(r.updated_at).toLocaleDateString('zh-TW'))}</p>`;
       const open=document.createElement('button');open.type='button';open.textContent='閱讀／查看資源';open.onclick=()=>view(r).catch(e=>tell(errorMessage(e),true));card.append(open);
       if(owns(r)&&mode==='manage'){
         const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=selected.some(x=>x.id===r.id);
