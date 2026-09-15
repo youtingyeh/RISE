@@ -112,3 +112,8 @@ node tools/static-check.mjs
 
 驗收：以兩名學生、一名助教及一名管理員測試隔離、附件下載、退回補件、核准、回覆及刪帳。此版已在本機 PostgreSQL 相容測試環境驗證 migration 重複執行、跨帳號隔離、核准助教、角色撤銷及禁止舊 RPC 繞過附件要求；實際 SMTP 與 Storage 檔案操作仍須於 Supabase 安裝後驗收。
 
+
+
+## Google Drive 附件（選用）
+
+完整部署與驗收步驟見 `backend/GOOGLE-DRIVE-SETUP.md`。先執行 `backend/google-drive.sql`，再部署 `supabase/functions/rise-drive/index.ts`，最後由管理員在審核頁按「連接 Google Drive 並啟用」。未啟用前保留原儲存方式；舊附件仍可讀取。Google 憑證只放 Supabase Secrets。

@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node test-db.mjs && node test-edge.mjs && node test-ui.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "jsdom": "30.0.1"
+  }
+}

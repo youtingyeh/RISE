@@ -818,6 +818,14 @@
         report('正在永久刪除帳號，請勿關閉頁面。');
 
         try {
+          const preparation = await client.rpc('rise_drive_prepare_delete');
+          if (preparation.error?.code !== 'PGRST202') {
+            const hasDriveFiles = checked(preparation);
+            if (hasDriveFiles) {
+              let remaining = true;
+              while (remaining) remaining = (await driveRequest('purge-mine')).more;
+            }
+          }
           // Storage 檔案須透過 Storage API 移除，不能直接刪除資料庫中繼資料。
           while (true) {
             const files = checked(await client.storage.from('rise-credentials').list(user.id, { limit: 100 }));
@@ -939,10 +947,16 @@
           if (!types[file.type] || !file.size || file.size > 5 * 1024 * 1024 || file.name.length > 255) throw Error('rise:附件須為 PDF、JPG、PNG 或 WebP，每份不超過 5 MB。');
         }
         if (!files.length && !attachments.length) throw Error('rise:請上傳至少一份資格證明。');
+        const backend = files.length ? await attachmentBackend() : 'supabase';
         for (const file of files) {
-          const path = user.id + '/' + crypto.randomUUID() + '.' + types[file.type];
-          checked(await client.storage.from('rise-credentials').upload(path, file, { contentType: file.type, upsert: false }));
-          uploaded.push({ path, name: file.name });
+          if (backend === 'google-drive') {
+            const body = new FormData(); body.append('file', file);
+            uploaded.push(await driveRequest('upload', body));
+          } else {
+            const path = user.id + '/' + crypto.randomUUID() + '.' + types[file.type];
+            checked(await client.storage.from('rise-credentials').upload(path, file, { contentType: file.type, upsert: false }));
+            uploaded.push({ provider: 'supabase', path, name: file.name });
+          }
         }
         if (files.length) attachments = uploaded;
         checked(await client.rpc('rise_submit_staff_application', {
@@ -961,6 +975,28 @@
     });
   }
 
+  async function driveRequest(action, body = null, binary = false) {
+    const session = checked(await client.auth.getSession()).session;
+    if (!session?.access_token) throw Error('rise:請先登入。');
+    const headers = { Authorization: 'Bearer ' + session.access_token, apikey: cfg.publishableKey };
+    if (!(body instanceof FormData)) headers['Content-Type'] = 'application/json';
+    const response = await fetch(cfg.url.replace(/\/$/, '') + '/functions/v1/rise-drive?action=' + encodeURIComponent(action), {
+      method: 'POST', headers, body: body instanceof FormData ? body : JSON.stringify(body || {})
+    });
+    if (!response.ok) {
+      let detail = {};
+      try { detail = await response.json(); } catch {}
+      throw Error('rise:' + (typeof detail.error === 'string' ? detail.error : 'Google Drive 服務尚未部署或無法連線，請管理員確認 rise-drive 函式設定。'));
+    }
+    return binary ? response.blob() : response.json();
+  }
+
+  async function attachmentBackend() {
+    const result = await client.rpc('rise_attachment_backend');
+    if (result.error?.code === 'PGRST202') return 'supabase';
+    return checked(result);
+  }
+
   async function showEvidence(box, attachments) {
     if (!attachments.length) { box.textContent = '此申請尚無證明附件。'; return; }
     box.textContent = '證明附件（僅本人與管理員可查看）';
@@ -970,7 +1006,9 @@
       button.onclick = async () => {
         button.disabled = true;
         try {
-          const data = checked(await client.storage.from('rise-credentials').download(file.path));
+          const data = file.provider === 'google-drive'
+            ? await driveRequest('download', { id: file.path }, true)
+            : checked(await client.storage.from('rise-credentials').download(file.path));
           const url = URL.createObjectURL(data), a = document.createElement('a');
           a.href = url; a.download = file.name; a.click();
           setTimeout(() => URL.revokeObjectURL(url), 60000);
@@ -996,6 +1034,12 @@
     }
 
     root.innerHTML = `
+      <section class="auth-card">
+        <h2>資格附件儲存設定</h2>
+        <p>完成 Google Drive 後端部署後，按下方按鈕建立私有專用資料夾，並將新附件切換至 Google Drive。既有附件仍可查看。</p>
+        <button id="drive-initialize" type="button">連接 Google Drive 並啟用</button>
+        <p id="drive-setup-status" role="status"></p>
+      </section>
       <section class="auth-card">
         <div class="auth-field">
           <label for="review-filter">審核狀態</label>
@@ -1029,6 +1073,22 @@
         </div>
       </dialog>
     `;
+
+    $('#drive-initialize').onclick = async () => {
+      const button = $('#drive-initialize'), message = $('#drive-setup-status');
+      if (button.disabled) return;
+      button.disabled = true; message.textContent = '正在確認授權與專用資料夾…';
+      try {
+        const result = await driveRequest('initialize');
+        message.textContent = result.message;
+        if (result.folderURL?.startsWith('https://drive.google.com/drive/folders/')) {
+          const link = document.createElement('a'); link.href = result.folderURL;
+          link.textContent = '開啟專用資料夾'; link.target = '_blank'; link.rel = 'noopener noreferrer';
+          message.append(document.createElement('br'), link);
+        }
+      } catch (error) { message.textContent = errorText(error); }
+      finally { button.disabled = false; }
+    };
 
     let offset = 0;
     let rows = [];
@@ -1507,4 +1567,5 @@
 
   init();
 })();
+
 
