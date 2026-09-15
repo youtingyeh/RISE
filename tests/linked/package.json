@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test-feed.mjs && node test-detail.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "30.0.1"
+  }
+}

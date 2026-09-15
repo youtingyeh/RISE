@@ -11,7 +11,7 @@
   function tell(message,error=false){status.textContent=message;status.style.color=error?'#a51c30':'';}
   function errorMessage(e){if(['PGRST202','PGRST205','42P01'].includes(e.code))return '資源管理尚未完成後端設定，請執行 backend/teaching-resources.sql。';const text=String(e.message||e);return text.startsWith('rise:')?text.slice(5):'操作未完成，請確認網路、登入狀態及後端設定後重試。';}
   function yt(value){if(!value.trim())return '';let url;try{url=new URL(value.trim());}catch{throw Error('rise:請貼上完整 YouTube 網址。');}const host=url.hostname.toLowerCase();let id='';if(!['https:','http:'].includes(url.protocol))throw Error('rise:YouTube 網址不正確。');if(host==='youtu.be')id=url.pathname.slice(1).split('/')[0];else if(['youtube.com','www.youtube.com','m.youtube.com'].includes(host))id=url.searchParams.get('v')||url.pathname.match(/^\/(?:embed|shorts)\/([^/]+)/)?.[1]||'';if(!/^[\w-]{11}$/.test(id))throw Error('rise:無法辨識 YouTube 影片，請確認連結。');return id;}
-  function protectedLogin(){return `<a href="login.html?next=resources.html">登入後觀看影片或下載教材</a>`;}
+  function protectedLogin(){return `<a href="login.html?next=${encodeURIComponent('resources.html'+location.search)}">登入後觀看影片或下載教材</a>`;}
   async function list(){
     const box=$('#resource-list');box.textContent='讀取中…';
     let query=db.from('rise_teaching_resources').select('*').order('updated_at',{ascending:false}).order('id');
@@ -30,9 +30,10 @@
   }
   async function view(r){
     if(user?.email_confirmed_at){try{checked(await db.rpc('rise_record_resource_visit',{p_resource_id:r.id}));}catch{tell('資源瀏覽紀錄暫時無法儲存。',true);}}
+    const url=new URL(location.href);url.searchParams.set('id',r.id);history.replaceState(null,'',url);
     const box=$('#resource-detail');box.hidden=false;box.replaceChildren();
     const title=document.createElement('h2');title.textContent=r.title;
-    const close=document.createElement('button');close.type='button';close.className='secondary';close.textContent='關閉閱讀';close.onclick=()=>{box.replaceChildren();box.hidden=true;};
+    const close=document.createElement('button');close.type='button';close.className='secondary';close.textContent='關閉閱讀';close.onclick=()=>{box.replaceChildren();box.hidden=true;const u=new URL(location.href);u.searchParams.delete('id');history.replaceState(null,'',u);};
     const body=document.createElement('div');body.className='resource-article';body.textContent=r.body;box.append(close,title,body);
     if(!user?.email_confirmed_at&&(r.youtube_id||r.files.length)){const p=document.createElement('p');p.innerHTML=protectedLogin();box.append(p);}
     if(user?.email_confirmed_at){
@@ -109,7 +110,14 @@
       $('#res-prev').onclick=()=>{offset=Math.max(0,offset-12);list().catch(e=>tell(errorMessage(e),true));};$('#res-next').onclick=()=>{offset+=12;list().catch(e=>tell(errorMessage(e),true));};
       window.addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue='';}});
       await list();
+      const resourceId=new URLSearchParams(location.search).get('id');
+      if(resourceId){
+        if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resourceId))throw Error('rise:教材連結不正確。');
+        const resource=checked(await db.from('rise_teaching_resources').select('*').eq('id',resourceId).maybeSingle());
+        if(resource)await view(resource);else tell('此教材已下架、尚未發布，或你沒有閱讀權限。',true);
+      }
     }catch(e){tell(errorMessage(e),true);}
   }
   start();
 })();
+

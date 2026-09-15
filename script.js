@@ -151,15 +151,15 @@
 
   const navigation = [
     ["home", "index.html", "首頁"],
+    ["about", "about.html", "關於計畫"],
+    ["team", "team.html", "核心團隊"],
     ["learning", "learning.html", "學習路徑"],
     ["inquiry", "inquiry.html", "提問工作台"],
     ["support", "support.html", "教師與助教"],
-    ["about", "about.html", "關於計畫"],
     ["videos", "explore.html", "影音探索"],
     ["science", "science.html", "科學探索"],
     ["resources", "resources.html", "教學資源"],
-    ["schedule", "schedule.html", "重要日程"],
-    ["team", "team.html", "核心團隊"]
+    ["schedule", "schedule.html", "重要日程"]
   ];
 
   function activePage() {
@@ -444,24 +444,10 @@
   /* ===== 科學探索與三學科頁 ===== */
 
   function sciencePage() {
-    return `
-      ${heading(
-        "SCIENCE EXPLORATION",
-        "科學探索",
-        "從學科介紹、探索主題到學習資源，選擇你的起點。"
-      )}
-      <section class="section container">
-        <div class="card-grid">${subjectCards()}</div>
-        <div class="note">
-          <h2>從哪裡開始？</h2>
-          <p>
-            想了解各學科的探索方向，可以先進入學科頁；
-            想直接找影片，可以前往影音目錄。
-          </p>
-          ${link("explore.html", "前往影音目錄 →", "text-link")}
-        </div>
-      </section>
-    `;
+    return `${heading("SCIENCE EXPLORATION", "科學探索", "先找到你有興趣的學科與問題，再選擇文章、影片或教材。")}
+      <section class="section container"><div class="card-grid">${subjectCards()}</div>
+      <div class="note"><h2>選主題，還是安排學習？</h2><p>這裡適合自由探索數學、物理與化學；若想依閱讀、觀看與練習安排自己的學習，請前往學習路徑。</p>${link("learning.html","進入學習路徑 →","text-link")}</div>
+      <h2>探索已發布教材</h2><p>選擇學科與類型，找到老師提供的內容。</p><div data-resource-feed="science"></div></section>`;
   }
 
   function subjectPage(id) {
@@ -529,11 +515,7 @@
 
             <section id="materials" class="content-section">
               <h2>${e(subject.name)}教學資源</h2>
-              ${
-                subjectResources.length
-                  ? subjectResources.map(resourceRow).join("")
-                  : emptyState("教學資源待提供")
-              }
+              <div data-resource-feed="science" data-subject="${e(id)}"></div>
             </section>
           </div>
         </div>
@@ -1261,9 +1243,14 @@ function setupCalendar() {
   }
 
   function learningPage() {
-    return `${heading("LEARNING PATHWAYS", "我的學習起點", "先知道要練什麼能力，再選擇單元。下列是計畫主題，不代表教材已上線，也不是固定先修順序。")}
-      <section class="section container"><div class="note"><h2>一個單元怎麼學？</h2><p>計畫規劃每堂課以 30 分鐘為限，搭配 3–5 題練習；教材分為核心講義、延伸閱讀與挑戰題。學習重點是完整演算、思考註記與修改理由。</p><p>正式教材與單元先備條件尚待課程團隊提供。</p></div>
-      ${D.subjects.map(s=>`<section class="content-section"><p class="eyebrow">${e(s.english)}</p><h2>${e(s.name)}</h2><p>${e(s.description)}</p><div class="card-grid two">${(s.topics||[]).map(t=>`<article class="member ${e(s.id)}"><span class="badge">規劃主題・教材待提供</span><h3>${e(t.title)}</h3><p>${e(t.description)}</p></article>`).join("")||emptyState("課程範圍待確認","保留學科入口，待課程團隊提供正式規劃。")}</div><div class="actions">${link(s.id+".html", "查看"+s.name+"探索", "button secondary")}${link("explore.html?subject="+s.id,"查看影音範例","text-link")}</div></section>`).join("")}</section>`;
+    return `${heading("LEARNING PATHWAYS", "學習路徑", "選擇學科，透過閱讀、觀看與練習，逐步整理自己的理解。")}
+      <section class="section container"><div class="card-grid">
+      <article class="member"><p class="eyebrow">01 · READ</p><h2>閱讀文章</h2><p>先閱讀說明，記下概念、假設與不理解的地方。</p><button class="button secondary" data-learning-kind="article">選擇文章</button></article>
+      <article class="member"><p class="eyebrow">02 · WATCH</p><h2>影片學習</h2><p>觀看講解，暫停思考並整理推理步驟。</p><button class="button secondary" data-learning-kind="video">選擇影片</button></article>
+      <article class="member"><p class="eyebrow">03 · PRACTICE</p><h2>教材練習</h2><p>使用講義或練習材料，留下解題過程與疑問。</p><button class="button secondary" data-learning-kind="material">選擇教材</button></article></div>
+      <p class="small muted">這是建議的學習方式，可依教材說明調整順序；並非固定課程或先修要求。</p>
+      <h2>選擇你的學習內容</h2><div data-resource-feed="learning"></div>
+      <section class="note"><h2>遇到問題時</h2><p>把嘗試過的方法和卡住的地方整理好，可以附上題目或解題圖片，向教師與助教提問。</p>${link("questions.html","前往我的問題","button")}</section></section>`;
   }
 
   const questionFields = [
@@ -1390,6 +1377,13 @@ function setupCalendar() {
     ${siteFooter()}
   `;
 
+  if (document.querySelector('[data-resource-feed]')) {
+    const css=document.createElement('link');css.rel='stylesheet';css.href='linked-resources.css?v=20260915';document.head.append(css);
+    const feed=document.createElement('script');feed.src='resource-feed.js?v=20260915';
+    feed.onerror=()=>{document.querySelector('[data-resource-feed]').textContent='教材列表無法載入，請重新整理。';};
+    document.head.append(feed);
+  }
+
   const menuButton = $(".menu-button");
   const mainNav = $("#main-nav");
 
@@ -1452,4 +1446,5 @@ function setupCalendar() {
 })();
 
   
+
 
