@@ -639,7 +639,7 @@
     try {
       const base = new URL('./', location.href);
       const target = new URL(raw, base);
-      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html'];
+      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html', 'support.html', 'staff-questions.html'];
       if (target.origin !== base.origin || !allowed.some(name => target.pathname === base.pathname + name)) return 'account.html';
       return target.pathname + target.search;
     } catch { return 'account.html'; }
@@ -743,7 +743,7 @@
               ? '<a class="auth-button" href="admin-review.html">教師／助教申請審核</a>'
               : ''}
 
-            <a class="auth-button" href="questions.html">學生問答</a>
+            <a class="auth-button" href="${['teacher','ta','admin'].includes(profile.role) ? 'staff-questions.html' : 'questions.html'}">${['teacher','ta','admin'].includes(profile.role) ? '學生問題待答工作台' : '我的問題'}</a>
             <button id="logout" class="secondary">登出</button>
           </div>
 
@@ -831,6 +831,15 @@
             const files = checked(await client.storage.from('rise-credentials').list(user.id, { limit: 100 }));
             if (!files.length) break;
             checked(await client.storage.from('rise-credentials').remove(files.map(file => user.id + '/' + file.name)));
+          }
+          const qaPreparation = await client.rpc('rise_begin_qa_delete');
+          if (qaPreparation.error?.code !== 'PGRST202') {
+            checked(qaPreparation);
+            while (true) {
+              const images = checked(await client.storage.from('rise-question-images').list(user.id, { limit: 100 }));
+              if (!images.length) break;
+              checked(await client.storage.from('rise-question-images').remove(images.map(image => user.id + '/' + image.name)));
+            }
           }
           checked(await client.rpc('rise_delete_my_account'));
 
@@ -1320,25 +1329,30 @@
     await refresh();
   }
 
-  async function questionPage() {
+  async function questionPage(workbench = false) {
     const staff = ['teacher', 'ta', 'admin'].includes(profile.role);
     let offset = 0;
     const size = 20;
     root.innerHTML = `<section class="auth-card">
-      <h2>${staff ? '學生問答工作台' : '我的問題'}</h2>
+      <h2>${workbench ? '學生問題待答工作台' : '我的問題'}</h2>
       <p>問題與回覆會存入帳號，供提問者及已核准的教師、助教與管理員查看。請勿填寫他人個資。</p>
+      ${workbench ? '<div class="auth-field"><label for="q-filter">問題狀態</label><select id="q-filter"><option value="unanswered">待解答</option><option value="answered">已有教學回覆</option><option value="all">全部問題</option></select><p class="auth-help">待解答指尚未有教師、助教或管理員回覆；學生自己的補充不算解答。依提問時間由早到晚排列。</p></div>' : `
       <form id="question-form">
         <div class="auth-field"><label for="q-subject">學科</label><select id="q-subject"><option value="math">數學</option><option value="physics">物理</option><option value="chemistry">化學</option><option value="multiple">跨學科</option></select></div>
         <div class="auth-field"><label for="q-title">問題標題</label><input id="q-title" required maxlength="160"></div>
         <div class="auth-field"><label for="q-body">問題內容、已嘗試的方法與卡住的地方</label><textarea id="q-body" required maxlength="10000" rows="6"></textarea></div>
+        <div class="auth-field qa-upload"><label for="q-images">附上題目或解題圖片（選填）</label>
+        <p id="q-images-help">最多 3 張 JPG、PNG 或 WebP，每張原始檔案不超過 5 MB。請裁掉姓名、學號等不必要資料。</p>
+        <input id="q-images" type="file" multiple accept="image/jpeg,image/png,image/webp" aria-describedby="q-images-help">
+        <p id="q-image-status" role="status" aria-live="polite"></p><div id="q-image-preview" class="qa-image-grid"></div></div>
         <button type="submit">送出問題</button>
-      </form>
+      </form>`}
       <hr><div id="question-list"></div>
       <div class="auth-actions"><button id="q-prev" type="button">上一頁</button><button id="q-next" type="button">下一頁</button><button id="q-refresh" type="button">重新整理</button></div>
     </section>`;
     async function draw() {
       const box = $('#question-list'); box.textContent = '讀取中…';
-      const rows = checked(await client.from('rise_questions').select('*').order('created_at', {ascending:false}).order('id').range(offset, offset + size));
+      const rows = workbench ? checked(await client.rpc('rise_staff_question_queue', {p_filter: $('#q-filter').value, p_offset: offset})) : checked(await client.from('rise_questions').select('*').eq('user_id', user.id).order('created_at', {ascending:false}).order('id').range(offset, offset + size));
       box.innerHTML = rows.length ? '' : '<p>目前沒有問題。</p>';
       for (const q of rows.slice(0,size)) {
         const article = document.createElement('article'); article.className = 'auth-record';
@@ -1350,12 +1364,36 @@
           try { await discussion(q, thread); } catch(err) {report(errorText(err),true);}
           finally { open.disabled=false; }
         };
+        if (workbench) {
+          const state = document.createElement('p'); state.className='auth-help'; state.textContent=q.has_staff_answer?'已有教學回覆':'待解答'; article.prepend(state);
+        }
         article.append(open,thread); box.append(article);
       }
       $('#q-prev').disabled = offset === 0; $('#q-next').disabled = rows.length <= size;
     }
     async function discussion(q, box) {
       box.innerHTML = '';
+      const pictures = document.createElement('div'); pictures.className='qa-image-grid'; box.append(pictures);
+      const imageRows = await client.from('rise_question_images').select('path,name').eq('question_id', q.id);
+      if (imageRows.error && !['PGRST205','42P01'].includes(imageRows.error.code)) throw imageRows.error;
+      for (const picture of imageRows.data || []) {
+        const card=document.createElement('div'), button=document.createElement('button');
+        button.type='button';button.textContent='查看圖片：'+picture.name;button.className='secondary';
+        button.onclick=async()=>{
+          button.disabled=true;
+          try {
+            const blob=checked(await client.storage.from('rise-question-images').download(picture.path));
+            const reader=new FileReader();
+            const data=await new Promise((resolve,reject)=>{reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
+            // 限定 raster 圖片，絕不以 HTML 或 SVG 頁面開啟上傳內容。
+            if (!/^data:image\/(jpeg|png|webp);base64,/.test(String(data))) throw Error('rise:圖片格式不支援。');
+            const img=document.createElement('img');img.src=data;img.alt=picture.name;
+            const link=document.createElement('a');link.href=data;link.download=picture.name;link.textContent='下載圖片';
+            card.replaceChildren(img,link);
+          } catch(err){report(errorText(err),true);button.disabled=false;}
+        };
+        card.append(button);pictures.append(card);
+      }
       let answerOffset = 0;
       const entries = document.createElement('div');
       const more = document.createElement('button'); more.type='button'; more.textContent='載入更多回覆';
@@ -1379,7 +1417,7 @@
         event.preventDefault();const b=form.querySelector('button');if(b.disabled)return;b.disabled=true;
         try {
           checked(await client.rpc('rise_answer_question',{p_question_id:q.id,p_body:form.querySelector('textarea').value.trim()}));
-          report('回覆已保存。'); await discussion(q,box);
+          report('回覆已保存。'); if (workbench) await draw(); else await discussion(q,box);
         } catch(err) {report(errorText(err),true);} finally {if(b.isConnected)b.disabled=false;}
       };
       box.append(entries,more,form);await answers();
@@ -1388,13 +1426,66 @@
     $('#q-prev').onclick=()=>{offset=Math.max(0,offset-size);refresh();};
     $('#q-next').onclick=()=>{offset+=size;refresh();};
     $('#q-refresh').onclick=refresh;
-    $('#question-form').onsubmit=async event=>{
-      event.preventDefault();const form=event.target,b=form.querySelector('button');if(b.disabled)return;b.disabled=true;
-      try {
-        checked(await client.from('rise_questions').insert({user_id:user.id,subject:$('#q-subject').value,title:$('#q-title').value.trim(),body:$('#q-body').value.trim()}));
-        form.reset();offset=0;report('問題已送出，教師與助教可在工作台查看。');await draw();
-      } catch(err) {report(errorText(err),true);} finally {b.disabled=false;}
-    };
+    if (workbench) $('#q-filter').onchange=()=>{offset=0;refresh();};
+    if (!workbench) {
+      let selected=[],busy=false,submissionId=null,uploaded=[];
+      const picker=$('#q-images'),preview=$('#q-image-preview');
+      const clear=()=>{selected.forEach(f=>URL.revokeObjectURL(f.preview));selected=[];preview.replaceChildren();picker.value='';};
+      window.addEventListener('pagehide',()=>selected.forEach(f=>URL.revokeObjectURL(f.preview)),{once:true});
+      function showPreview(){
+        preview.replaceChildren();
+        selected.forEach((item,index)=>{
+          const card=document.createElement('div'),img=document.createElement('img'),remove=document.createElement('button');
+          img.src=item.preview;img.alt=item.file.name;
+          remove.type='button';remove.className='secondary';remove.textContent='移除第 '+(index+1)+' 張';remove.disabled=busy||!!submissionId;
+          remove.onclick=()=>{URL.revokeObjectURL(item.preview);selected.splice(index,1);showPreview();};
+          card.append(img,remove);preview.append(card);
+        });
+        $('#q-image-status').textContent=`已選 ${selected.length}／3 張圖片`;
+      }
+      picker.onchange=async()=>{
+        if(busy)return;busy=true;picker.disabled=true;
+        try {
+          const files=[...picker.files];if(selected.length+files.length>3)throw Error('rise:最多三張圖片。');
+          for(const file of files){
+            if(!['image/jpeg','image/png','image/webp'].includes(file.type)||!file.size||file.size>5242880)throw Error('rise:僅支援 JPG、PNG、WebP，每張不超過 5 MB。');
+          }
+          for(const file of files){
+            const bitmap=await createImageBitmap(file);
+            try {
+              if(bitmap.width*bitmap.height>24000000)throw Error('rise:圖片解析度太大，請先縮小或裁切。');
+              const canvas=document.createElement('canvas');
+              const scale=Math.min(1,2400/Math.max(bitmap.width,bitmap.height));
+              canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+              canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+              const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+              if(!blob||blob.size>5242880)throw Error('rise:圖片處理後仍太大，請先縮小圖片。');
+              const name=file.name.replace(/\.[^.]+$/,'').slice(0,200)+'.png';
+              const image=new File([blob],name,{type:'image/png'});
+              selected.push({file:image,preview:URL.createObjectURL(image)});
+            }finally{bitmap.close();}
+          }
+        }catch(err){report(errorText(err),true);}finally{busy=false;picker.value='';picker.disabled=!!submissionId;showPreview();}
+      };
+      $('#question-form').onsubmit=async event=>{
+        event.preventDefault();const form=event.target,b=form.querySelector('button[type="submit"]');if(busy||b.disabled)return;
+        busy=true;b.disabled=true;picker.disabled=true;
+        try {
+          submissionId ||= crypto.randomUUID();showPreview();
+          for(let i=uploaded.length;i<selected.length;i++){
+            const file=selected[i].file,path=user.id+'/'+crypto.randomUUID()+'.png';
+            report(`正在上傳第 ${i+1} 張圖片…`);
+            checked(await client.storage.from('rise-question-images').upload(path,file,{contentType:'image/png',upsert:false}));
+            uploaded.push({path,name:file.name});
+          }
+          const result=await client.rpc('rise_submit_question',{p_id:submissionId,p_subject:$('#q-subject').value,p_title:$('#q-title').value.trim(),p_body:$('#q-body').value.trim(),p_images:uploaded});
+          if(result.error?.code==='PGRST202')throw Error('rise:圖片問答後端尚未安裝，請管理員執行 backend/qa-upgrade.sql。');
+          checked(result);
+          clear();uploaded=[];submissionId=null;form.reset();offset=0;report('問題與圖片已送出。');await draw();
+        }catch(err){report(errorText(err)+' 如已開始上傳，請保留此頁重試；已上傳圖片會保留。',true);}
+        finally{busy=false;b.disabled=false;picker.disabled=!!submissionId;showPreview();}
+      };
+    }
     await draw();
   }
 
@@ -1568,6 +1659,14 @@
 
         $('[data-submit]').disabled = true;
 
+      } else if (page === 'support' || page === 'staff-questions') {
+        if (await loadUser()) {
+          if (!['teacher','ta','admin'].includes(profile.role)) {
+            root.innerHTML = '<section class="auth-card"><h2>此頁僅限教師與助教</h2><p>需要已核准的教師、助教或管理員身分。</p><a class="auth-button" href="questions.html">前往我的問題</a> <a href="teacher-apply.html">申請教師／助教資格</a></section>';
+          } else if (page === 'support') {
+            root.innerHTML = '<section class="auth-card"><h2>學生問題待答工作台</h2><p>優先查看尚未有教學人員回覆的問題，閱讀學生的解題過程與附圖，再提供引導。</p><a class="auth-button" href="staff-questions.html">查看待解答問題</a><p>僅限已核准的教師、助教與管理員使用。</p></section>';
+          } else await questionPage(true);
+        }
       } else if (page === 'questions') {
         if (await loadUser()) await questionPage();
       } else if (page === 'account') {
@@ -1590,6 +1689,7 @@
 
   init();
 })();
+
 
 
 

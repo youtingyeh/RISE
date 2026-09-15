@@ -16,3 +16,12 @@
 .auth-danger-zone p{color:#5d3a43}
 .auth-shell button.danger{border-color:#8f243d;background:#8f243d;color:#fff}
 .auth-shell button.danger:hover:not(:disabled){border-color:#6f172b;background:#6f172b}
+
+
+/* Private question image selection and viewing */
+.qa-upload{padding:20px;border:1px dashed #9eafbf;border-radius:12px;background:#f5f8fb}
+.qa-image-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin:16px 0}
+.qa-image-grid>div{min-width:0;border:1px solid #d9e2ec;border-radius:10px;background:white;padding:12px;overflow-wrap:anywhere}
+.qa-image-grid img{display:block;width:100%;height:auto;max-height:480px;object-fit:contain;margin-bottom:12px}
+.qa-image-grid button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.qa-upload input[type=file]{max-width:100%;padding:12px 0}

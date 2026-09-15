@@ -1,0 +1,48 @@
+import {PGlite} from '@electric-sql/pglite';
+import fs from 'node:fs';
+const db=new PGlite();
+await db.exec(`create role service_role bypassrls; create role anon; create role authenticated; create schema auth; create schema storage;
+create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}');
+create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+grant usage on schema auth,storage,public to authenticated;
+grant execute on function auth.uid() to authenticated;
+create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);
+alter table storage.objects enable row level security;
+grant select,insert,delete on storage.objects to authenticated;
+create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;`);
+await db.exec(fs.readFileSync('../../backend/setup.sql','utf8'));
+const migration=fs.readFileSync('../../backend/staff-upgrade.sql','utf8');await db.exec(migration);await db.exec(migration);
+const driveMigration=fs.readFileSync('../../backend/google-drive.sql','utf8');await db.exec(driveMigration);await db.exec(driveMigration);
+const migrationQA=fs.readFileSync('../../backend/qa-upgrade.sql','utf8');await db.exec(migrationQA);await db.exec(migrationQA);
+const ids=[1,2,3,4,5].map(n=>'00000000-0000-0000-0000-'+String(n).padStart(12,'0'));
+for(const [i,id]of ids.entries())await db.query("insert into auth.users(id,email,email_confirmed_at) values($1,$2,now())",[id,`u${i}@example.org`]);
+for(const [i,role]of [[2,'teacher'],[3,'ta'],[4,'admin']])await db.query('update public.rise_profiles set role=$1 where id=$2',[role,ids[i]]);
+async function as(i){await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[ids[i]]);await db.exec('set role authenticated');}
+async function deny(sql,args=[]){let failed=false;try{await db.query(sql,args);}catch{failed=true;}if(!failed)throw Error('unexpected permission: '+sql);}
+const qid='10000000-0000-0000-0000-000000000001',qid2='10000000-0000-0000-0000-000000000002';
+const image=ids[0]+'/sample.png',pending=ids[0]+'/pending.png';
+const submit='select public.rise_submit_question($1,\'math\',\'Title\',\'Body\',$2)';
+await as(0);await db.query("insert into storage.objects(bucket_id,name) values('rise-question-images',$1),('rise-question-images',$2)",[image,pending]);
+await db.query(submit,[qid,JSON.stringify([{path:image,name:'sample.png'}])]);
+await db.query(submit,[qid,'[]']);
+if((await db.query('select * from public.rise_questions')).rows.length!==1)throw Error('duplicate');
+await deny("select * from public.rise_staff_question_queue('all',0)");
+await db.query("select public.rise_answer_question($1,'Student followup')",[qid]);
+await as(1);await deny(submit,[qid2,JSON.stringify([{path:image,name:'stolen.png'}])]);
+if((await db.query('select * from public.rise_question_images')).rows.length)throw Error('metadata leak');
+if((await db.query("select * from storage.objects where bucket_id='rise-question-images'")).rows.length)throw Error('image leak');
+for(const roleIndex of [2,3,4]){await as(roleIndex);
+ if((await db.query("select * from public.rise_staff_question_queue('unanswered',0)")).rows.length!==1)throw Error('missing queue');
+ const accessible=(await db.query("select * from storage.objects where bucket_id='rise-question-images'")).rows;
+ if(accessible.length!==1||accessible[0].name!==image)throw Error('staff image visibility');
+}
+await as(3);await db.query("select public.rise_answer_question($1,'TA answer')",[qid]);
+if((await db.query("select * from public.rise_staff_question_queue('unanswered',0)")).rows.length)throw Error('still pending');
+if((await db.query("select * from public.rise_staff_question_queue('answered',0)")).rows.length!==1)throw Error('missing answered');
+await db.exec('reset role');await db.query("update public.rise_profiles set role='student' where id=$1",[ids[3]]);await as(3);
+await deny("select * from public.rise_staff_question_queue('all',0)");
+await as(0);await db.query('select public.rise_begin_qa_delete()');await deny("insert into storage.objects(bucket_id,name) values('rise-question-images',$1)",[ids[0]+'/late.png']);
+await deny(submit,[qid2,'[]']);
+await db.query("delete from storage.objects where bucket_id='rise-question-images'");
+console.log('PASS repeated migration, image ownership, student isolation, staff/TA/admin visibility, pending-image isolation, idempotency, answered filter, role revocation, deletion upload lock');await db.close();
