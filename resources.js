@@ -80,7 +80,7 @@
     editing=r;files=(r?.files||[]).map(f=>({...f}));pendingId=r?.id||crypto.randomUUID();dirty=false;
     const box=$('#resource-editor');box.hidden=false;$('#resource-organizer').hidden=true;
     box.innerHTML=`<h2>${r?'編輯資源':'新增資源'}</h2><form id="res-form">
-      <div class="resource-fields"><div class="auth-field"><label for="res-destination">發布區域</label><select id="res-destination"><option value="science">科學探索（主題）</option><option value="learning">學習路徑（單元）</option></select></div>
+      <div class="resource-fields"><div class="auth-field"><label for="res-destination">發布區域</label><select id="res-destination"><option value="science">科學探索（主題）</option></select></div>
       <div class="auth-field"><label for="res-collection">主題／單元名稱</label><input id="res-collection" required maxlength="100" placeholder="例如：牛頓運動定律" value="${esc(r?.collection||'')}"><p class="auth-help">同一學科、同一名稱的教材會收在同一張單元卡片內。</p></div></div>
       <div class="resource-fields"><div class="auth-field"><label for="res-group-order">主題／單元排序</label><input id="res-group-order" type="number" min="0" max="999999" step="1" value="${r?.group_order||0}"></div><div class="auth-field"><label for="res-item-order">單元內教材排序</label><input id="res-item-order" type="number" min="0" max="999999" step="1" value="${r?.item_order||0}"></div></div><p class="auth-help">數字越小越前。也可儲存後選取多份教材，使用上下按鈕整理順序。</p>
       <div class="auth-field"><label for="res-title">標題</label><input id="res-title" required maxlength="160" value="${esc(r?.title)}"></div>
