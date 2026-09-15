@@ -1674,6 +1674,7 @@
             root.innerHTML = '<section class="auth-card"><h2>此頁僅限教師與助教</h2><p>需要已核准的教師、助教或管理員身分。</p><a class="auth-button" href="questions.html">前往我的問題</a> <a href="teacher-apply.html">申請教師／助教資格</a></section>';
           } else if (page === 'support') {
             root.innerHTML = '<section class="auth-card"><h2>學生問題待答工作台</h2><p>優先查看尚未有教學人員回覆的問題，閱讀學生的解題過程與附圖，再提供引導。</p><a class="auth-button" href="staff-questions.html">查看待解答問題</a><p>僅限已核准的教師、助教與管理員使用。</p></section>';
+            if (['teacher','admin'].includes(profile.role)) root.innerHTML += '<section class="auth-card"><h2>教學資源管理</h2><p>新增文章、影片與教材，選擇發布到學習路徑或科學探索，並以主題整理教材。</p><a class="auth-button" href="resources.html">管理學習路徑與科學探索教材</a></section>';
           } else await questionPage(true);
         }
       } else if (page === 'questions') {
