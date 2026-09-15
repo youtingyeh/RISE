@@ -1680,7 +1680,7 @@
           } else if (page === 'support') {
             root.innerHTML = '<section class="auth-card"><h2>學生問題待答工作台</h2><p>優先查看尚未有教學人員回覆的問題，閱讀學生的解題過程與附圖，再提供引導。</p><a class="auth-button" href="staff-questions.html">查看待解答問題</a><p>僅限已核准的教師、助教與管理員使用。</p></section>';
             if (['teacher','admin'].includes(profile.role)) root.innerHTML += '<section class="auth-card"><h2>教學資源管理</h2><p>新增文章、影片與教材，發布到科學探索，並以主題整理教材。</p><a class="auth-button" href="resources.html">科學探索教材管理</a></section>';
-            if (['teacher','admin'].includes(profile.role)) root.innerHTML += '<section class="auth-card"><h2>討論題公告</h2><p>發布討論題，讓學生回答並查看他們的思考。</p><a class="auth-button" href="discussions.html">發布討論題與查看回答</a></section>';
+            if (['teacher','admin'].includes(profile.role)) root.innerHTML += '<section class="auth-card"><h2>討論題公告</h2><p>發布討論題，讓學生回答並查看他們的思考。</p><a class="auth-button" href="discussions.html?view=teacher">發布討論題與查看回答</a></section>';
           } else await questionPage(true);
         }
       } else if (page === 'discussions') {

@@ -1,0 +1,10 @@
+.discussion-board{display:grid;gap:0;margin-top:24px}
+.discussion-announcement{padding:24px 0;border-top:1px solid #d7e1ea}
+.discussion-announcement h3{font-size:1.3rem;margin:12px 0;color:#142e4b;overflow-wrap:anywhere}
+.discussion-meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;color:#5b7087;font-size:.9rem}
+.discussion-badge{padding:4px 10px;border-radius:5px;background:#e8f4ef;color:#20624c}
+.discussion-badge.is-closed{background:#eef0f3;color:#5b6472}
+.discussion-excerpt{color:#52657a;line-height:1.8;overflow-wrap:anywhere}
+.discussion-announcement button{margin-top:8px}
+#discussion-detail{scroll-margin-top:140px}
+@media(max-width:600px){.discussion-announcement{padding:20px 0}.discussion-announcement h3{font-size:1.15rem}}
