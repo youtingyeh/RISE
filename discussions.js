@@ -31,7 +31,7 @@ window.RISE_DISCUSSIONS = async function({client,user,profile,root,report}) {
    if(teacher){
     const prev=document.createElement('button'),next=document.createElement('button');prev.textContent='上一頁回答';next.textContent='下一頁回答';prev.disabled=answerPage===0;next.disabled=answers.length<=20;prev.onclick=()=>open(topic,answerPage-1);next.onclick=()=>open(topic,answerPage+1);box.append(prev,' ',next);
    }
-   if(canAnswer&&!topic.closed&&!answers.length){
+   if(!teacher&&!topic.closed){
     const form=document.createElement('form');form.innerHTML='<div class="auth-field"><label for="discussion-answer">我的回答</label><textarea id="discussion-answer" required maxlength="10000" rows="6"></textarea></div><button type="submit">提交回答</button>';
     form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button'),body=form.querySelector('textarea').value.trim();if(button.disabled||!body)return;button.disabled=true;try{checked(await client.from('rise_discussion_answers').insert({topic_id:topic.id,body}));report('回答已提交。');await open(topic);}catch(err){fail(err);}finally{button.disabled=false;}};box.append(form);
    }
