@@ -1,9 +1,9 @@
 (() => {
   'use strict';
   const groups = [
-    ['學生專區', [['learning.html','學習路徑'],['science.html','科學探索'],['explore.html','影音探索'],['inquiry.html','提問工作台'],['questions.html','我的問題']]],
-    ['助教專區', [['support.html','助教工作台'],['staff-questions.html','待解答問題']]],
-    ['教師專區', [['support.html','教師工作台'],['staff-questions.html','待解答問題'],['resources.html','學習路徑與科學探索教材管理']]]
+    ['學生專區', [['science.html','科學探索'],['explore.html','影音探索'],['inquiry.html','提問工作台'],['questions.html','我的問題']]],
+    ['助教專區', [['support.html','助教工作台'],['staff-questions.html','待答工作台'],['questions.html','我的提問']]],
+    ['教師專區', [['support.html','教師工作台'],['staff-questions.html','待答工作台'],['questions.html','我的提問'],['resources.html','學習路徑與科學探索教材管理']]]
   ];
   function mount(nav) {
     if (nav.dataset.roleNavigation) return;

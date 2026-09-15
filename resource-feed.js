@@ -13,7 +13,22 @@
   if(!window.RISE_AUTH_CONFIG)await load('auth-config.js');
   if(!window.supabase)await load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js');
   const cfg=window.RISE_AUTH_CONFIG,db=window.supabase.createClient(cfg.url,cfg.publishableKey),$=s=>host.querySelector(s);
-  host.innerHTML=`<div class="resource-feed-controls"><label>學科 <select id="feed-subject"></select></label><label>內容類型 <select id="feed-kind"></select></label><button type="button" id="feed-refresh" class="button secondary">重新整理</button></div><p id="feed-status" role="status" aria-live="polite"></p><div id="feed-list" class="card-grid"></div><section id="feed-detail" class="note" hidden></section><div class="actions"><button type="button" id="feed-prev" class="button secondary">上一頁</button><button type="button" id="feed-next" class="button secondary">下一頁</button><a class="text-link" href="resources.html?destination=${destination}">前往此區教學資源 →</a></div>`;
+  host.innerHTML=`<div class="resource-feed-controls"><label>學科 <select id="feed-subject"></select></label><label>內容類型 <select id="feed-kind"></select></label><button type="button" id="feed-refresh" class="button secondary">重新整理</button></div><p id="feed-status" role="status" aria-live="polite"></p><div id="feed-list" class="card-grid"></div><section id="feed-detail" class="note" hidden></section><div class="actions"><button type="button" id="feed-prev" class="button secondary">上一頁</button><button type="button" id="feed-next" class="button secondary">下一頁</button><span id="feed-management"></span></div>`;
+  // 只有伺服器確認過身分的教師／管理員才顯示管理入口。
+  let roleCheck=0;
+  async function refreshManagement(){
+   const seq=++roleCheck,slot=$('#feed-management');slot.replaceChildren();
+   try{
+    const identity=await db.auth.getUser(),user=identity.data?.user;
+    if(identity.error||!user?.email_confirmed_at||seq!==roleCheck)return;
+    const result=await db.from('rise_profiles').select('role').eq('id',user.id).maybeSingle();
+    if(seq!==roleCheck||result.error||!['teacher','admin'].includes(result.data?.role))return;
+    const a=document.createElement('a');a.className='text-link';a.href='resources.html?destination='+destination;a.textContent='前往此區教學資源 →';slot.append(a);
+   }catch{/* 無法確認資格時不顯示管理入口。 */}
+  }
+  db.auth.onAuthStateChange(()=>{++roleCheck;$('#feed-management').replaceChildren();setTimeout(refreshManagement,0);});
+  window.addEventListener('pageshow',refreshManagement);
+  refreshManagement();
   for(const [v,label]of Object.entries(subjects))$('#feed-subject').add(new Option(label,v));
   for(const [v,label]of Object.entries(kinds))$('#feed-kind').add(new Option(label,v));$('#feed-subject').value=subject;
   function failure(e){return ['PGRST202','PGRST205','42P01'].includes(e.code)?'主題與單元功能尚未啟用，請管理員執行 resource-placement.sql。':'暫時無法載入，請重新整理再試。';}

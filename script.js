@@ -153,7 +153,6 @@
     ["home", "index.html", "首頁"],
     ["about", "about.html", "關於計畫"],
     ["team", "team.html", "核心團隊"],
-    ["learning", "learning.html", "學習路徑"],
     ["inquiry", "inquiry.html", "提問工作台"],
     ["support", "support.html", "教師與助教"],
     ["videos", "explore.html", "影音探索"],
@@ -446,7 +445,6 @@
   function sciencePage() {
     return `${heading("SCIENCE EXPLORATION", "科學探索", "先找到你有興趣的學科與問題，再選擇文章、影片或教材。")}
       <section class="section container"><div class="card-grid">${subjectCards()}</div>
-      <div class="note"><h2>選主題，還是安排學習？</h2><p>這裡適合自由探索數學、物理與化學；若想依閱讀、觀看與練習安排自己的學習，請前往學習路徑。</p>${link("learning.html","進入學習路徑 →","text-link")}</div>
       <h2>已發布探索主題</h2><p>先選探索主題，再展開其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>`;
   }
 
@@ -1232,9 +1230,9 @@ function setupCalendar() {
   function programHomePage() {
     return `${heading("REASONING × QUESTIONING", "練習推理，也練習提出好問題", "數思新生以數理能力與提問力雙軌培育，陪你從理解概念、寫出思路，到修正問題與展開對話。")}
       <section class="section container"><div class="card-grid two">
-      <article class="subject-card math"><p class="eyebrow">TRACK 01 / REASONING</p><h2>數理能力</h2><p>先理解概念，再寫出每一步的理由；從錯誤中修正推理。此功能需登入使用。</p>${link("learning.html", "查看學習路徑", "button")}</article>
+      <article class="subject-card math"><p class="eyebrow">TRACK 01 / REASONING</p><h2>數理能力</h2><p>先理解概念，再寫出每一步的理由；從錯誤中修正推理。此功能需登入使用。</p>${link("science.html", "前往科學探索", "button")}</article>
       <article class="subject-card physics"><p class="eyebrow">TRACK 02 / QUESTIONING</p><h2>提問力</h2><p>說明你觀察到什麼、為什麼想問，以及這個問題值得探索的原因。此功能需登入使用。</p>${link("inquiry.html", "開始整理我的問題", "button")}</article></div>
-      <div class="note"><h2>第一次來？</h2><p>對數理有興趣的高中生，可以先看學習路徑；想練習把想法問清楚，也可以直接使用提問工作台。範例階段尚未開放正式教材、作業繳交與助教批閱。</p></div>
+      <div class="note"><h2>第一次來？</h2><p>對數理有興趣的高中生，可以先看科學探索；想練習把想法問清楚，也可以直接使用提問工作台。範例階段尚未開放正式教材、作業繳交與助教批閱。</p></div>
       ${sectionHeading("DISCIPLINES", "學科探索", "science.html", "查看三學科 →")}<div class="card-grid">${subjectCards()}</div></section>
       <section class="section soft"><div class="container">${sectionHeading("LEARNING CYCLE", "看懂之後，把思路留下來")}
       <ol class="learning-steps"><li><strong>理解概念</strong><p>查看先備概念、核心講義與教學影片。</p></li><li><strong>寫出推理</strong><p>記錄解題策略、理由與卡住的位置。</p></li><li><strong>修正想法</strong><p>對照回饋，說明修改了什麼、為什麼。</p></li><li><strong>提出新問題</strong><p>把學到的概念轉成可探索的問題。</p></li></ol>
@@ -1379,7 +1377,7 @@ function setupCalendar() {
 
   if (document.querySelector('[data-resource-feed]')) {
     const css=document.createElement('link');css.rel='stylesheet';css.href='linked-resources.css?v=placement-20260915';document.head.append(css);
-    const feed=document.createElement('script');feed.src='resource-feed.js?v=placement-20260915';
+    const feed=document.createElement('script');feed.src='resource-feed.js?v=science-20260915-2';
     feed.onerror=()=>{document.querySelector('[data-resource-feed]').textContent='教材列表無法載入，請重新整理。';};
     document.head.append(feed);
   }
