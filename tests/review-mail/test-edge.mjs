@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import {stripTypeScriptTypes} from 'node:module';
+import assert from 'node:assert/strict';
+let source=fs.readFileSync('../../supabase/functions/rise-review-mail/index.ts','utf8').replace(/^import .*;$/gm,'').replace('export async function handler','async function handler').replace('Deno.serve(handler);','');
+source=stripTypeScriptTypes(source,{mode:'transform'});
+let role='admin',valid=true,fail=false,jobs=[],mails=[],updates=[];
+const result=data=>({data,error:null});
+const createClient=()=>({auth:{getUser:async()=>result({user:valid?{id:'admin',email_confirmed_at:'now'}:null}),admin:{getUserById:async()=>result({user:{email:'verified@example.org',email_confirmed_at:'now'}})}},rpc:async()=>result(jobs.splice(0,1)),from(table){let payload;const q={select(){return q},eq(){return q},neq(){return q},single(){return q},update(p){payload=p;updates.push(p);return q},then(resolve){return Promise.resolve(table==='rise_profiles'?result({role}):{data:null,count:jobs.length,error:null}).then(resolve)}};return q;}});
+const nodemailer={createTransport:()=>({sendMail:async(m)=>{if(fail)throw Error('secret SMTP detail');mails.push(m);return {accepted:['verified@example.org']}},close(){}})};
+const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-secret',RISE_SMTP_USER:'sender@example.org',RISE_SMTP_PASSWORD:'smtp-secret'};
+const handler=new Function('createClient','nodemailer','Deno',source+';return handler;')(createClient,nodemailer,{env:{get:k=>env[k]}});
+const req=()=>new Request('https://example.org',{method:'POST',headers:{Origin:'https://youtingyeh.github.io',Authorization:'Bearer token'},body:JSON.stringify({to:'attacker@example.org'})});
+valid=false;assert.equal((await handler(req())).status,401);valid=true;role='student';assert.equal((await handler(req())).status,403);assert.equal(mails.length,0);role='admin';
+const job={id:'j1',user_id:'student',application_id:'a1',version:2,decision:'returned',requested_role:'ta',note:'請補件 <script>',attempts:1};jobs=[job];let r=await handler(req());assert.equal((await r.json()).sent,1);assert.equal(mails[0].to.address,'verified@example.org');assert(mails[0].subject.includes('助教'));assert(mails[0].text.includes('請補件'));assert.equal(updates[0].state,'sent');
+fail=true;jobs=[job];r=await handler(req());assert.equal((await r.json()).failed,1);assert.equal(updates.at(-1).state,'pending');assert(!JSON.stringify(updates).includes('smtp-secret'));
+console.log('PASS admin-only, verified identity, server-selected recipient/content, SMTP success/failure queue state');

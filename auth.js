@@ -1042,7 +1042,7 @@
       </section>
       <section class="auth-card">
         <div class="auth-field">
-          <label for="review-filter">審核狀態</label>
+          <button type="button" id="retry-review-mail" class="secondary">寄送待寄審核通知</button><p id="review-mail-status" role="status" aria-live="polite"></p><label for="review-filter">審核狀態</label>
           <select id="review-filter">
             <option value="pending">待審核</option>
             <option value="returned">待補件</option>
@@ -1065,7 +1065,7 @@
         <h2 id="dialog-title">確認審核決定</h2>
         <p id="dialog-description"></p>
         <p class="auth-help">
-          審核意見會顯示給申請人。目前不會寄送審核通知信。
+          審核意見會顯示給申請人。審核保存後會嘗試寄送通知信；寄送失敗不影響審核結果。
         </p>
         <div class="auth-actions">
           <button id="review-confirm">確認送出</button>
@@ -1196,6 +1196,28 @@
       report('申請資料已更新。');
     }
 
+    async function sendReviewMail() {
+      const status = $('#review-mail-status');
+      const retry = $('#retry-review-mail');
+      if (retry.disabled) return;
+      retry.disabled = true;
+      status.textContent = '正在寄送待寄審核通知…';
+      try {
+        const session = checked(await client.auth.getSession()).session;
+        if (!session) throw Error('rise:請重新登入。');
+        const response = await fetch(cfg.url.replace(/\/$/, '') + '/functions/v1/rise-review-mail', {
+          method: 'POST', headers: { apikey: cfg.publishableKey, Authorization: 'Bearer ' + session.access_token }
+        });
+        const result = await response.json();
+        if (!response.ok) throw Error('rise:' + (result.error || '通知信服務無法使用。'));
+        status.textContent = `本次 ${result.sent} 封已交由郵件伺服器接收；尚有 ${result.remaining} 封待寄。` +
+          (result.failed ? ' 部分寄送失敗，請檢查 SMTP 設定，10 分鐘後可再按補寄。' : result.remaining ? ' 可稍後再按此按鈕處理其餘待寄通知。' : '');
+      } catch (error) {
+        status.textContent = '審核結果已保存，通知信尚未確認寄出。' + errorText(error) + ' 後端設定完成後可按上方按鈕補寄。';
+      } finally { retry.disabled = false; }
+    }
+    $('#retry-review-mail').onclick = sendReviewMail;
+
     const safeRefresh = () => {
       return refresh().catch(e => report(errorText(e), true));
     };
@@ -1283,8 +1305,9 @@
         await refresh();
 
         report(
-          '審核已保存。申請人可在會員中心查看結果；尚未寄送通知信。'
+          '審核已保存。申請人可在會員中心查看結果。'
         );
+        await sendReviewMail();
       } catch (e) {
         $('#review-dialog').close();
         decision = null;
@@ -1567,5 +1590,6 @@
 
   init();
 })();
+
 
 

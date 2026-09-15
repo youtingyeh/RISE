@@ -1,0 +1,47 @@
+import {PGlite} from '@electric-sql/pglite';
+import fs from 'node:fs';
+const db=new PGlite();
+await db.exec(`create role service_role bypassrls; create role anon; create role authenticated; create schema auth; create schema storage;
+create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}');
+create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+grant usage on schema auth,storage,public to authenticated;
+grant execute on function auth.uid() to authenticated;
+create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);
+alter table storage.objects enable row level security;
+grant select,insert,delete on storage.objects to authenticated;
+create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;`);
+await db.exec(fs.readFileSync('../../backend/setup.sql','utf8'));
+const migration=fs.readFileSync('../../backend/staff-upgrade.sql','utf8');await db.exec(migration);await db.exec(migration);
+const mail=fs.readFileSync('../../backend/review-mail.sql','utf8');await db.exec(mail);await db.exec(mail);
+const ids=[1,2,3,4].map(n=>'00000000-0000-0000-0000-'+String(n).padStart(12,'0'));
+for(const [i,id]of ids.entries())await db.query(`insert into auth.users values($1,$2,now(),$3)`,[id,`person${i}@example.org`,JSON.stringify({requested_kind:i===1?'ta':'teacher'})]);
+await db.query("update public.rise_profiles set role='admin' where id=$1",[ids[0]]);
+async function as(i){await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[ids[i]]);await db.exec('set role authenticated');}
+async function denied(sql,args){try{await db.query(sql,args);throw new Error('UNEXPECTED ALLOW');}catch(e){if(e.message==='UNEXPECTED ALLOW')throw e;}}
+await as(1);
+await db.query("insert into storage.objects(bucket_id,name) values('rise-credentials',$1)",[ids[1]+'/proof.pdf']);
+await denied("insert into storage.objects(bucket_id,name) values('rise-credentials',$1)",[ids[2]+'/proof.pdf']);
+await denied("select public.rise_submit_teacher_application('s','math','r',0)",[]);
+const submit="select public.rise_submit_staff_application('s','math','r',0,$1,$2) as id";
+await denied(submit,['admin',JSON.stringify([{path:ids[1]+'/proof.pdf',name:'proof.pdf'}])]);
+const result=await db.query(submit,['ta',JSON.stringify([{path:ids[1]+'/proof.pdf',name:'proof.pdf'}])]);const aid=result.rows[0].id;
+await denied("select public.rise_review_teacher_application($1,'approved','',1)",[aid]);
+await as(0);await db.query("select public.rise_review_teacher_application($1,'approved','',1)",[aid]);
+await as(1);const role=(await db.query('select role from public.rise_profiles where id=auth.uid()')).rows[0].role;if(role!=='ta')throw Error(role);
+
+await denied('select * from public.rise_review_mail',[]);
+await denied('select public.rise_claim_review_mail()',[]);
+await db.exec('reset role');
+let queued=(await db.query('select * from public.rise_review_mail')).rows;
+if(queued.length!==1||queued[0].decision!=='approved')throw Error('queue mismatch');
+await db.exec('set role service_role');
+if((await db.query('select * from public.rise_claim_review_mail()')).rows.length!==1)throw Error('claim missing');
+if((await db.query('select * from public.rise_claim_review_mail()')).rows.length!==0)throw Error('duplicate claim');
+await db.exec('reset role');
+await db.exec("update public.rise_review_mail set state='sent'");
+if((await db.query('select * from public.rise_claim_review_mail()')).rows.length)throw Error('sent reclaimed');
+await db.query('delete from public.rise_teacher_applications where id=$1',[aid]);
+if((await db.query('select * from public.rise_review_mail')).rows.length)throw Error('orphan mail');
+console.log('PASS queue transaction, repeated migration, restricted access, claims, sent deduplication, cascade deletion');
+await db.close();
