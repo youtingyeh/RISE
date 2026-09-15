@@ -14,8 +14,11 @@ window.RISE_DISCUSSIONS = async function({client,user,profile,root,report}) {
   const seq=++detailSequence,box=$('#discussion-detail');box.hidden=false;box.textContent='正在讀取回答…';
   try{
    const fresh=checked(await client.from('rise_discussion_topics').select('*').eq('id',topic.id).single());
-   let answerQuery=client.from('rise_discussion_answers').select('*').eq('topic_id',topic.id);
-   if(!teacher)answerQuery=answerQuery.eq('user_id',user.id);
+ const answerQuery =
+  client
+    .from('rise_discussion_answers')
+    .select('*')
+    .eq('topic_id', topic.id);
    const answers=checked(await answerQuery.order('created_at').order('id').range(answerPage*20,answerPage*20+20));
    if(seq!==detailSequence)return;topic=fresh;
    box.innerHTML=`<h2>${esc(topic.title)}</h2><p style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(topic.body)}</p><p>${topic.closed?'已結束回答':'開放回答中'}</p><h3>${teacher?'學生回答':'我的回答'}</h3><div id="discussion-answers"></div>`;
