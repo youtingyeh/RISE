@@ -1503,31 +1503,61 @@
     await draw();
   }
 
-  function loadSDK() {
-    return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
+function loadSDK() {
+  const sources = [
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js',
+    'https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.js'
+  ];
 
-      const timeout = setTimeout(() => {
-        reject(Error('timeout'));
+  return new Promise((resolve, reject) => {
+    if (window.supabase?.createClient) {
+      resolve();
+      return;
+    }
+
+    let index = 0;
+    let lastError = null;
+
+    function tryNext() {
+      if (index >= sources.length) {
+        reject(lastError || Error('Supabase SDK 載入失敗'));
+        return;
+      }
+
+      const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        script.remove();
+        lastError = Error('Supabase SDK 載入逾時');
+        tryNext();
       }, 15000);
 
-      s.src =
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js';
+      script.src = sources[index++];
+      script.async = true;
 
-      s.onload = () => {
-        clearTimeout(timeout);
-        resolve();
+      script.onload = () => {
+        clearTimeout(timer);
+
+        if (window.supabase?.createClient) {
+          resolve();
+        } else {
+          lastError = Error('Supabase SDK 載入後無法使用');
+          tryNext();
+        }
       };
 
-      s.onerror = () => {
-        clearTimeout(timeout);
-        reject(Error('network'));
+      script.onerror = () => {
+        clearTimeout(timer);
+        script.remove();
+        lastError = Error('無法載入 Supabase SDK：' + script.src);
+        tryNext();
       };
 
-      document.head.append(s);
-    });
-  }
+      document.head.appendChild(script);
+    }
 
+    tryNext();
+  });
+}
   async function init() {
     renderPublic();
 
