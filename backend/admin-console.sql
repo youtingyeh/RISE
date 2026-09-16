@@ -95,13 +95,45 @@ begin
  update public.rise_profiles set role=p_role where id=p_user_id;
  insert into rise_private.member_role_events(actor_id,target_id,old_role,new_role) values(auth.uid(),p_user_id,previous,p_role);
 end;$$;
+
+create or replace function public.rise_admin_update_member(p_user_id uuid,p_display_name text,p_expected_name text) returns void
+language plpgsql security definer set search_path='' as $
+declare previous_name text;
+begin
+ if not rise_private.console_admin() then raise exception 'rise:僅限已驗證的管理員使用。' using errcode='42501';end if;
+ if p_user_id is null or char_length(trim(coalesce(p_display_name,''))) not between 1 and 80 then raise exception 'rise:姓名需為1至80字。';end if;
+ select display_name into previous_name from public.rise_profiles where id=p_user_id for update;
+ if not found then raise exception 'rise:找不到會員資料，請先在後端補齊。';end if;
+ if previous_name is distinct from p_expected_name then raise exception 'rise:姓名已被其他人更新，請重新整理。';end if;
+ update public.rise_profiles set display_name=trim(p_display_name) where id=p_user_id;
+end;$;
+
+create or replace function public.rise_admin_delete_member(p_user_id uuid,p_expected_role text) returns void
+language plpgsql security definer set search_path='' as $
+declare previous_role text;
+begin
+ perform pg_advisory_xact_lock(723461093);
+ if not rise_private.console_admin() then raise exception 'rise:僅限已驗證的管理員使用。' using errcode='42501';end if;
+ if p_user_id is null or p_user_id=auth.uid() then raise exception 'rise:不能刪除目前登入的管理員帳號。';end if;
+ select role into previous_role from public.rise_profiles where id=p_user_id for update;
+ if not found then raise exception 'rise:找不到會員資料，請先在後端補齊。';end if;
+ if previous_role is distinct from p_expected_role then raise exception 'rise:會員資料已變更，請重新整理。';end if;
+ if previous_role='admin' and (select count(*) from public.rise_profiles where role='admin')<=1 then raise exception 'rise:必須保留至少一位管理員。';end if;
+ delete from storage.objects where bucket_id in ('rise-credentials','rise-teaching-files') and (name=p_user_id::text or name like p_user_id::text||'/%');
+ delete from auth.users where id=p_user_id;
+end;$;
+
 revoke all on function public.rise_record_activity() from public,anon;
 revoke all on function public.rise_admin_members(text,text,integer) from public,anon;
 revoke all on function public.rise_admin_statistics() from public,anon;
 revoke all on function public.rise_admin_set_role(uuid,text,text) from public,anon;
+revoke all on function public.rise_admin_update_member(uuid,text,text) from public,anon;
+revoke all on function public.rise_admin_delete_member(uuid,text) from public,anon;
 grant execute on function public.rise_record_activity() to authenticated;
 grant execute on function public.rise_admin_members(text,text,integer) to authenticated;
 grant execute on function public.rise_admin_statistics() to authenticated;
 grant execute on function public.rise_admin_set_role(uuid,text,text) to authenticated;
+grant execute on function public.rise_admin_update_member(uuid,text,text) to authenticated;
+grant execute on function public.rise_admin_delete_member(uuid,text) to authenticated;
 notify pgrst,'reload schema';
 commit;
