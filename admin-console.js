@@ -10,7 +10,55 @@ window.RISE_ADMIN_CONSOLE = async function({client,user,profile,root,report}) {
  root.innerHTML=`<section class="auth-card"><h2>管理工具</h2><div class="auth-actions"><a class="auth-button" href="admin-review.html">教師與助教資格審核</a><a class="auth-button" href="resources.html?destination=science">科學探索教材管理</a><a class="auth-button" href="discussions.html?view=teacher">討論題管理</a></div></section>
  <section class="auth-card"><h2>會員與活躍度概況</h2><button id="admin-stats-refresh" type="button">更新統計</button><p id="admin-metric-status" role="status"></p><div id="admin-metrics" class="admin-metrics"></div><div id="admin-roles" class="auth-help"></div><p id="admin-activity-note" class="auth-help"></p><details><summary>查看近 30 天每日趨勢</summary><div class="admin-table-wrap"><table><caption>每日活躍會員與新註冊人數（台灣時間）</caption><thead><tr><th scope="col">日期</th><th scope="col">活躍會員</th><th scope="col">新註冊</th></tr></thead><tbody id="admin-daily"></tbody></table></div></details></section>
  <section class="auth-card"><h2>已註冊會員管理</h2><p>搜尋會員、確認驗證狀態及調整角色。角色變更會保留後端操作紀錄。</p><form id="admin-search" class="admin-filters"><label>姓名或信箱<input id="admin-query" type="search" maxlength="200" placeholder="輸入姓名或信箱"></label><label>角色<select id="admin-role-filter"><option value="all">全部角色</option>${Object.entries(labels).map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label><button type="submit">搜尋／重新整理</button></form><p id="admin-members-status" role="status"></p><div class="admin-table-wrap"><table><caption>註冊會員清單</caption><thead><tr><th scope="col">姓名／信箱</th><th scope="col">角色</th><th scope="col">信箱驗證</th><th scope="col">註冊時間</th><th scope="col">最近登入／活動</th><th scope="col">管理</th></tr></thead><tbody id="admin-members"></tbody></table></div><div class="auth-actions"><button id="admin-prev" type="button">上一頁</button><button id="admin-next" type="button">下一頁</button></div></section>
- <dialog id="admin-role-dialog" aria-labelledby="admin-role-title"><form id="admin-role-form"><h2 id="admin-role-title">調整會員角色</h2><p id="admin-role-member"></p><label>新角色<select id="admin-new-role">${Object.entries(labels).filter(([v])=>v!=='missing').map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label><p>管理員可以查看會員資料、統計與調整權限。請確認授予的角色。</p><div class="auth-actions"><button type="submit" id="admin-role-save">確認變更</button><button type="button" id="admin-role-cancel">取消</button></div></form></dialog>`;
+<dialog id="admin-role-dialog" aria-labelledby="admin-role-title">
+  <form id="admin-role-form">
+    <h2 id="admin-role-title">管理會員</h2>
+
+    <p id="admin-role-member"></p>
+
+    <label>
+      姓名
+      <input
+        id="admin-display-name"
+        type="text"
+        maxlength="80"
+        required
+      >
+    </label>
+
+    <label>
+      角色
+      <select id="admin-new-role">
+        ${Object.entries(labels)
+          .filter(([v]) => v !== 'missing')
+          .map(([v, t]) => `<option value="${v}">${t}</option>`)
+          .join('')}
+      </select>
+    </label>
+
+    <p>
+      可修改會員姓名與角色。刪除帳號後，會員資料與相關紀錄將永久移除。
+    </p>
+
+    <div class="auth-actions">
+      <button type="submit" id="admin-role-save">
+        儲存變更
+      </button>
+
+      <button
+        type="button"
+        id="admin-delete-member"
+        class="admin-danger"
+      >
+        永久刪除帳號
+      </button>
+
+      <button type="button" id="admin-role-cancel">
+        取消
+      </button>
+    </div>
+  </form>
+</dialog>;
  async function stats(){
   const seq=++statsRequest;$('#admin-metric-status').textContent='正在讀取統計…';$('#admin-metrics').replaceChildren();$('#admin-daily').replaceChildren();
   try{const s=checked(await client.rpc('rise_admin_statistics'));if(!alive||seq!==statsRequest)return;
