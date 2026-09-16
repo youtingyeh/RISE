@@ -639,7 +639,7 @@
     try {
       const base = new URL('./', location.href);
       const target = new URL(raw, base);
-      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html', 'support.html', 'staff-questions.html', 'resources.html', 'discussions.html'];
+      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html', 'support.html', 'staff-questions.html', 'resources.html', 'discussions.html', 'admin-console.html'];
       if (target.origin !== base.origin || !allowed.some(name => target.pathname === base.pathname + name)) return 'account.html';
       return target.pathname + target.search;
     } catch { return 'account.html'; }
@@ -740,7 +740,7 @@
               : ''}
 
             ${isAdmin
-              ? '<a class="auth-button" href="admin-review.html">教師／助教申請審核</a>'
+              ? '<a class="auth-button" href="admin-console.html">管理員專區</a><a class="auth-button" href="admin-review.html">教師／助教申請審核</a>'
               : ''}
 
             <a class="auth-button" href="${['teacher','ta','admin'].includes(profile.role) ? 'staff-questions.html' : 'questions.html'}">${['teacher','ta','admin'].includes(profile.role) ? '學生問題待答工作台' : '我的問題'}</a>
@@ -1597,6 +1597,7 @@
       updateAccountNavigation(
         identity.data?.user || null
       );
+      if(identity.data?.user?.email_confirmed_at) client.rpc('rise_record_activity').catch(()=>{});
 
       notice.hidden = true;
 
@@ -1696,6 +1697,15 @@
       } else if (page === 'teacher') {
         await teacherPage();
 
+      } else if (page === 'admin-console') {
+        if (await loadUser()) {
+          if(profile.role!=='admin') {
+            root.innerHTML='<section class="auth-card"><h2>此頁僅限管理員使用</h2><a href="account.html">返回會員中心</a></section>';
+          } else {
+            if(!window.RISE_ADMIN_CONSOLE) throw Error('rise:管理系統未載入，請重新整理。');
+            await window.RISE_ADMIN_CONSOLE({client,user,profile,root,report});
+          }
+        }
       } else if (page === 'admin') {
         await adminPage();
       }

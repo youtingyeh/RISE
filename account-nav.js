@@ -26,6 +26,7 @@
   }
 
   function showLoggedIn(client, user) {
+    if(user.email_confirmed_at) client.rpc('rise_record_activity').catch(()=>{});
     const email = document.createElement("span");
 
     email.textContent = user.email || "已登入帳號";

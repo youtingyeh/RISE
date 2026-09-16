@@ -1411,7 +1411,7 @@ function setupCalendar() {
   const accountScript = document.createElement("script");
 
   accountScript.src = new URL(
-    "./account-nav.js",
+    "./account-nav.js?v=admin-console-20260916-1",
     document.currentScript
       ? document.currentScript.src
       : document.baseURI
