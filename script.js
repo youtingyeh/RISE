@@ -55,6 +55,31 @@
     });
   }
 
+
+  // Published video metadata is public; playback keeps the existing sign-in gate.
+  let catalogError=false;
+  try {
+    if (!window.RISE_AUTH_CONFIG) await new Promise((resolve,reject)=>{
+      const tag=document.createElement('script');tag.src='auth-config.js';
+      const timer=setTimeout(()=>reject(Error('config timeout')),8000);
+      tag.onload=()=>{clearTimeout(timer);resolve();};tag.onerror=()=>{clearTimeout(timer);reject(Error('config load'));};
+      document.head.append(tag);
+    });
+    const cfg=window.RISE_AUTH_CONFIG;
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+    let remote=[];
+    try{
+      for(let offset=0;;offset+=500){
+        const response=await fetch(cfg.url.replace(/\/$/,'')+'/rest/v1/rise_explore_videos?select=*&published=eq.true&order=sort_order.asc,id.asc&limit=500&offset='+offset,{headers:{apikey:cfg.publishableKey},signal:controller.signal});
+        if(!response.ok)throw Error('video catalog '+response.status);
+        const rows=await response.json();if(!Array.isArray(rows))throw Error('invalid catalog');
+        remote.push(...rows);if(rows.length<500)break;
+      }
+      const remoteIds=new Set(remote.map(v=>v.id));
+      D.videos=[...remote,...(D.videos||[]).filter(v=>!remoteIds.has(v.id))];
+    }finally{clearTimeout(timer);}
+  }catch(error){catalogError=true;console.warn('[RISE video catalog]',error.message);}
+
   const videos = D.videos || [];
   const resources = D.resources || [];
   const team = D.team || [];
@@ -1375,6 +1400,10 @@ function setupCalendar() {
     ${siteFooter()}
   `;
 
+  if(catalogError&&['videos','video'].includes(page)){
+    const warning=document.createElement('p');warning.className='container note';warning.setAttribute('role','status');warning.textContent='最新影片清單暫時無法載入，請稍後重新整理。';
+    document.querySelector('main')?.prepend(warning);
+  }
   if (document.querySelector('[data-resource-feed]')) {
     const css=document.createElement('link');css.rel='stylesheet';css.href='linked-resources.css?v=placement-20260915';document.head.append(css);
     const feed=document.createElement('script');feed.src='resource-feed.js?v=science-20260915-2';
