@@ -36,7 +36,36 @@ window.RISE_ADMIN_CONSOLE = async function({client,user,profile,root,report}) {
  const deleteButton=$('#admin-delete-member');if(deleteButton)deleteButton.onclick=async()=>{if(busy||!selected||selected.id===user.id)return;const label=selected.display_name+'（'+(selected.email||'無信箱')+'）';if(!window.confirm('確定要永久刪除 '+label+'？此操作無法復原。'))return;busy=true;$('#admin-delete-member').disabled=true;$('#admin-role-save').disabled=true;$('#admin-role-cancel').disabled=true;$('#admin-display-name').disabled=true;$('#admin-new-role').disabled=true;try{checked(await client.rpc('rise_admin_delete_member',{p_user_id:selected.id,p_expected_role:selected.role}));if(!alive)return;$('#admin-role-dialog').close();selected=null;report('會員帳號已刪除。');await Promise.all([members(),stats()]);}catch(err){if(alive){$('#admin-role-dialog').close();failure(err);}}finally{busy=false;if(alive){$('#admin-delete-member').disabled=false;$('#admin-role-save').disabled=false;$('#admin-role-cancel').disabled=false;$('#admin-display-name').disabled=false;$('#admin-new-role').disabled=false;}}};
  $('#admin-role-dialog').addEventListener('cancel',e=>{if(busy)e.preventDefault();});
  $('#admin-role-form').onsubmit=async e=>{e.preventDefault();if(busy||!selected)return;const nextName=$('#admin-display-name').value.trim(),nextRole=$('#admin-new-role').value;if(!nextName){report('姓名不可空白。',true);return;}if(nextName===selected.display_name&&(selected.id===user.id||nextRole===selected.role)){report('沒有需要儲存的變更。');return;}busy=true;$('#admin-role-save').disabled=true;$('#admin-role-cancel').disabled=true;$('#admin-delete-member').disabled=true;$('#admin-display-name').disabled=true;$('#admin-new-role').disabled=true;try{if(nextName!==selected.display_name)checked(await client.rpc('rise_admin_update_member',{p_user_id:selected.id,p_display_name:nextName,p_expected_name:selected.display_name}));if(selected.id!==user.id&&nextRole!==selected.role)checked(await client.rpc('rise_admin_set_role',{p_user_id:selected.id,p_role:nextRole,p_expected_role:selected.role}));if(!alive)return;$('#admin-role-dialog').close();report('會員資料已更新。');await Promise.all([members(),stats()]);}catch(err){if(alive){$('#admin-role-dialog').close();failure(err);}}finally{busy=false;if(alive){$('#admin-role-save').disabled=false;$('#admin-role-cancel').disabled=false;$('#admin-delete-member').disabled=false;$('#admin-display-name').disabled=false;$('#admin-new-role').disabled=selected?.id===user.id;}}};
- $('#admin-search').onsubmit=e=>{e.preventDefault();offset=0;members();};$('#admin-prev').onclick=()=>{offset=Math.max(0,offset-25);members();};$('#admin-next').onclick=()=>{offset+=25;members();};$('#admin-stats-refresh').onclick=stats;
+const searchForm = $('#admin-search');
+const prevButton = $('#admin-prev');
+const nextButton = $('#admin-next');
+const statsButton = $('#admin-stats-refresh');
+
+if (searchForm) {
+  searchForm.onsubmit = e => {
+    e.preventDefault();
+    offset = 0;
+    members();
+  };
+}
+
+if (prevButton) {
+  prevButton.onclick = () => {
+    offset = Math.max(0, offset - 25);
+    members();
+  };
+}
+
+if (nextButton) {
+  nextButton.onclick = () => {
+    offset += 25;
+    members();
+  };
+}
+
+if (statsButton) {
+  statsButton.onclick = stats;
+}
  function clear(){alive=false;++request;++statsRequest;const dialog=$('#admin-role-dialog');if(dialog?.open)dialog.close();root.replaceChildren();report('管理員工作階段已結束，請重新登入。',true);}
  client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||(session?.user&&session.user.id!==user.id))clear();});
  window.addEventListener('pageshow',e=>{if(e.persisted){clear();location.reload();}});
