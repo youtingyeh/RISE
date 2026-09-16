@@ -1741,11 +1741,18 @@ function loadSDK() {
       }
 
     } catch (err) {
-      report(errorText(err), true);
+      console.error('[RISE auth initialization error]', err);
+
+      const detail = String(
+        err?.message || err || '未知錯誤'
+      );
+
+      report('帳號服務初始化失敗：' + detail, true);
+
       notice.hidden = false;
       notice.textContent =
-        '帳號服務未完成載入。請確認設定與網路；不影響公開教材頁面。';
-    }
+        '帳號服務初始化失敗：' + detail;
+  }
   }
 
   init();
