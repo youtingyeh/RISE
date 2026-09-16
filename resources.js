@@ -128,7 +128,7 @@
     try{
       db=window.supabase.createClient(cfg.url,cfg.publishableKey);
       const identity=await db.auth.getUser();user=identity.data?.user;
-      if(user?.email_confirmed_at) db.rpc('rise_record_activity').catch(()=>{});
+      if(user?.email_confirmed_at) Promise.resolve().then(()=>db.rpc('rise_record_activity')).catch(()=>{});
       if(user)profile=checked(await db.from('rise_profiles').select('role').eq('id',user.id).single());
       const nav=document.querySelector('.auth-nav');
       if(nav){nav.innerHTML=user?'<a href="account.html">我的帳號</a><button type="button" id="resource-logout">登出</button>':'<a href="register.html">註冊</a><a href="login.html?next=resources.html">登入</a>';if(user)$('#resource-logout').onclick=async()=>{if(dirty&&!confirm('尚有未儲存內容，確定登出？'))return;await db.auth.signOut();location.reload();};}

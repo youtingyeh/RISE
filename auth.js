@@ -1597,7 +1597,7 @@
       updateAccountNavigation(
         identity.data?.user || null
       );
-      if(identity.data?.user?.email_confirmed_at) client.rpc('rise_record_activity').catch(()=>{});
+      if(identity.data?.user?.email_confirmed_at) Promise.resolve().then(()=>client.rpc('rise_record_activity')).catch(()=>{});
 
       notice.hidden = true;
 
