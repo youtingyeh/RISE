@@ -1358,7 +1358,7 @@
         <p id="q-images-help">最多 3 張 JPG、PNG 或 WebP，每張原始檔案不超過 5 MB。請裁掉姓名、學號等不必要資料。</p>
         <input id="q-images" type="file" multiple accept="image/jpeg,image/png,image/webp" aria-describedby="q-images-help">
         <p id="q-image-status" role="status" aria-live="polite"></p><div id="q-image-preview" class="qa-image-grid"></div></div>
-        <button type="submit">送出問題</button>
+        <fieldset><legend>提問整理（選填）</legend><p>以下內容會和問題一起送交教師與助教，不必另外保存草稿。問題內容與提問整理合計最多 10000 字。</p><button type="button" id="q-import-draft">載入此帳號在本機保存的舊草稿</button><div class="auth-field"><label for="q-background">我觀察到什麼？</label><textarea id="q-background" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-question">我真正想問什麼？</label><textarea id="q-question" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-motivation">為什麼我想問？</label><textarea id="q-motivation" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-assumptions">我用了哪些假設？</label><textarea id="q-assumptions" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-evidence">我可以怎麼探索？</label><textarea id="q-evidence" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-impact">如果釐清了，能幫助我們理解什麼？</label><textarea id="q-impact" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-revision">這次改了什麼？</label><textarea id="q-revision" rows="3" maxlength="10000"></textarea></div></fieldset><button type="submit">直接送出問題</button>
       </form>`}
       <hr><div id="question-list"></div>
       <div class="auth-actions"><button id="q-prev" type="button">上一頁</button><button id="q-next" type="button">下一頁</button><button id="q-refresh" type="button">重新整理</button></div>
@@ -1481,10 +1481,25 @@
           }
         }catch(err){report(errorText(err),true);}finally{busy=false;picker.value='';picker.disabled=!!submissionId;showPreview();}
       };
+      const reflectionFields=[["background","我觀察到什麼？"],["question","我真正想問什麼？"],["motivation","為什麼我想問？"],["assumptions","我用了哪些假設？"],["evidence","我可以怎麼探索？"],["impact","如果釐清了，能幫助我們理解什麼？"],["revision","這次改了什麼？"]];
+      $('#q-import-draft').onclick=()=>{
+        try {
+          const saved=JSON.parse(localStorage.getItem('rise-draft-v2:'+user.id+':question:提問練習')||'[]');
+          const latest=Array.isArray(saved)?saved[saved.length-1]:null;
+          if(!latest?.values){report('此帳號在本機沒有已保存的問題草稿。');return;}
+          if(reflectionFields.some(([id])=>$('#q-'+id).value.trim())&&!confirm('載入舊草稿會取代目前的提問整理欄位，是否繼續？'))return;
+          for(const [id] of reflectionFields)$('#q-'+id).value=typeof latest.values[id]==='string'?latest.values[id]:'';
+          report('已載入舊草稿，原始紀錄仍保留。請確認後送出問題。');
+        }catch{report('無法讀取本機草稿；你仍可直接填寫並送出問題。',true);}
+      };
       $('#question-form').onsubmit=async event=>{
         event.preventDefault();const form=event.target,b=form.querySelector('button[type="submit"]');if(busy||b.disabled)return;
         busy=true;b.disabled=true;picker.disabled=true;
         try {
+          const reflection=reflectionFields.map(([id,label])=>({label,value:$('#q-'+id).value.trim()})).filter(x=>x.value).map(x=>'【'+x.label+'】\n'+x.value).join('\n\n');
+          const questionBody=[$('#q-body').value.trim(),reflection].filter(Boolean).join('\n\n');
+          if(!$('#q-title').value.trim()||!$('#q-body').value.trim())throw Error('rise:請填寫問題標題與問題內容。');
+          if([...questionBody].length>10000)throw Error('rise:問題內容與提問整理合計不可超過 10000 字，請縮短後再送出。');
           submissionId ||= crypto.randomUUID();showPreview();
           for(let i=uploaded.length;i<selected.length;i++){
             const file=selected[i].file,path=user.id+'/'+crypto.randomUUID()+'.png';
@@ -1492,7 +1507,7 @@
             checked(await client.storage.from('rise-question-images').upload(path,file,{contentType:'image/png',upsert:false}));
             uploaded.push({path,name:file.name});
           }
-          const result=await client.rpc('rise_submit_question',{p_id:submissionId,p_subject:$('#q-subject').value,p_title:$('#q-title').value.trim(),p_body:$('#q-body').value.trim(),p_images:uploaded});
+          const result=await client.rpc('rise_submit_question',{p_id:submissionId,p_subject:$('#q-subject').value,p_title:$('#q-title').value.trim(),p_body:questionBody,p_images:uploaded});
           if(result.error?.code==='PGRST202')throw Error('rise:圖片問答後端尚未安裝，請管理員執行 backend/qa-upgrade.sql。');
           checked(result);
           clear();uploaded=[];submissionId=null;form.reset();offset=0;report('問題與圖片已送出。');await draw();

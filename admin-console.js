@@ -58,7 +58,7 @@ window.RISE_ADMIN_CONSOLE = async function({client,user,profile,root,report}) {
       </button>
     </div>
   </form>
-</dialog>;
+</dialog>`;
  async function stats(){
   const seq=++statsRequest;$('#admin-metric-status').textContent='正在讀取統計…';$('#admin-metrics').replaceChildren();$('#admin-daily').replaceChildren();
   try{const s=checked(await client.rpc('rise_admin_statistics'));if(!alive||seq!==statsRequest)return;

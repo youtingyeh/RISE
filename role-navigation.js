@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const groups = [
-    ['學生專區', [['science.html','科學探索'],['explore.html','影音探索'],['inquiry.html','提問工作台'],['questions.html','我的提問'],['discussions.html','討論題公告']]],
+    ['學生專區', [['science.html','科學探索'],['explore.html','影音探索'],['questions.html','我的提問'],['discussions.html','討論題公告']]],
     ['助教專區', [['support.html','助教工作台'],['staff-questions.html','待答工作台']]],
     ['教師專區', [['support.html','教師工作台'],['staff-questions.html','待答工作台'],['discussions.html?view=teacher','討論題公告'],['resources.html?destination=science','科學探索教材管理']]]
   ];
