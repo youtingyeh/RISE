@@ -639,7 +639,7 @@
     try {
       const base = new URL('./', location.href);
       const target = new URL(raw, base);
-      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html', 'support.html', 'staff-questions.html', 'resources.html', 'discussions.html', 'admin-console.html', 'admin-videos.html'];
+      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html', 'support.html', 'staff-questions.html', 'resources.html', 'discussions.html', 'admin-console.html', 'admin-videos.html', 'assignments.html', 'ta-training.html', 'competitions.html', 'learning-report.html'];
       if (target.origin !== base.origin || !allowed.some(name => target.pathname === base.pathname + name)) return 'account.html';
       return target.pathname + target.search;
     } catch { return 'account.html'; }
@@ -1747,6 +1747,11 @@ function loadSDK() {
       } else if (page === 'teacher') {
         await teacherPage();
 
+      } else if (page === 'learning-workflows') {
+        if (await loadUser()) {
+          if (!window.RISE_WORKFLOWS) throw Error('rise:學習流程未載入，請重新整理。');
+          await window.RISE_WORKFLOWS({client,user,profile,root,report});
+        }
       } else if (page === 'admin-videos') {
         if (await loadUser()) {
           if (profile.role !== 'admin' || !user.email_confirmed_at) {
@@ -1786,6 +1791,7 @@ function loadSDK() {
 
   init();
 })();
+
 
 
 
