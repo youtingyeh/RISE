@@ -4,3 +4,6 @@ verify_jwt = false
 
 [functions.rise-review-mail]
 verify_jwt = false
+
+[functions.rise-question-advisor]
+verify_jwt = false

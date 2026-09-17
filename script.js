@@ -336,7 +336,7 @@
         <strong>${e(subject.name)}</strong>
         <div class="cover-bottom">
           <span>${video.demo ? "範例影片" : "影片封面待提供"}</span>
-          <span>${e(video.duration || "片長待填")}</span>
+          <span>點選觀看影片</span>
         </div>
       `;
 
@@ -795,7 +795,7 @@
             <div class="detail-meta">
               <span>講者：${e(video.speaker || "待填")}</span>
               <span>程度：${e(video.level || "待填")}</span>
-              <span>片長：${e(video.duration || "待填")}</span>
+              
             </div>
 
             <div class="player" id="player">

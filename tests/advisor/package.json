@@ -1,0 +1,1 @@
+{"private":true,"type":"module","engines":{"node":">=24"},"scripts":{"test":"node test.mjs"},"devDependencies":{"linkedom":"0.18.13","@electric-sql/pglite":"0.5.8"}}

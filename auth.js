@@ -639,7 +639,7 @@
     try {
       const base = new URL('./', location.href);
       const target = new URL(raw, base);
-      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html', 'support.html', 'staff-questions.html', 'resources.html', 'discussions.html', 'admin-console.html'];
+      const allowed = ['learning.html', 'inquiry.html', 'video-detail.html', 'questions.html', 'support.html', 'staff-questions.html', 'resources.html', 'discussions.html', 'admin-console.html', 'admin-videos.html'];
       if (target.origin !== base.origin || !allowed.some(name => target.pathname === base.pathname + name)) return 'account.html';
       return target.pathname + target.search;
     } catch { return 'account.html'; }
@@ -1482,6 +1482,10 @@
         }catch(err){report(errorText(err),true);}finally{busy=false;picker.value='';picker.disabled=!!submissionId;showPreview();}
       };
       const reflectionFields=[["background","我觀察到什麼？"],["question","我真正想問什麼？"],["motivation","為什麼我想問？"],["assumptions","我用了哪些假設？"],["evidence","我可以怎麼探索？"],["impact","如果釐清了，能幫助我們理解什麼？"],["revision","這次改了什麼？"]];
+      if (window.RISE_QUESTION_ADVISOR) {
+        try { window.RISE_QUESTION_ADVISOR({client,form:$('#question-form'),config:cfg}); }
+        catch { console.warn('RISE question advisor unavailable; question submission remains enabled.'); }
+      }
       $('#q-import-draft').onclick=()=>{
         try {
           const saved=JSON.parse(localStorage.getItem('rise-draft-v2:'+user.id+':question:提問練習')||'[]');
@@ -1489,6 +1493,7 @@
           if(!latest?.values){report('此帳號在本機沒有已保存的問題草稿。');return;}
           if(reflectionFields.some(([id])=>$('#q-'+id).value.trim())&&!confirm('載入舊草稿會取代目前的提問整理欄位，是否繼續？'))return;
           for(const [id] of reflectionFields)$('#q-'+id).value=typeof latest.values[id]==='string'?latest.values[id]:'';
+          $('#q-question').dispatchEvent(new Event('input',{bubbles:true}));
           report('已載入舊草稿，原始紀錄仍保留。請確認後送出問題。');
         }catch{report('無法讀取本機草稿；你仍可直接填寫並送出問題。',true);}
       };
@@ -1742,6 +1747,15 @@ function loadSDK() {
       } else if (page === 'teacher') {
         await teacherPage();
 
+      } else if (page === 'admin-videos') {
+        if (await loadUser()) {
+          if (profile.role !== 'admin' || !user.email_confirmed_at) {
+            root.innerHTML='<section class="auth-card"><h2>此頁僅限已驗證的管理員使用</h2><a href="account.html">返回會員中心</a></section>';
+          } else {
+            if (!window.RISE_VIDEO_MANAGER) throw Error('rise:影音管理未載入，請重新整理。');
+            await window.RISE_VIDEO_MANAGER({client,user,profile,root,report});
+          }
+        }
       } else if (page === 'admin-console') {
         if (await loadUser()) {
           if(profile.role!=='admin') {
@@ -1772,7 +1786,6 @@ function loadSDK() {
 
   init();
 })();
-
 
 
 
