@@ -58,7 +58,9 @@
 
   // Published video metadata is public; playback keeps the existing sign-in gate.
   let catalogError=false;
-  try {
+  // Only catalog-dependent pages wait for remote video metadata.
+  // A slow/unavailable backend must not delay the homepage or plan information.
+  if (['videos','video','math','physics','chemistry'].includes(document.body.dataset.page)) try {
     if (!window.RISE_AUTH_CONFIG) await new Promise((resolve,reject)=>{
       const tag=document.createElement('script');tag.src='auth-config.js';
       const timer=setTimeout(()=>reject(Error('config timeout')),8000);
@@ -1253,16 +1255,54 @@ function setupCalendar() {
 
   /* 計畫書 2025-11-05：雙軌入口、在此裝置保存的練習草稿。 */
   function programHomePage() {
-    return `${heading("REASONING × QUESTIONING", "練習推理，也練習提出好問題", "數思新生以數理能力與提問力雙軌培育，陪你從理解概念、寫出思路，到修正問題與展開對話。")}
-      <section class="section container"><div class="card-grid two">
-      <article class="subject-card math"><p class="eyebrow">TRACK 01 / REASONING</p><h2>數理能力</h2><p>先理解概念，再寫出每一步的理由；從錯誤中修正推理。此功能需登入使用。</p>${link("science.html", "前往科學探索", "button")}</article>
-      <article class="subject-card physics"><p class="eyebrow">TRACK 02 / QUESTIONING</p><h2>提問力</h2><p>說明你觀察到什麼、為什麼想問，以及這個問題值得探索的原因。此功能需登入使用。</p>${link("inquiry.html", "開始整理我的問題", "button")}</article></div>
-      <div class="note"><h2>第一次來？</h2><p>對數理有興趣的高中生，可以先看科學探索；想練習把想法問清楚，也可以直接使用提問工作台。範例階段尚未開放正式教材、作業繳交與助教批閱。</p></div>
-      ${sectionHeading("DISCIPLINES", "學科探索", "science.html", "查看三學科 →")}<div class="card-grid">${subjectCards()}</div></section>
-      <section class="section soft"><div class="container">${sectionHeading("LEARNING CYCLE", "看懂之後，把思路留下來")}
-      <ol class="learning-steps"><li><strong>理解概念</strong><p>查看先備概念、核心講義與教學影片。</p></li><li><strong>寫出推理</strong><p>記錄解題策略、理由與卡住的位置。</p></li><li><strong>修正想法</strong><p>對照回饋，說明修改了什麼、為什麼。</p></li><li><strong>提出新問題</strong><p>把學到的概念轉成可探索的問題。</p></li></ol>
-      <div class="actions">${link("explore.html", "影音與單元導讀")}${link("support.html", "教師與助教支持", "button secondary")}</div></div></section>
-      <section class="section container">${sectionHeading("PROGRAM INFORMATION", "計畫資訊")}<div class="info-grid">${[["about.html","關於計畫"],["team.html","核心團隊"],["schedule.html","重要日程"],["resources.html","教學資源"]].map(([url,label])=>`<a class="info-card" href="${url}"><h3>${label}</h3><span class="text-link">查看內容 →</span></a>`).join("")}</div></section>`;
+    return `
+      <section class="rise-hero">
+        <div class="container rise-hero-grid">
+          <div>
+            <p class="edition">數思新生 · 青少年雙軌培育計畫</p>
+            <h1>讓每一次提問，<br>成為<em>理解的起點。</em></h1>
+            <p class="intro">不只學會答案，更要看見思考的過程。從數理推演到追問未知，練習把直覺化為理由，把好奇化為值得探索的問題。</p>
+            <div class="actions">${link("science.html","開始科學探索 →","button")}${link("questions.html","提出我的問題","button secondary")}</div>
+          </div>
+          <aside class="rise-board" aria-label="數理能力與提問力相互支持的雙軌培育理念">
+            <p class="eyebrow">REASONING × INQUIRY</p>
+            <svg viewBox="0 0 440 265" aria-hidden="true" focusable="false">
+              <defs><pattern id="rise-grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#78938c" stroke-opacity=".2"/></pattern></defs>
+              <rect width="440" height="265" fill="url(#rise-grid)"/>
+              <circle cx="220" cy="132" r="102" fill="none" stroke="#78938c" stroke-opacity=".3" stroke-dasharray="4 8"/>
+              <path d="M35 207 C115 207 115 58 220 58 S327 207 405 207" fill="none" stroke="#94c7ae" stroke-width="3"/>
+              <path d="M35 58 C115 58 115 207 220 207 S327 58 405 58" fill="none" stroke="#e5c182" stroke-width="3"/>
+              <circle cx="35" cy="207" r="6" fill="#94c7ae"/><circle cx="405" cy="58" r="6" fill="#e5c182"/>
+              <circle cx="220" cy="58" r="7" fill="#94c7ae"/><circle cx="220" cy="207" r="7" fill="#e5c182"/>
+              <rect x="154" y="106" width="132" height="54" rx="27" fill="#142f3a" stroke="#8ca79a"/>
+              <text x="220" y="141" text-anchor="middle" fill="#f2ecd9" font-family="Georgia,serif" font-size="23" letter-spacing="5">RISE</text>
+              <text x="26" y="35" fill="#e5c182" font-family="sans-serif" font-size="12" letter-spacing="2">ASK WHY</text>
+              <text x="289" y="245" fill="#94c7ae" font-family="sans-serif" font-size="12" letter-spacing="2">REASON IT OUT</text>
+            </svg>
+            <div class="rise-board-caption"><span><strong>數理能力</strong>概念・邏輯・推演</span><span><strong>提問力</strong>觀察・假設・探索</span></div>
+          </aside>
+        </div>
+        <div class="container rise-hero-foot"><span>能力導向的學習</span><span>看見推理的過程</span><span>學生 × 助教 × 教師</span></div>
+      </section>
+      <section class="section container">
+        <div class="rise-section-intro"><div><p class="eyebrow">TWO TRACKS, ONE JOURNEY</p><h2>思考，從兩條路一起出發。</h2></div><p>數理訓練讓想法有依據，提問練習讓理解更深入。兩條主軸相互支持，將知識轉化為可以帶走的能力。</p></div>
+        <div class="rise-tracks">
+          <article class="rise-track"><span class="track-no">01 / Reasoning</span><h3>把「我會了」變成「我懂為什麼」</h3><p>閱讀教材、觀察現象、寫下每一步推理。重點不只在答案，而是你如何建立概念之間的連結。</p><div class="track-tags"><span>概念理解</span><span>邏輯推演</span><span>錯誤分析</span></div><a class="text-link" href="science.html">進入科學探索 →</a></article>
+          <article class="rise-track questioning"><span class="track-no">02 / Inquiry</span><h3>把「我好奇」變成一個好問題</h3><p>整理觀察、背景與動機，辨識假設，思考需要什麼證據。讓一個疑問，開啟下一段探索。</p><div class="track-tags"><span>問題意識</span><span>假設檢查</span><span>清楚表達</span></div><a class="text-link" href="questions.html">整理並送出我的問題 →</a></article>
+        </div>
+      </section>
+      <section class="section soft"><div class="container">
+        <div class="rise-section-intro"><div><p class="eyebrow">THE LEARNING PROCESS</p><h2>答案之外，留下思考的足跡。</h2></div><p>從學習、練習到回饋與修訂，逐步看見自己理解的改變。每一次重新思考，都是能力累積的一部分。</p></div>
+        <ol class="rise-cycle"><li><h3>理解概念</h3><p>閱讀教材、觀看講解，找出已知與未知。</p></li><li><h3>寫出推理</h3><p>記下策略、理由，以及卡住的地方。</p></li><li><h3>回饋與修訂</h3><p>對照教師與助教的建議，說明修改的依據。</p></li><li><h3>提出新問題</h3><p>檢查假設，將理解延伸到新的情境。</p></li></ol>
+        <div class="actions">${link("assignments.html","作業與修訂歷程","button secondary")}${link("explore.html","瀏覽影音探索","button secondary")}</div>
+        <p class="rise-section-note">作業、討論及競賽內容依教師發布與平台開放情況提供；個人學習功能需登入使用。</p>
+      </div></section>
+      <section class="section container">${sectionHeading("EXPLORE THE SCIENCES","從一個概念，走向更大的世界","science.html","查看學科 →")}<div class="card-grid">${subjectCards()}</div></section>
+      <section class="container"><div class="rise-community">
+        <div><p class="eyebrow">LEARN TOGETHER</p><h2>讓學習成為一場對話。</h2><p>以學生的問題為起點，串起助教的陪伴與教師的經驗。《數思新生》期待建立一個持續交流、教學相長的教育社群。</p><a href="about.html">了解計畫理念 →</a></div>
+        <div class="rise-community-list"><div><strong>學生</strong><p>主動探索、完整表達，從回饋中修正想法。</p></div><div><strong>助教</strong><p>理解學生的思考脈絡，以再提問引導再思考。</p></div><div><strong>教師</strong><p>發展教材與討論題，支持深度理解與專業回饋。</p></div></div>
+      </div></section>
+      <section class="section container"><p class="eyebrow">STAY CONNECTED</p><h2>一起參與數思新生</h2><div class="rise-links"><a href="team.html"><span><strong>核心團隊</strong><small>認識推動計畫的夥伴</small></span><span aria-hidden="true">↗</span></a><a href="schedule.html"><span><strong>重要日程</strong><small>查看活動與計畫公告</small></span><span aria-hidden="true">↗</span></a><a href="account.html"><span><strong>會員中心</strong><small>進入你的學習與教學空間</small></span><span aria-hidden="true">↗</span></a></div></section>`;
   }
 
   function learningPage() {
@@ -1306,7 +1346,7 @@ function setupCalendar() {
       <section class="note"><h2>學生怎麼準備求助？</h2><p>留下題目或單元、已嘗試的方法、完整推理與卡住的位置。你可以在影片導讀頁保存推理紀錄，再匯出草稿。</p></section>
       <section class="content-section"><h2>助教培訓與回饋品質</h2><p>計畫規劃教學溝通、錯誤診斷、批閱標準與學生回饋倫理等培訓，並透過試批考核與教師抽查維持品質。招募時間、資格與正式聯絡管道尚待公告。</p></section>
       <section class="content-section"><h2>教師共備與學者對談</h2><p>教師共備聚焦教材、教案與學習案例；學者對談以學生事先整理的問題為出發點。未來可將問題、回應與延伸閱讀整理為開放資源。</p>${link("inquiry.html","先整理一份問題摘要","button secondary")}</section>
-      <section class="note"><h2>學生問答</h2><p>教師、助教與管理員可查看學生提交的問題並回覆。作業繳交、助教分派、草稿同步與競賽投稿尚未開放。</p>${link("questions.html","進入學生問答","button")}</section></section>`;
+      <section class="note"><h2>學生問答</h2><p>從待答工作台查看學生提交的問題並回覆；作業批閱與競賽管理另設獨立入口，依帳號權限及教師發布內容提供。</p>${link("staff-questions.html","進入待答工作台","button")}</section></section>`;
   }
 
   function addLearningRecord() {
@@ -1473,6 +1513,4 @@ function setupCalendar() {
 })();
 
   
-
-
 

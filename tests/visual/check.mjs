@@ -1,0 +1,30 @@
+import {readFile,readdir} from 'node:fs/promises';
+import {resolve,dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
+const files=await readdir(root);
+const source=await readFile(resolve(root,'script.js'),'utf8');
+new vm.Script(source);
+const home=source.slice(source.indexOf('  function programHomePage()'),source.indexOf('  function learningPage()'));
+const context={link:(href,label,cls)=>`<a href="${href}" class="${cls}">${label}</a>`,sectionHeading:()=>'<h2>學科探索</h2>',subjectCards:()=>'<article>學科入口</article>'};
+vm.createContext(context);vm.runInContext(home+'; result=programHomePage()',context);
+const markup=context.result;
+assert.equal((markup.match(/<h1>/g)||[]).length,1);
+assert.equal((markup.match(/class="rise-track(?: questioning)?"/g)||[]).length,2);
+for(const phrase of ['數理能力','提問力','回饋與修訂','學生','助教','教師'])assert(markup.includes(phrase));
+for(const [,href] of markup.matchAll(/href="([^"#?]+)/g))assert(files.includes(href),'Missing homepage link '+href);
+assert(!markup.includes('尚未開放正式教材、作業'));
+for(const path of files.filter(p=>p.endsWith('.html'))){
+ const html=await readFile(resolve(root,path),'utf8');
+ assert.equal((html.match(/href="theme-rise\.css\?v=20260917-1"/g)||[]).length,1,path+' must load theme once');
+ assert(html.lastIndexOf('theme-rise.css')<html.indexOf('</head>'));
+ if(html.includes('script.js?v='))assert(html.includes('script.js?v=visual-20260917-1'));
+}
+const css=await readFile(resolve(root,'theme-rise.css'),'utf8');
+assert(css.includes('prefers-reduced-motion'));assert(css.includes('@media(max-width:420px)'));assert(css.includes('@media print'));
+assert(!/@import|https?:/.test(css),'Theme must not request remote fonts or images');
+assert(!/\[hidden\]\s*\{/.test(css),'Theme must not alter access visibility');
+assert(source.includes("if (['videos','video','math','physics','chemistry'].includes(document.body.dataset.page)) try"));
+console.log('PASS: homepage dual tracks, one H1, valid destinations, all 33 theme entries, cache versions, reduced motion, print, no remote visual dependencies.');
