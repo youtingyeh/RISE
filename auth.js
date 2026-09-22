@@ -1628,7 +1628,14 @@ function loadSDK() {
         }
       );
 
+      window.RISE_NAV_CLIENT=client;
+      window.dispatchEvent(new Event('rise-nav-client'));
       client.auth.onAuthStateChange((event, session) => {
+        if(user&&(event==='SIGNED_OUT'||(session?.user&&session.user.id!==user.id))){
+          root.replaceChildren();
+          location.reload();
+          return;
+        }
         if (event === "PASSWORD_RECOVERY") {
           recovery = true;
         }
@@ -1791,7 +1798,6 @@ function loadSDK() {
 
   init();
 })();
-
 
 
 

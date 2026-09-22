@@ -141,6 +141,8 @@
           }
         );
 
+      window.RISE_NAV_CLIENT=client;
+      window.dispatchEvent(new Event('rise-nav-client'));
       const {
         data,
         error

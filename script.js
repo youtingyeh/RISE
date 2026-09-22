@@ -1264,22 +1264,15 @@ function setupCalendar() {
             <p class="intro">不只學會答案，更要看見思考的過程。從數理推演到追問未知，練習把直覺化為理由，把好奇化為值得探索的問題。</p>
             <div class="actions">${link("science.html","開始科學探索 →","button")}${link("questions.html","提出我的問題","button secondary")}</div>
           </div>
-          <aside class="rise-board" aria-label="數理能力與提問力相互支持的雙軌培育理念">
-            <p class="eyebrow">REASONING × INQUIRY</p>
-            <svg viewBox="0 0 440 265" aria-hidden="true" focusable="false">
-              <defs><pattern id="rise-grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#78938c" stroke-opacity=".2"/></pattern></defs>
-              <rect width="440" height="265" fill="url(#rise-grid)"/>
-              <circle cx="220" cy="132" r="102" fill="none" stroke="#78938c" stroke-opacity=".3" stroke-dasharray="4 8"/>
-              <path d="M35 207 C115 207 115 58 220 58 S327 207 405 207" fill="none" stroke="#94c7ae" stroke-width="3"/>
-              <path d="M35 58 C115 58 115 207 220 207 S327 58 405 58" fill="none" stroke="#e5c182" stroke-width="3"/>
-              <circle cx="35" cy="207" r="6" fill="#94c7ae"/><circle cx="405" cy="58" r="6" fill="#e5c182"/>
-              <circle cx="220" cy="58" r="7" fill="#94c7ae"/><circle cx="220" cy="207" r="7" fill="#e5c182"/>
-              <rect x="154" y="106" width="132" height="54" rx="27" fill="#142f3a" stroke="#8ca79a"/>
-              <text x="220" y="141" text-anchor="middle" fill="#f2ecd9" font-family="Georgia,serif" font-size="23" letter-spacing="5">RISE</text>
-              <text x="26" y="35" fill="#e5c182" font-family="sans-serif" font-size="12" letter-spacing="2">ASK WHY</text>
-              <text x="289" y="245" fill="#94c7ae" font-family="sans-serif" font-size="12" letter-spacing="2">REASON IT OUT</text>
-            </svg>
-            <div class="rise-board-caption"><span><strong>數理能力</strong>概念・邏輯・推演</span><span><strong>提問力</strong>觀察・假設・探索</span></div>
+          <aside class="rise-prompt-card" aria-label="探索與提問的三個起點">
+            <p class="eyebrow">一個好問題，從這裡開始</p>
+            <h2>你想弄懂的，<br>是什麼？</h2>
+            <ol class="rise-prompt-list">
+              <li><span aria-hidden="true">01</span><div><h3>先觀察</h3><p>哪個現象，讓你好奇？</p></div></li>
+              <li><span aria-hidden="true">02</span><div><h3>試著推理</h3><p>你怎麼解釋？有什麼依據？</p></div></li>
+              <li><span aria-hidden="true">03</span><div><h3>繼續追問</h3><p>如果條件改變，答案也會變嗎？</p></div></li>
+            </ol>
+            <a class="text-link" href="questions.html">寫下我的第一個問題 →</a>
           </aside>
         </div>
         <div class="container rise-hero-foot"><span>能力導向的學習</span><span>看見推理的過程</span><span>學生 × 助教 × 教師</span></div>
@@ -1287,8 +1280,8 @@ function setupCalendar() {
       <section class="section container">
         <div class="rise-section-intro"><div><p class="eyebrow">TWO TRACKS, ONE JOURNEY</p><h2>思考，從兩條路一起出發。</h2></div><p>數理訓練讓想法有依據，提問練習讓理解更深入。兩條主軸相互支持，將知識轉化為可以帶走的能力。</p></div>
         <div class="rise-tracks">
-          <article class="rise-track"><span class="track-no">01 / Reasoning</span><h3>把「我會了」變成「我懂為什麼」</h3><p>閱讀教材、觀察現象、寫下每一步推理。重點不只在答案，而是你如何建立概念之間的連結。</p><div class="track-tags"><span>概念理解</span><span>邏輯推演</span><span>錯誤分析</span></div><a class="text-link" href="science.html">進入科學探索 →</a></article>
-          <article class="rise-track questioning"><span class="track-no">02 / Inquiry</span><h3>把「我好奇」變成一個好問題</h3><p>整理觀察、背景與動機，辨識假設，思考需要什麼證據。讓一個疑問，開啟下一段探索。</p><div class="track-tags"><span>問題意識</span><span>假設檢查</span><span>清楚表達</span></div><a class="text-link" href="questions.html">整理並送出我的問題 →</a></article>
+          <article class="rise-track"><span class="track-no">01 / 數理能力</span><h3>把「我會了」變成「我懂為什麼」</h3><p>閱讀教材、觀察現象、寫下每一步推理。重點不只在答案，而是你如何建立概念之間的連結。</p><div class="track-tags"><span>概念理解</span><span>邏輯推演</span><span>錯誤分析</span></div><a class="text-link" href="science.html">進入科學探索 →</a></article>
+          <article class="rise-track questioning"><span class="track-no">02 / 提問力</span><h3>把「我好奇」變成一個好問題</h3><p>整理觀察、背景與動機，辨識假設，思考需要什麼證據。讓一個疑問，開啟下一段探索。</p><div class="track-tags"><span>問題意識</span><span>假設檢查</span><span>清楚表達</span></div><a class="text-link" href="questions.html">整理並送出我的問題 →</a></article>
         </div>
       </section>
       <section class="section soft"><div class="container">
@@ -1480,7 +1473,7 @@ function setupCalendar() {
   const accountScript = document.createElement("script");
 
   accountScript.src = new URL(
-    "./account-nav.js?v=login-hotfix-20260916-2",
+    "./account-nav.js?v=roles-20260922-1",
     document.currentScript
       ? document.currentScript.src
       : document.baseURI
@@ -1513,4 +1506,3 @@ function setupCalendar() {
 })();
 
   
-

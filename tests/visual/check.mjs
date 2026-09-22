@@ -18,11 +18,12 @@ for(const [,href] of markup.matchAll(/href="([^"#?]+)/g))assert(files.includes(h
 assert(!markup.includes('尚未開放正式教材、作業'));
 for(const path of files.filter(p=>p.endsWith('.html'))){
  const html=await readFile(resolve(root,path),'utf8');
- assert.equal((html.match(/href="theme-rise\.css\?v=20260917-1"/g)||[]).length,1,path+' must load theme once');
+ assert.equal((html.match(/href="theme-rise\.css\?v=20260922-1"/g)||[]).length,1,path+' must load theme once');
  assert(html.lastIndexOf('theme-rise.css')<html.indexOf('</head>'));
- if(html.includes('script.js?v='))assert(html.includes('script.js?v=visual-20260917-1'));
+ if(html.includes('script.js?v='))assert(html.includes('script.js?v=roles-20260922-1'));
 }
 const css=await readFile(resolve(root,'theme-rise.css'),'utf8');
+assert(markup.includes('rise-prompt-card'));assert(!markup.includes('rise-board'));assert(!markup.includes('<svg'));
 assert(css.includes('prefers-reduced-motion'));assert(css.includes('@media(max-width:420px)'));assert(css.includes('@media print'));
 assert(!/@import|https?:/.test(css),'Theme must not request remote fonts or images');
 assert(!/\[hidden\]\s*\{/.test(css),'Theme must not alter access visibility');
