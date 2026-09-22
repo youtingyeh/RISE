@@ -76,7 +76,7 @@
       let roles=null;
       if(['support.html','staff-questions.html','ta-training.html'].includes(p))roles=['ta','teacher','admin'];
       if((p==='resources.html'&&!u.searchParams.has('id'))||(p==='discussions.html'&&u.searchParams.get('view')==='teacher'))roles=['teacher','admin'];
-      if(['admin-console.html','admin-videos.html','admin-review.html'].includes(p))roles=['admin'];
+      if(['admin-courses.html','admin-console.html','admin-videos.html','admin-review.html'].includes(p))roles=['admin'];
       if(roles)a.hidden=!roles.includes(role);
     });
   };

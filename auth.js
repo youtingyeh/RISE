@@ -396,6 +396,7 @@
               data: {
                 display_name: f.get('name').trim(),
                 requested_kind: f.get('kind'),
+                course_ids: document.querySelector('#auth-root form')?.riseCourseIds?.() || [],
                 privacy_notice_version: '2026-09-14',
                 privacy_consent_at: new Date().toISOString()
               }
@@ -875,6 +876,7 @@
       });
     }
 
+    window.RISE_COURSES?.membership(client,root,profile);
     $('#logout').onclick = async () => {
       try {
         checked(await client.auth.signOut());
@@ -1629,6 +1631,7 @@ function loadSDK() {
       );
 
       window.RISE_NAV_CLIENT=client;
+      if(page==='register') window.RISE_COURSES?.registration(client,root.querySelector('form'));
       window.dispatchEvent(new Event('rise-nav-client'));
       client.auth.onAuthStateChange((event, session) => {
         if(user&&(event==='SIGNED_OUT'||(session?.user&&session.user.id!==user.id))){
@@ -1767,6 +1770,11 @@ function loadSDK() {
             if (!window.RISE_VIDEO_MANAGER) throw Error('rise:影音管理未載入，請重新整理。');
             await window.RISE_VIDEO_MANAGER({client,user,profile,root,report});
           }
+        }
+      } else if (page === 'admin-courses') {
+        if(await loadUser()){
+          if(profile.role!=='admin') root.textContent='此頁僅限管理員使用。';
+          else {try{await window.RISE_COURSES.admin({client,profile,root});}catch(e){report(window.RISE_COURSES.error(e),true);}}
         }
       } else if (page === 'admin-console') {
         if (await loadUser()) {

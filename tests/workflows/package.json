@@ -1,1 +1,2 @@
 {"private":true,"type":"module","scripts":{"test":"node test-db.mjs && node test-ui.mjs"},"devDependencies":{"@electric-sql/pglite":"0.5.8","linkedom":"0.18.13"}}
+

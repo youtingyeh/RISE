@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+import {parseHTML} from 'linkedom';
+const {window,document}=parseHTML('<html><body><div id="root"></div></body></html>');
+Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this.querySelector('option[selected]')?.value||this.querySelector('option')?.value||'';},set(v){for(const o of this.querySelectorAll('option')){if(o.value===v)o.setAttribute('selected','');else o.removeAttribute('selected');}}});
+const calls=[],catalog=[{id:'c1',title:'物理 <img>',active:true}],root=document.querySelector('#root');
+const client={rpc:async(name,args)=>{calls.push({name,args});return {data:name==='rise_course_catalog'?catalog:args.p_action==='list'?{courses:catalog,selected:[]}:args.p_action==='roster'?[{id:'u1',display_name:'同學'}]:{saved:true}};}};
+vm.runInContext(await readFile(new URL('../../course-membership.js',import.meta.url),'utf8'),vm.createContext({window,document}));
+const api=window.RISE_COURSES;
+const form=document.createElement('form');form.innerHTML='<button type="submit">註冊</button>';root.append(form);await api.registration(client,form);assert(form.riseCourseIds);form.querySelector('input').setAttribute('checked','');assert.equal(form.riseCourseIds()[0],'c1');assert.equal(root.querySelectorAll('img').length,0);
+root.replaceChildren();await api.membership(client,root,{role:'student'});root.querySelector('input').setAttribute('checked','');await root.querySelector('form').onsubmit({preventDefault(){}});assert.equal(calls.at(-1).args.p_action,'membership');assert.equal(calls.at(-1).args.p_data.course_ids[0],'c1');
+root.replaceChildren();const f=document.createElement('form');f.innerHTML='<button type="submit">建立</button>';root.append(f);await api.audience(client,f);assert.throws(()=>f.riseAudience(),/至少一門/);f.querySelector('input[type="checkbox"]').setAttribute('checked','');assert.equal(f.riseAudience().course_ids[0],'c1');const mode=f.querySelector('select');mode.value='students';mode.onchange();assert.throws(()=>f.riseAudience(),/至少一位/);f.querySelector('input[type="search"]').value='同學';await [...f.querySelectorAll('button')].find(b=>b.textContent==='搜尋學生').onclick();[...f.querySelectorAll('button')].find(b=>b.textContent.startsWith('同學')).onclick();assert.equal(f.riseAudience().student_ids[0],'u1');mode.value='all';assert.equal(f.riseAudience().audience,'all');
+await api.admin({client,root,profile:{role:'student'}});assert.match(root.textContent,/僅管理員/);assert.equal(root.querySelectorAll('form').length,0);
+console.log('PASS course UI: signup selection, membership save, safe text, target validation, specific students, admin gate');

@@ -41,6 +41,7 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
    button(box,item.published?'下架作業':'發布作業',async()=>{await action('assignment_state',{id:item.id,published:!item.published});await assignments();});
    button(box,item.closed?'重新開放':'關閉繳交',async()=>{await action('assignment_state',{id:item.id,closed:!item.closed});await assignments();});
   }
+  if(isOwner(item)){const editor=details(box,'調整指派對象');const f=form(editor,'','儲存指派對象',async(values,f)=>{await action('assignment_audience',{id:item.id,...f.riseAudience()});await assignments();});await window.RISE_COURSES.audience(client,f,item);}
   const own=data.revisions.filter(v=>v.student_id===user.id),latest=own[0];
   if(role==='student'&&item.published&&!item.closed&&(!item.due_at||new Date(item.due_at)>new Date())){
    const editor=section(box,latest?'提交修訂版本':'繳交作業','每次提交都保留完整版本。批閱後可參考評語修訂；附件會跟隨各版本保留。');
@@ -67,7 +68,7 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
  }
  async function assignments(){
   const seq=++request,data=await read('assignments');if(seq!==request||!alive)return;main.replaceChildren();
-  if(teacher){const creator=details(main,'新增作業');form(creator,field('title','作業標題','text')+field('subject','學科','select',subjects)+field('body','作業題目、要求與評量重點')+field('due_at','截止時間（依本機時區；選填）','datetime-local','',false)+'<label><input name="published" type="checkbox">立即發布</label>','建立作業',async(values,f)=>{await action('assignment_create',{...values,published:f.querySelector('[name="published"]').checked,due_at:values.due_at?new Date(values.due_at).toISOString():null});await assignments();});}
+  if(teacher){const creator=details(main,'新增作業');const createForm=form(creator,field('title','作業標題','text')+field('subject','學科','select',subjects)+field('body','作業題目、要求與評量重點')+field('due_at','截止時間（依本機時區；選填）','datetime-local','',false)+'<label><input name="published" type="checkbox">立即發布</label>','建立作業',async(values,f)=>{await action('assignment_create',{...values,...f.riseAudience(),published:f.querySelector('[name="published"]').checked,due_at:values.due_at?new Date(values.due_at).toISOString():null});await assignments();});await window.RISE_COURSES.audience(client,createForm);}
   const list=section(main,staff?'作業批閱工作台':'我的作業');const viewer=section(main,'作業詳情');viewer.hidden=true;
   if(!data.items.length)text(list,'目前沒有可查看的作業。');
   for(const item of data.items)button(list,item.title+' · '+(item.closed?'已關閉':item.published?'已發布':'草稿'),async()=>{viewer.hidden=false;await assignment(item,viewer);viewer.scrollIntoView({block:'start',behavior:'smooth'});});
@@ -135,3 +136,4 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
  async function load(){try{if(area==='training')await training();else if(area==='competitions')await competitions();else if(area==='analytics')await analytics();else await assignments();}catch(e){fail(e);}}
  await load();
 };
+
