@@ -68,7 +68,12 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
  }
  async function assignments(){
   const seq=++request,data=await read('assignments');if(seq!==request||!alive)return;main.replaceChildren();
-  if(teacher){const creator=details(main,'新增作業');const createForm=form(creator,field('title','作業標題','text')+field('subject','學科','select',subjects)+field('body','作業題目、要求與評量重點')+field('due_at','截止時間（依本機時區；選填）','datetime-local','',false)+'<label><input name="published" type="checkbox">立即發布</label>','建立作業',async(values,f)=>{await action('assignment_create',{...values,...f.riseAudience(),published:f.querySelector('[name="published"]').checked,due_at:values.due_at?new Date(values.due_at).toISOString():null});await assignments();});await window.RISE_COURSES.audience(client,createForm);}
+  if(teacher){
+   const entry=section(main,'建立並指派作業','新增題目、設定截止時間，並選擇要指派的課程組或學生。');entry.classList.add('wf-create-entry');
+   const creator=document.createElement('div');creator.id='wf-assignment-create';creator.hidden=true;
+   const launch=button(entry,'＋ 新增作業',async()=>{creator.hidden=!creator.hidden;launch.setAttribute('aria-expanded',String(!creator.hidden));launch.textContent=creator.hidden?'＋ 新增作業':'收合新增作業';if(!creator.hidden)creator.querySelector('[name="title"]')?.focus();});
+   launch.classList.add('wf-create-button');launch.setAttribute('aria-expanded','false');launch.setAttribute('aria-controls',creator.id);entry.append(creator);
+   const createForm=form(creator,field('title','作業標題','text')+field('subject','學科','select',subjects)+field('body','作業題目、要求與評量重點')+field('due_at','截止時間（依本機時區；選填）','datetime-local','',false)+'<label><input name="published" type="checkbox">立即發布</label>','建立作業',async(values,f)=>{await action('assignment_create',{...values,...f.riseAudience(),published:f.querySelector('[name="published"]').checked,due_at:values.due_at?new Date(values.due_at).toISOString():null});await assignments();});await window.RISE_COURSES.audience(client,createForm);}
   const list=section(main,staff?'作業批閱工作台':'我的作業');const viewer=section(main,'作業詳情');viewer.hidden=true;
   if(!data.items.length)text(list,'目前沒有可查看的作業。');
   for(const item of data.items)button(list,item.title+' · '+(item.closed?'已關閉':item.published?'已發布':'草稿'),async()=>{viewer.hidden=false;await assignment(item,viewer);viewer.scrollIntoView({block:'start',behavior:'smooth'});});
