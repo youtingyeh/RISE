@@ -1,0 +1,42 @@
+import {PGlite} from '@electric-sql/pglite';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const pg=new PGlite();
+await pg.exec(`create role anon;create role authenticated;create schema auth;create schema storage;
+create table auth.users(id uuid primary key,email_confirmed_at timestamptz,raw_user_meta_data jsonb);
+create table public.rise_profiles(id uuid primary key references auth.users(id) on delete cascade,role text,display_name text);
+create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('app.uid',true),'')::uuid $$;
+create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);
+alter table storage.objects enable row level security;grant usage on schema auth,storage to authenticated;grant select,insert on storage.objects to authenticated;`);
+const sql=await readFile(new URL('../../backend/course-assignments.sql',import.meta.url),'utf8');
+await pg.exec(sql);await pg.exec(sql);
+const ids=Object.fromEntries(['student','other','ta','teacher','admin','judge','unverified'].map((x,i)=>[x,'00000000-0000-4000-8000-'+String(i+1).padStart(12,'0')]));
+for(const [key,id] of Object.entries(ids)){await pg.query('insert into auth.users(id,email_confirmed_at) values($1,$2)',[id,key==='unverified'?null:'2026-01-01']);await pg.query('insert into public.rise_profiles values($1,$2,$3)',[id,key==='other'||key==='unverified'?'student':key==='judge'?'teacher':key,key]);}
+async function as(key,fn){await pg.query("select set_config('app.uid',$1,false)",[ids[key]||'']);await pg.exec('set role authenticated');try{return await fn();}finally{await pg.exec('reset role');}}
+const act=(key,action,data={})=>as(key,async()=>(await pg.query('select public.rise_workflow_action($1,$2) as result',[action,data])).rows[0].result);
+const read=(key,area,id=null)=>as(key,async()=>(await pg.query('select public.rise_workflow_read($1,$2) as result',[area,id])).rows[0].result);
+const rejects=async(fn,pattern)=>assert.rejects(fn,pattern);
+
+const migration=await readFile(new URL('../../backend/training-course-management.sql',import.meta.url),'utf8');
+await pg.exec(migration);await pg.exec(migration);
+const manage=(key,action,data={})=>as(key,async()=>(await pg.query('select public.rise_training_manage($1,$2) as result',[action,data])).rows[0].result);
+for(const role of ['student','ta','unverified'])await rejects(()=>manage(role,'course_create',{title:'拒絕',body:'x'}),/僅教師/);
+const draft=(await manage('teacher','course_create',{title:'教師課程',body:'內容',published:false})).id;
+assert((await read('teacher','training')).items.some(c=>c.id===draft));
+assert(!(await read('ta','training')).items.some(c=>c.id===draft));
+assert(!(await read('judge','training')).items.some(c=>c.id===draft));
+await rejects(()=>manage('judge','course_publish',{id:draft,published:true}),/無權/);
+await manage('teacher','course_publish',{id:draft,published:true});
+assert((await read('ta','training')).items.some(c=>c.id===draft));
+await rejects(()=>manage('ta','course_publish',{id:draft,published:false}),/僅教師/);
+const submission=(await act('ta','training_submit',{id:draft,expected_version:0,body:'成果'})).id;
+await rejects(()=>act('teacher','certify',{id:submission,decision:'approved',note:'x'}),/僅管理員/);
+await manage('admin','course_publish',{id:draft,published:false});
+assert(!(await read('ta','training')).items.some(c=>c.id===draft));
+assert((await read('admin','training')).items.some(c=>c.id===draft));
+const adminCourse=(await manage('admin','course_create',{title:'管理員課程',body:'內容'})).id;
+await rejects(()=>manage('teacher','course_publish',{id:adminCourse,published:true}),/無權/);
+await rejects(()=>as('student',()=>pg.query('select * from rise_work.courses')),/permission denied/);
+console.log('PASS training management: teacher/admin creation, student/TA rejection, owner-only drafts and publishing, admin control, certification unchanged, idempotent migration');
+await pg.close();

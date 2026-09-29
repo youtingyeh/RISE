@@ -9,9 +9,9 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const date=v=>v?new Date(v).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}):'不限時間';
  const checked=result=>{if(result.error)throw result.error;return result.data;};
- const fail=e=>report(['PGRST202','42P01','3F000'].includes(e.code)?'學習流程後端尚未安裝，請管理員執行 backend/learning-workflows.sql。':e.code==='23505'?'這份版本已有你的評語，請重新整理查看。':String(e.message||'').startsWith('rise:')?e.message.slice(5):'操作未完成。請保留輸入、重新確認登入與網路後再試。',true);
+ const fail=e=>report((e.code==='PGRST202'&&String(e.message||'').includes('rise_training_manage'))?'培訓課程管理尚未啟用，請管理員執行 backend/training-course-management.sql。':['PGRST202','42P01','3F000'].includes(e.code)?'學習流程後端尚未安裝，請管理員執行 backend/learning-workflows.sql。':e.code==='23505'?'這份版本已有你的評語，請重新整理查看。':String(e.message||'').startsWith('rise:')?e.message.slice(5):'操作未完成。請保留輸入、重新確認登入與網路後再試。',true);
  const read=(type,id=null)=>client.rpc('rise_workflow_read',{p_area:type,p_id:id}).then(checked);
- const action=(type,data)=>client.rpc('rise_workflow_action',{p_action:type,p_data:data}).then(checked);
+ const action=(type,data)=>client.rpc(['course_create','course_publish'].includes(type)?'rise_training_manage':'rise_workflow_action',{p_action:type,p_data:data}).then(checked);
  root.innerHTML='<nav class="wf-tabs" aria-label="學習功能"><a href="assignments.html">'+(staff?'作業批閱':'我的作業')+'</a>'+(staff?'<a href="ta-training.html">助教培訓認證</a>':'')+'<a href="competitions.html">提問競賽</a><a href="learning-report.html">學習成效</a></nav><div id="wf-main"></div>';
  const main=root.querySelector('#wf-main');
  function section(parent,title,description=''){
@@ -83,10 +83,15 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
   if(!staff){main.textContent='此頁限教師、助教與管理員使用。';return;}
   const seq=++request,data=await read('training');if(seq!==request||!alive)return;main.replaceChildren();
   text(main,'此為平台內部培訓認證，與教師／助教帳號資格分開；核發不會自動變更帳號角色。認證有效期間一年，可由管理員撤銷。');
-  if(admin){const editor=details(main,'建立培訓課程');form(editor,field('title','課程名稱','text')+field('body','教材與考核作業','textarea',trainingTemplate)+'<label><input name="published" type="checkbox">立即發布</label>','建立課程',async(values,f)=>{await action('course_create',{...values,published:f.querySelector('[name="published"]').checked});await training();});}
+  if(teacher){
+   const entry=section(main,'建立培訓課程','設定培訓教材與考核內容，儲存為草稿或發布給參與培訓的教師與助教。');entry.classList.add('wf-create-entry');
+   const editor=document.createElement('div');editor.id='wf-training-create';editor.hidden=true;
+   const launch=button(entry,'＋ 建立培訓課程',async()=>{editor.hidden=!editor.hidden;launch.setAttribute('aria-expanded',String(!editor.hidden));launch.textContent=editor.hidden?'＋ 建立培訓課程':'收合課程表單';if(!editor.hidden)editor.querySelector('[name="title"]')?.focus();});
+   launch.classList.add('wf-create-button');launch.setAttribute('aria-expanded','false');launch.setAttribute('aria-controls',editor.id);entry.append(editor);
+   form(editor,field('title','課程名稱','text')+field('body','教材與考核作業','textarea',trainingTemplate)+'<label><input name="published" type="checkbox">立即發布</label>','建立課程',async(values,f)=>{await action('course_create',{...values,published:f.querySelector('[name="published"]').checked});await training();});}
   if(!data.items.length)text(main,'尚未發布培訓課程。');
   for(const course of data.items){const box=section(main,course.title+(course.published?'':'（草稿）'));text(box,course.body);
-   if(admin)button(box,course.published?'下架課程':'發布課程',async()=>{await action('course_publish',{id:course.id,published:!course.published});await training();});
+   if(isOwner(course))button(box,course.published?'下架課程':'發布課程',async()=>{await action('course_publish',{id:course.id,published:!course.published});await training();});
    const submissions=data.submissions.filter(t=>t.course_id===course.id),own=submissions.filter(t=>t.applicant_id===user.id),latest=own[0];
    if(!admin&&course.published){const editor=details(box,latest?'修訂培訓成果':'提交培訓成果');form(editor,field('body','依課程要求撰寫試批與考核內容','textarea',latest?.body||''),'提交審核',async(values)=>{await action('training_submit',{id:course.id,expected_version:latest?.version||0,...values});await training();});}
    const applicants=[...new Set(submissions.map(t=>t.applicant_id))];

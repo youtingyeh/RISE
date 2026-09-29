@@ -17,7 +17,7 @@ async function mount(role,area,{error=false}={}){
  const reads={assignments:{items:[assignment]},assignment:{revisions:[rev],reviews:[]},training:{items:[course],submissions:[],certificates:[]},competitions:{items:[contest]},competition:{own:[],judges:[],entries:[],judgments:[],candidates:[{id:me,name:'教師',role:'teacher'}],results:[]},analytics:{scope:'測試',summary:{reviewed_versions:0,training_submissions:0,valid_certifications:0,competition_entries:0},rows:[],timeline:[]}};
  class Data{constructor(form){this.rows=[...form.querySelectorAll('input,textarea,select')].filter(x=>x.name&&x.type!=='file'&&(x.type!=='checkbox'||x.checked)).map(x=>[x.name,x.value||'']);}*[Symbol.iterator](){yield* this.rows;}}
  let failWrites=false;
- const client={auth:{onAuthStateChange(){}},rpc:async(name,args)=>{if(error)return {error:{code:'PGRST202'}};if(name==='rise_course_action')return {data:{courses:[{id:'course-id',title:'基礎物理',active:true}],selected:[]}};if(name==='rise_workflow_action'){actions.push(args);return failWrites?{error:{message:'rise:測試失敗'}}:{data:{id:'new'}};}return {data:reads[args.p_area]};},storage:{from:()=>({upload:async()=>({data:{}})})}};
+ const client={auth:{onAuthStateChange(){}},rpc:async(name,args)=>{if(error)return {error:{code:'PGRST202'}};if(name==='rise_course_action')return {data:{courses:[{id:'course-id',title:'基礎物理',active:true}],selected:[]}};if(name==='rise_workflow_action'||name==='rise_training_manage'){actions.push(args);return failWrites?{error:{message:'rise:測試失敗'}}:{data:{id:'new'}};}return {data:reads[args.p_area]};},storage:{from:()=>({upload:async()=>({data:{}})})}};
  const context=vm.createContext({window,document,FormData:Data,URL,Blob,Date,crypto:globalThis.crypto,confirm:()=>true,setTimeout,location:{reload(){}}});
  vm.runInContext(coursesSource,context);
  vm.runInContext(source,context);
@@ -29,6 +29,7 @@ for(const role of ['student','ta','teacher','admin'])for(const area of ['assignm
  const env=await mount(role,area);assert.equal(env.reports.length,0,role+' '+area);
  const ids=[...env.root.querySelectorAll('[id]')].map(x=>x.id);assert.equal(ids.length,new Set(ids).size);
  assert.equal(env.root.querySelectorAll('img').length,0,'untrusted title rendered as text');
+ if(area==='training'&&role!=='student'){const launch=[...env.root.querySelectorAll('button')].find(b=>b.textContent==='＋ 建立培訓課程');assert.equal(!!launch,['teacher','admin'].includes(role));if(launch){const editor=env.root.querySelector('#wf-training-create');assert(editor.hidden);await launch.onclick();assert.equal(editor.hidden,false);assert.equal(launch.getAttribute('aria-expanded'),'true');}}
  if(area==='training'&&role==='student')assert.match(env.root.textContent,/限教師/);
  if(area==='assignments'){
   await env.press('作業 <img');
