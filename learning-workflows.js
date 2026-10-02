@@ -30,7 +30,19 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
    try{await fn(values,f);s.textContent='已儲存。';report('已儲存。');}catch(e){s.textContent='未確認儲存成功，輸入已保留。';fail(e);}finally{busy=false;controls.forEach(c=>c.disabled=false);}
   };return f;
  }
- function details(parent,title){const d=document.createElement('details');text(d,title,'summary');parent.append(d);return d;}
+ function record(parent,title){const d=document.createElement('section');d.className='wf-record';text(d,title,'h3');parent.append(d);return d;}
+ let editorCount=0;
+ function actionEditor(parent,title,description=''){
+  const entry=section(parent,title,description);entry.classList.add('wf-create-entry');
+  const dialog=document.createElement('dialog');dialog.className='wf-editor-dialog';
+  const heading=text(dialog,title,'h2');heading.id='wf-editor-heading-'+(++editorCount);dialog.setAttribute('aria-labelledby',heading.id);
+  const launch=button(entry,'＋ '+title,async()=>{dialog.showModal();dialog.querySelector('input:not([type=checkbox]),textarea,select')?.focus();});
+  launch.classList.add('wf-create-button');launch.setAttribute('aria-haspopup','dialog');
+  const close=button(dialog,'關閉視窗（保留本頁輸入）',async()=>dialog.close());close.classList.add('secondary');
+  dialog.addEventListener('cancel',e=>{if(dialog.querySelector('[type=submit]:disabled'))e.preventDefault();});
+  close.addEventListener('click',e=>{if(dialog.querySelector('[type=submit]:disabled'))e.stopImmediatePropagation();},true);
+  entry.append(dialog);return dialog;
+ }
  function table(parent,headers,rows){const wrap=document.createElement('div');wrap.className='wf-table-wrap';wrap.innerHTML='<table><thead><tr>'+headers.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';parent.append(wrap);}
  async function attachment(parent,file){button(parent,'下載：'+file.name,async()=>{const data=checked(await client.storage.from('rise-work-files').download(file.path));const url=URL.createObjectURL(data);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);});}
  const isOwner=item=>teacher&&(admin||item.owner_id===user.id);
@@ -41,7 +53,7 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
    button(box,item.published?'下架作業':'發布作業',async()=>{await action('assignment_state',{id:item.id,published:!item.published});await assignments();});
    button(box,item.closed?'重新開放':'關閉繳交',async()=>{await action('assignment_state',{id:item.id,closed:!item.closed});await assignments();});
   }
-  if(isOwner(item)){const editor=details(box,'調整指派對象');const f=form(editor,'','儲存指派對象',async(values,f)=>{await action('assignment_audience',{id:item.id,...f.riseAudience()});await assignments();});await window.RISE_COURSES.audience(client,f,item);}
+  if(isOwner(item)){const editor=actionEditor(box,'調整指派對象');const f=form(editor,'','儲存指派對象',async(values,f)=>{await action('assignment_audience',{id:item.id,...f.riseAudience()});await assignments();});await window.RISE_COURSES.audience(client,f,item);}
   const own=data.revisions.filter(v=>v.student_id===user.id),latest=own[0];
   if(role==='student'&&item.published&&!item.closed&&(!item.due_at||new Date(item.due_at)>new Date())){
    const editor=section(box,latest?'提交修訂版本':'繳交作業','每次提交都保留完整版本。批閱後可參考評語修訂；附件會跟隨各版本保留。');
@@ -59,7 +71,7 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
   text(box,staff?'繳交與修訂歷程':'我的版本與批閱','h3');
   if(!data.revisions.length)text(box,'尚無繳交紀錄。');
   for(const revision of data.revisions){
-   const d=details(box,(staff?'學生 '+(revision.student_name||revision.student_id.slice(0,8))+' · ':'')+'第 '+revision.version+' 版 · '+date(revision.created_at));
+   const d=record(box,(staff?'學生 '+(revision.student_name||revision.student_id.slice(0,8))+' · ':'')+'第 '+revision.version+' 版 · '+date(revision.created_at));
    text(d,revision.body);if(revision.change_note)text(d,'修改說明：'+revision.change_note);for(const file of revision.files||[])await attachment(d,file);
    const reviews=data.reviews.filter(g=>g.revision_id===revision.id);
    for(const g of reviews){const review=section(d,'批閱回饋');text(review,date(g.created_at)+' · '+({ta:'助教',teacher:'教師',admin:'管理員'}[g.reviewer_role]||'教學人員'));text(review,'思路分析：'+g.analysis);text(review,'改進建議：'+g.improvement);text(review,'延伸提問：'+g.followup);text(review,'推理表現：'+g.score+'/4 · '+(g.outcome==='completed'?'完成':'請修訂'));}
@@ -68,11 +80,7 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
  }
  async function assignments(){
   const seq=++request,data=await read('assignments');if(seq!==request||!alive)return;main.replaceChildren();
-  if(teacher){
-   const entry=section(main,'建立並指派作業','新增題目、設定截止時間，並選擇要指派的課程組或學生。');entry.classList.add('wf-create-entry');
-   const creator=document.createElement('div');creator.id='wf-assignment-create';creator.hidden=true;
-   const launch=button(entry,'＋ 新增作業',async()=>{creator.hidden=!creator.hidden;launch.setAttribute('aria-expanded',String(!creator.hidden));launch.textContent=creator.hidden?'＋ 新增作業':'收合新增作業';if(!creator.hidden)creator.querySelector('[name="title"]')?.focus();});
-   launch.classList.add('wf-create-button');launch.setAttribute('aria-expanded','false');launch.setAttribute('aria-controls',creator.id);entry.append(creator);
+  if(teacher){const creator=actionEditor(main,'新增作業','新增題目、設定截止時間，並選擇要指派的課程組或學生。');
    const createForm=form(creator,field('title','作業標題','text')+field('subject','學科','select',subjects)+field('body','作業題目、要求與評量重點')+field('due_at','截止時間（依本機時區；選填）','datetime-local','',false)+'<label><input name="published" type="checkbox">立即發布</label>','建立作業',async(values,f)=>{await action('assignment_create',{...values,...f.riseAudience(),published:f.querySelector('[name="published"]').checked,due_at:values.due_at?new Date(values.due_at).toISOString():null});await assignments();});await window.RISE_COURSES.audience(client,createForm);}
   const list=section(main,staff?'作業批閱工作台':'我的作業');const viewer=section(main,'作業詳情');viewer.hidden=true;
   if(!data.items.length)text(list,'目前沒有可查看的作業。');
@@ -83,24 +91,20 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
   if(!staff){main.textContent='此頁限教師、助教與管理員使用。';return;}
   const seq=++request,data=await read('training');if(seq!==request||!alive)return;main.replaceChildren();
   text(main,'此為平台內部培訓認證，與教師／助教帳號資格分開；核發不會自動變更帳號角色。認證有效期間一年，可由管理員撤銷。');
-  if(teacher){
-   const entry=section(main,'建立培訓課程','設定培訓教材與考核內容，儲存為草稿或發布給參與培訓的教師與助教。');entry.classList.add('wf-create-entry');
-   const editor=document.createElement('div');editor.id='wf-training-create';editor.hidden=true;
-   const launch=button(entry,'＋ 建立培訓課程',async()=>{editor.hidden=!editor.hidden;launch.setAttribute('aria-expanded',String(!editor.hidden));launch.textContent=editor.hidden?'＋ 建立培訓課程':'收合課程表單';if(!editor.hidden)editor.querySelector('[name="title"]')?.focus();});
-   launch.classList.add('wf-create-button');launch.setAttribute('aria-expanded','false');launch.setAttribute('aria-controls',editor.id);entry.append(editor);
+  if(teacher){const editor=actionEditor(main,'建立培訓課程','設定培訓教材與考核內容，儲存為草稿或發布給參與培訓的教師與助教。');
    form(editor,field('title','課程名稱','text')+field('body','教材與考核作業','textarea',trainingTemplate)+'<label><input name="published" type="checkbox">立即發布</label>','建立課程',async(values,f)=>{await action('course_create',{...values,published:f.querySelector('[name="published"]').checked});await training();});}
   if(!data.items.length)text(main,'尚未發布培訓課程。');
   for(const course of data.items){const box=section(main,course.title+(course.published?'':'（草稿）'));text(box,course.body);
    if(isOwner(course))button(box,course.published?'下架課程':'發布課程',async()=>{await action('course_publish',{id:course.id,published:!course.published});await training();});
    const submissions=data.submissions.filter(t=>t.course_id===course.id),own=submissions.filter(t=>t.applicant_id===user.id),latest=own[0];
-   if(!admin&&course.published){const editor=details(box,latest?'修訂培訓成果':'提交培訓成果');form(editor,field('body','依課程要求撰寫試批與考核內容','textarea',latest?.body||''),'提交審核',async(values)=>{await action('training_submit',{id:course.id,expected_version:latest?.version||0,...values});await training();});}
+   if(!admin&&course.published){const editor=actionEditor(box,latest?'修訂培訓成果':'提交培訓成果');form(editor,field('body','依課程要求撰寫試批與考核內容','textarea',latest?.body||''),'提交審核',async(values)=>{await action('training_submit',{id:course.id,expected_version:latest?.version||0,...values});await training();});}
    const applicants=[...new Set(submissions.map(t=>t.applicant_id))];
    for(const applicant of applicants){const versions=submissions.filter(t=>t.applicant_id===applicant),newest=versions[0],ids=versions.map(v=>v.id),cert=data.certificates.find(c=>ids.includes(c.submission_id));
-    const d=details(box,(admin?'申請人 '+(newest.applicant_name||applicant.slice(0,8))+' · ':'我的成果 · ')+'共 '+versions.length+' 版');
+    const d=record(box,(admin?'申請人 '+(newest.applicant_name||applicant.slice(0,8))+' · ':'我的成果 · ')+'共 '+versions.length+' 版');
     const valid=cert?.decision==='approved'&&new Date(cert.valid_until)>new Date();
     text(d,cert?'認證狀態：'+(valid?'有效至 '+date(cert.valid_until):cert.decision==='returned'?'待補件':cert.decision==='revoked'?'已撤銷':'已到期')+'；審核意見：'+cert.note:'尚待審核');
     if(valid){text(d,'認證編號：'+cert.id);button(d,'下載內部培訓認證紀錄',async()=>{const blob=new Blob(['RISE 平台內部培訓認證\n課程：'+course.title+'\n帳號：'+applicant+'\n認證編號：'+cert.id+'\n核發：'+date(cert.created_at)+'\n有效至：'+date(cert.valid_until)+'\n非學位或法定專業資格；當前有效性請以網站紀錄為準。'],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='RISE-training-'+cert.id+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);});}
-    for(const v of versions){const history=details(d,'第 '+v.version+' 版 · '+date(v.created_at));text(history,v.body);for(const c of data.certificates.filter(c=>c.submission_id===v.id))text(history,date(c.created_at)+' · '+c.decision+'：'+c.note);}
+    for(const v of versions){const history=record(d,'第 '+v.version+' 版 · '+date(v.created_at));text(history,v.body);for(const c of data.certificates.filter(c=>c.submission_id===v.id))text(history,date(c.created_at)+' · '+c.decision+'：'+c.note);}
     if(admin)form(d,field('decision','審核決定','select',options([['returned','退回補件'],['approved','核發一年認證'],['revoked','撤銷認證']]))+field('note','依四項能力說明審核理由'),'保存審核紀錄',async(values)=>{await action('certify',{id:newest.id,...values});await training();});
    }
   }
@@ -120,16 +124,16 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
    const f=form(editor,field('division','組別','select',options([['高中','高中'],['大專','大專']]))+field('field','領域','select',options(['自然科學','人文','社會','跨領域'].map(v=>[v,v])))+field('title','問題標題','text')+field('body','問題、背景、動機及可能影響','textarea',latest?.body||''),'保存投稿版本',async(values)=>{await action('competition_submit',{id:item.id,expected_version:latest?.version||0,...values});await competition(item,box);});
    if(latest){f.querySelector('[name="title"]').value=latest.title;f.querySelector('[name="division"]').value=latest.division;f.querySelector('[name="field"]').value=latest.field;}
   }
-  for(const entry of data.own){const d=details(box,'我的投稿第 '+entry.version+' 版 · '+date(entry.created_at));text(d,entry.title,'h4');text(d,entry.body);for(const g of data.judgments.filter(g=>g.entry_id===entry.id))text(d,'評審：創新 '+g.innovation+'、深度 '+g.depth+'、適切 '+g.appropriateness+'、啟發 '+g.inspiration+'。'+g.note);}
+  for(const entry of data.own){const d=record(box,'我的投稿第 '+entry.version+' 版 · '+date(entry.created_at));text(d,entry.title,'h4');text(d,entry.body);for(const g of data.judgments.filter(g=>g.entry_id===entry.id))text(d,'評審：創新 '+g.innovation+'、深度 '+g.depth+'、適切 '+g.appropriateness+'、啟發 '+g.inspiration+'。'+g.note);}
   if(data.entries.length)text(box,'評審工作台：請先確認無利益衝突。若認出投稿人或有指導關係，請聯絡主辦人處理後再評分。','h3');
-  for(const entry of data.entries){const d=details(box,'作品 '+entry.id.slice(0,8)+' · '+entry.division+'/'+entry.field+' · '+entry.title);text(d,entry.body);
+  for(const entry of data.entries){const d=record(box,'作品 '+entry.id.slice(0,8)+' · '+entry.division+'/'+entry.field+' · '+entry.title);text(d,entry.body);
    const g=data.judgments.find(g=>g.entry_id===entry.id);if(g)text(d,'已提交評語：'+g.note);
    else if(item.state==='judging')form(d,['innovation','depth','appropriateness','inspiration'].map((k,i)=>field(k,['創新性','深度','適切性','啟發性'][i],'select',options([0,1,2,3,4,5].map(n=>[String(n),String(n)])))).join('')+field('note','評分理由與改進建議'),'確認提交評分（不覆寫）',async(values)=>{await action('competition_judge',{id:entry.id,...values});await competition(item,box);});
   }
   if(item.state==='results'){text(box,'分組結果','h3');table(box,['組別','領域','作品','平均分／20','評審數'],data.results.map(e=>[e.division,e.field,e.title,e.average,e.reviewers]));if(!data.results.length)text(box,'本次沒有可發布的評分結果。');}
  }
  async function competitions(){const seq=++request,data=await read('competitions');if(seq!==request||!alive)return;main.replaceChildren();
-  if(teacher){const editor=details(main,'建立提問競賽');form(editor,field('title','競賽名稱','text')+field('body','辦法、資格、評分規準與作品公開範圍')+field('deadline','截止時間（依本機時區）','datetime-local'),'建立草稿',async(values)=>{await action('competition_create',{...values,deadline:new Date(values.deadline).toISOString()});await competitions();});}
+  if(teacher){const editor=actionEditor(main,'建立提問競賽','設定競賽辦法、參賽資格與截止時間。');form(editor,field('title','競賽名稱','text')+field('body','辦法、資格、評分規準與作品公開範圍')+field('deadline','截止時間（依本機時區）','datetime-local'),'建立草稿',async(values)=>{await action('competition_create',{...values,deadline:new Date(values.deadline).toISOString()});await competitions();});}
   const list=section(main,'提問競賽'),viewer=section(main,'競賽詳情');viewer.hidden=true;if(!data.items.length)text(list,'目前沒有競賽。');
   for(const item of data.items)button(list,item.title+' · '+stateLabel[item.state],async()=>{viewer.hidden=false;await competition(item,viewer);viewer.scrollIntoView({block:'start',behavior:'smooth'});});
  }

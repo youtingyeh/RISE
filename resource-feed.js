@@ -37,7 +37,7 @@
    try{
     const result=await db.rpc('rise_resource_group_items',{p_owner:group.owner_id,p_destination:destination,p_collection:group.collection,p_subject:group.subject,p_kind:kind,p_offset:page*12});if(seq!==detailRequest)return;if(result.error)throw result.error;
     const rows=result.data;box.replaceChildren();const heading=document.createElement('h3');heading.textContent=group.collection;
-    const close=document.createElement('button');close.type='button';close.className='button secondary';close.textContent='收起';close.onclick=()=>{++detailRequest;box.replaceChildren();box.hidden=true;};box.append(heading,close);
+    const close=document.createElement('button');close.type='button';close.className='button secondary';close.textContent='關閉內容';close.onclick=()=>{++detailRequest;box.replaceChildren();box.hidden=true;};box.append(heading,close);
     const list=document.createElement('ol');list.start=page*12+1;
     for(const r of rows.slice(0,12)){
      const item=document.createElement('li'),a=document.createElement('a'),summary=document.createElement('p');a.href='resources.html?id='+encodeURIComponent(r.id);a.textContent=(kinds[r.kind]||'教材')+'｜'+r.title;summary.textContent=r.summary;item.append(a,summary);list.append(item);
@@ -56,7 +56,7 @@
      const badge=document.createElement('p');badge.className='eyebrow';badge.textContent=subjects[group.subject]+' · '+noun;
      const title=document.createElement('h3');title.textContent=group.collection;
      const count=document.createElement('p');count.textContent=`${group.item_count} 份符合條件的內容`;
-     const button=document.createElement('button');button.type='button';button.className='button secondary';button.textContent='展開'+noun;button.onclick=()=>openGroup(group);card.append(badge,title,count,button);$('#feed-list').append(card);
+     const button=document.createElement('button');button.type='button';button.className='button secondary';button.textContent='查看'+noun;button.onclick=()=>openGroup(group);card.append(badge,title,count,button);$('#feed-list').append(card);
     }
     $('#feed-status').textContent=rows.length?`第 ${offset/12+1} 頁 · 依教師設定的順序呈現${noun}。`:`尚無符合條件的已發布${noun}。`;
     $('#feed-prev').disabled=offset===0;$('#feed-next').disabled=rows.length<=12;

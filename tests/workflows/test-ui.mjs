@@ -9,6 +9,8 @@ async function mount(role,area,{error=false}={}){
  const {document,window}=parseHTML('<html><body data-workflow="'+area+'"><div id="root"></div></body></html>');
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this.querySelector('option[selected]')?.getAttribute('value')||this.querySelector('option')?.getAttribute('value')||'';},set(v){for(const o of this.querySelectorAll('option')){if(o.value===v)o.setAttribute('selected','');else o.removeAttribute('selected');}}});
  window.HTMLElement.prototype.scrollIntoView=function(){};
+ window.HTMLElement.prototype.showModal=function(){this.setAttribute('open','');};
+ window.HTMLElement.prototype.close=function(){this.removeAttribute('open');};
  const root=document.querySelector('#root'),reports=[],actions=[];
  const assignment={id:'assignment',owner_id:me,title:'作業 <img onerror=bad>',body:'內容',published:true,closed:false};
  const rev={id:'revision',assignment_id:'assignment',student_id:role==='student'?me:other,version:1,body:'第一版',change_note:'',files:[],created_at:new Date().toISOString()};
@@ -29,7 +31,9 @@ for(const role of ['student','ta','teacher','admin'])for(const area of ['assignm
  const env=await mount(role,area);assert.equal(env.reports.length,0,role+' '+area);
  const ids=[...env.root.querySelectorAll('[id]')].map(x=>x.id);assert.equal(ids.length,new Set(ids).size);
  assert.equal(env.root.querySelectorAll('img').length,0,'untrusted title rendered as text');
- if(area==='training'&&role!=='student'){const launch=[...env.root.querySelectorAll('button')].find(b=>b.textContent==='＋ 建立培訓課程');assert.equal(!!launch,['teacher','admin'].includes(role));if(launch){const editor=env.root.querySelector('#wf-training-create');assert(editor.hidden);await launch.onclick();assert.equal(editor.hidden,false);assert.equal(launch.getAttribute('aria-expanded'),'true');}}
+ assert.equal(env.root.querySelectorAll('details,summary').length,0);
+ const createLabel={assignments:'＋ 新增作業',training:'＋ 建立培訓課程',competitions:'＋ 建立提問競賽'}[area];
+ if(createLabel){const launch=[...env.root.querySelectorAll('button')].find(b=>b.textContent===createLabel);assert.equal(!!launch,['teacher','admin'].includes(role));if(launch){const editor=launch.parentElement.querySelector('dialog');assert(editor);assert(!editor.hasAttribute('open'));await launch.onclick();assert(editor.hasAttribute('open'));const title=editor.querySelector('[name="title"]');title.value='保留草稿';await [...editor.querySelectorAll('button')].find(b=>b.textContent.startsWith('關閉視窗')).onclick();assert(!editor.hasAttribute('open'));await launch.onclick();assert.equal(title.value,'保留草稿');if(area==='competitions'){editor.querySelector('[name="deadline"]').value='2026-12-01T12:00';env.setFail();await editor.querySelector('form').onsubmit({preventDefault(){}});assert(editor.hasAttribute('open'));assert.equal(title.value,'保留草稿');}}}
  if(area==='training'&&role==='student')assert.match(env.root.textContent,/限教師/);
  if(area==='assignments'){
   await env.press('作業 <img');

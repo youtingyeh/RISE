@@ -472,7 +472,7 @@
   function sciencePage() {
     return `${heading("SCIENCE EXPLORATION", "科學探索", "先找到你有興趣的學科與問題，再選擇文章、影片或教材。")}
       <section class="section container"><div class="card-grid">${subjectCards()}</div>
-      <h2>已發布探索主題</h2><p>先選探索主題，再展開其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>`;
+      <h2>已發布探索主題</h2><p>選擇探索主題，查看其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>`;
   }
 
   function subjectPage(id) {
@@ -1439,7 +1439,7 @@ function setupCalendar() {
   }
   if (document.querySelector('[data-resource-feed]')) {
     const css=document.createElement('link');css.rel='stylesheet';css.href='linked-resources.css?v=placement-20260915';document.head.append(css);
-    const feed=document.createElement('script');feed.src='resource-feed.js?v=science-20260915-2';
+    const feed=document.createElement('script');feed.src='resource-feed.js?v=clear-actions-20261002-1';
     feed.onerror=()=>{document.querySelector('[data-resource-feed]').textContent='教材列表無法載入，請重新整理。';};
     document.head.append(feed);
   }
