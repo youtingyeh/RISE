@@ -30,7 +30,7 @@ window.RISE_COURSES=(()=>{
  find.onclick=async()=>{find.disabled=true;status.textContent='';try{const rows=await rpc(client,'roster',{search:search.value});results.replaceChildren();if(!rows.length)el('p','沒有符合的學生，請輸入至少兩字或完整會員編號。',results);for(const r of rows){const b=el('button',r.display_name+' · '+r.id,results);b.type='button';b.onclick=()=>{selected.set(r.id,r.display_name);draw();};}}catch(e){status.textContent=error(e);}finally{find.disabled=false;}};
  mode.onchange=()=>{courseBox.hidden=mode.value!=='courses';studentBox.hidden=mode.value!=='students';};mode.onchange();
  form.riseAudience=()=>{if(!ready)throw Error('rise:請先完成課程後端設定並重新載入。');const course_ids=mode.value==='courses'?getCourses():[],student_ids=mode.value==='students'?[...selected.keys()]:[];if(mode.value==='courses'&&!course_ids.length)throw Error('rise:請選擇至少一門課程。');if(mode.value==='students'&&!student_ids.length)throw Error('rise:請選擇至少一位學生。');return {audience:mode.value,course_ids,student_ids};};
- try{const data=await rpc(client,'list');getCourses=courseDropdown(courseBox,data.courses,item.course_ids||[]);ready=true;}catch(e){status.textContent=error(e);}
+ try{const data=await rpc(client,'list');if(data.can_assign_all===false){mode.querySelector('option[value="all"]')?.remove();if(mode.value==='all'||!mode.value)mode.value='courses';mode.onchange();}getCourses=courseDropdown(courseBox,data.courses,item.course_ids||[]);ready=true;}catch(e){status.textContent=error(e);}
  }
  return {registration,membership,admin,audience,error};
 })();

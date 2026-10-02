@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+import {parseHTML} from 'linkedom';
+const {window,document}=parseHTML('<html><body><div id="root"></div></body></html>');
+Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this.querySelector('option[selected]')?.value||this.querySelector('option')?.value||'';},set(v){for(const o of this.querySelectorAll('option')){if(o.value===v)o.setAttribute('selected','');else o.removeAttribute('selected');}}});
+const courses=[{id:'a',title:'物理 <img>',active:true},{id:'b',title:'化學',active:true}],calls=[],root=document.querySelector('#root');
+const client={rpc:async(name,args)=>{calls.push({name,args});return {data:name==='rise_course_catalog'?courses:args.p_action==='list'?{courses,teachers:[{id:'t',display_name:'Teacher',email:'t@example.test',scope:'courses',course_ids:['a']}]}:{saved:true}};}};
+vm.runInContext(await readFile(new URL('../../teacher-course-access.js',import.meta.url),'utf8'),vm.createContext({window,document}));
+const api=window.RISE_TEACHER_ACCESS,role=document.createElement('select');role.innerHTML='<option value="teacher">教師</option><option value="ta">助教</option>';
+const get=await api.application(client,root,role,null);assert.throws(()=>get(),/至少/);root.querySelector('input').setAttribute('checked','');assert.equal(get().course_ids[0],'a');root.querySelector('select').value='all';assert.equal(get().scope,'all');assert.equal(get().course_ids.length,0);role.value='ta';role.dispatchEvent(new window.Event('change'));assert(root.querySelector('fieldset').hidden);assert.equal(get().scope,'none');assert.equal(root.querySelector('img'),null);
+await api.admin({client,profile:{role:'student'},root});assert.equal(root.querySelector('form'),null);
+await api.admin({client,profile:{role:'admin'},root});assert.match(root.textContent,/Teacher/);const form=root.querySelector('form');form.querySelector('input').setAttribute('checked','');await form.onsubmit({preventDefault(){}});assert.equal(calls.at(-1).args.p_data.user_id,'t');assert.equal(calls.at(-1).args.p_data.scope,'courses');assert.match(form.textContent,/已儲存/);assert.equal(root.querySelector('details'),null);
+console.log('PASS scope UI: teacher/TA application, course/all choice, admin-only editor, save and safe rendering.');

@@ -118,6 +118,7 @@
   }
 
   function errorText(err) {
+    if(['PGRST202','42703'].includes(err?.code)&&/scoped_application|teacher_access|requested_access|requested_course_ids/.test(err?.message||''))return '教師課程權限尚未安裝，請執行 backend/teacher-course-access.sql。';
     const s = String(err?.message || err);
     const code = String(err?.code || '');
 
@@ -933,6 +934,7 @@
       <div class="auth-field"><label for="requested-role">申請身分</label>
       <select id="requested-role" name="requested-role"><option value="teacher">教師</option><option value="ta">助教（協助學生問答）</option></select></div>
       ${applicationFields}
+      <div id="teacher-course-request"></div>
       <div class="auth-field"><label for="evidence">資格證明附件</label>
       <input id="evidence" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" aria-describedby="evidence-help">
       <p id="evidence-help">提供 1 至 3 份 PDF、JPG、PNG 或 WebP，每份不超過 5 MB。例如任職證明、教師證或助教聘任文件；請遮蔽身分證字號等不必要資料。補件如未選新檔案，會保留原附件；選新檔案則替換整組附件。</p></div>
@@ -955,7 +957,9 @@
       $('#reason').value = a.reason;
     }
 
+    const getRequestedAccess = await window.RISE_TEACHER_ACCESS.application(client,$('#teacher-course-request'),$('#requested-role'),a);
     bindForm(async f => {
+      const requestedAccess = getRequestedAccess();
       const files = [...$('#evidence').files];
       const uploaded = [];
       let committed = false;
@@ -979,10 +983,11 @@
           }
         }
         if (files.length) attachments = uploaded;
-        checked(await client.rpc('rise_submit_staff_application', {
+        checked(await client.rpc('rise_submit_scoped_application', {
           p_school: f.get('school').trim(), p_subject: f.get('subject'),
           p_reason: f.get('reason').trim(), p_expected_version: a?.version || 0,
-          p_requested_role: f.get('requested-role'), p_attachments: attachments
+          p_requested_role: f.get('requested-role'), p_attachments: attachments,
+          p_access: requestedAccess.scope, p_course_ids: requestedAccess.course_ids
         }));
         committed = true;
         report('資格申請與附件已送出，可至會員中心查看審核狀態。');
@@ -1112,6 +1117,7 @@
 
     let offset = 0;
     let rows = [];
+    let reviewCoursePickers = new Map();
     let decision = null;
     const size = 20;
 
@@ -1166,7 +1172,7 @@
               <dd>${esc(a.review_note || '尚無')}</dd>
             </dl>
 
-            <div id="evidence-${a.id}"></div>
+            <div id="evidence-${a.id}"></div><div data-course-review="${a.id}"></div>
             <button class="secondary" data-history="${a.id}">
               查看紀錄
             </button>
@@ -1208,6 +1214,7 @@
         `).join('')
         : '<p>此狀態目前沒有申請。</p>';
 
+      reviewCoursePickers = await window.RISE_TEACHER_ACCESS.reviews(client,rows,root);
       for (const a of rows) await showEvidence($('#evidence-' + a.id), a.attachments || []);
       $('#previous').disabled = offset === 0;
       $('#next').disabled = !hasNext;
@@ -1284,7 +1291,10 @@
         return;
       }
 
+      let access={scope:'none',course_ids:[]};
+      try {if(b.dataset.decision==='approved'&&a.requested_role==='teacher'){const picker=reviewCoursePickers?.get(a.id);if(!picker)throw Error('rise:課程權限未載入，請重新整理。');access=picker.get();}}catch(e){report(window.RISE_TEACHER_ACCESS.error(e),true);return;}
       decision = {
+        p_access:access.scope,p_course_ids:access.course_ids,
         p_application_id: a.id,
         p_decision: b.dataset.decision,
         p_note: note,
@@ -1314,7 +1324,7 @@
       try {
         checked(
           await client.rpc(
-            'rise_review_teacher_application',
+            'rise_review_scoped_application',
             decision
           )
         );
@@ -1771,6 +1781,8 @@ function loadSDK() {
             await window.RISE_VIDEO_MANAGER({client,user,profile,root,report});
           }
         }
+      } else if (page === 'admin-teacher-access') {
+        if(await loadUser()){try{await window.RISE_TEACHER_ACCESS.admin({client,profile,root});}catch(e){report(window.RISE_TEACHER_ACCESS.error(e),true);}}
       } else if (page === 'admin-courses') {
         if(await loadUser()){
           if(profile.role!=='admin') root.textContent='此頁僅限管理員使用。';

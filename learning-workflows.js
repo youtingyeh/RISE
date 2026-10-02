@@ -137,8 +137,11 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
   const list=section(main,'提問競賽'),viewer=section(main,'競賽詳情');viewer.hidden=true;if(!data.items.length)text(list,'目前沒有競賽。');
   for(const item of data.items)button(list,item.title+' · '+stateLabel[item.state],async()=>{viewer.hidden=false;await competition(item,viewer);viewer.scrollIntoView({block:'start',behavior:'smooth'});});
  }
- async function analytics(){const seq=++request,data=await read('analytics');if(seq!==request||!alive)return;main.replaceChildren();
-  const box=section(main,'學習成效紀錄',data.scope+'。只統計本系統的作業提交與批閱；未提交者不列入。完成代表最新版本最近一次批閱標示完成，修訂次數不等於能力提升。');
+ let analyticsCourse=null;
+ async function analytics(){const seq=++request;main.replaceChildren();const data=await read('analytics',analyticsCourse);if(data.access_version!==1)throw Error('rise:課程權限尚未啟用，請管理員執行 backend/teacher-course-access.sql，再重新整理。');if(seq!==request||!alive)return;main.replaceChildren();
+  if(teacher){const filters=section(main,'依課程查看'),label=text(filters,'課程','label'),select=document.createElement('select');label.append(select);select.setAttribute('aria-label','學習成效課程篩選');for(const c of [{id:'',title:admin?'全部課程':'所有核准課程'},...(data.courses||[])]){const o=document.createElement('option');o.value=c.id;o.textContent=c.title;select.append(o);}select.value=analyticsCourse||'';select.onchange=async()=>{analyticsCourse=select.value||null;try{await analytics();}catch(e){fail(e);}};if(!admin&&!data.all_courses&&!(data.courses||[]).length)text(filters,'尚未取得課程授權，請聯絡管理員設定。');}
+  const box=section(main,'學習成效紀錄',data.scope+'。依目前課程學員及核准範圍，統計本系統的作業提交與批閱；未提交者不列入。完成代表最新版本最近一次批閱標示完成，修訂次數不等於能力提升。');
+  if(teacher)table(box,['有提交紀錄的學生','已交作業總人次','提交版本總數','已完成作業人次'],[[data.rows.length,...['assignments','versions','completed'].map(key=>data.rows.reduce((total,row)=>total+Number(row[key]||0),0))]]);
   if(data.summary)table(box,['已批閱版本','培訓提交版本','有效培訓認證','競賽投稿（每人每賽一件）'],[[data.summary.reviewed_versions,data.summary.training_submissions,data.summary.valid_certifications,data.summary.competition_entries]]);
   table(box,['學生','已交作業','提交版本','修訂次數','已完成','最新版本待批閱'],data.rows.map(r=>[r.display_name||r.id.slice(0,8),r.assignments,r.versions,r.revisions,r.completed,r.awaiting_review]));
   const timeline=section(main,'各版本推理表現','0–4 級來自教學人員判讀。不同作業難度與評閱者可能不同，不直接以平均分判定成長，也不以此取代正式成績。');
