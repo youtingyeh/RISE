@@ -238,4 +238,8 @@ end $$;
 drop trigger if exists rise_certification_rubric on rise_work.certificates;
 create trigger rise_certification_rubric before insert on rise_work.certificates for each row execute function rise_program.check_certification();
 revoke all on function rise_program.check_structured_entry(),rise_program.check_certification() from public,anon,authenticated;
+-- Frontend can reject old deployments before new required fields are silently ignored.
+create or replace function public.rise_program_revision() returns text language sql stable set search_path='' as $$ select '20261006'::text $$;
+revoke all on function public.rise_program_revision() from public,anon;
+grant execute on function public.rise_program_revision() to authenticated;
 notify pgrst,'reload schema';commit;

@@ -20,6 +20,8 @@
 3. 或依序執行 `01-question-history.sql` → `02-learning-modules.sql` → `03-community-events.sql` → `04-operations-data.sql`；與上一步擇一。
 4. 重新部署 `supabase/functions/rise-question-advisor/index.ts`。既有 `OPENAI_API_KEY`、`OPENAI_MODEL`、`RISE_SITE_ORIGIN` 保留；service-role key 僅於後端使用。前端不可填入秘密金鑰。
 5. GitHub Pages 部署後以管理員、指定課程教師、其他課程教師及學生測試。新頁面若提示尚未啟用，先確認 SQL 執行成功。
+競賽新版投稿與認證核發會先檢查後端版本；尚未更新時阻止送出並保留輸入，避免舊版 RPC 忽略新欄位。
+
 6. 若日後重新執行舊 workflow/teacher-course migration，最後必須再執行本次更新，避免覆寫新版 RPC。
 
 本次沒有新開公開 Storage bucket。原提問圖片保留原有安全規則；提問修訂目前針對文字，沿用原圖片。PLC 可附已授權教材的 HTTPS 分享連結；既有教材檔案上傳仍由教學資源功能處理。

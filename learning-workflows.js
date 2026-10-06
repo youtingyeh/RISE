@@ -11,7 +11,13 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
  const checked=result=>{if(result.error)throw result.error;return result.data;};
  const fail=e=>report((e.code==='PGRST202'&&String(e.message||'').includes('rise_training_manage'))?'培訓課程管理尚未啟用，請管理員執行 backend/training-course-management.sql。':['PGRST202','42P01','3F000'].includes(e.code)?'學習流程後端尚未安裝，請管理員執行 backend/learning-workflows.sql。':e.code==='23505'?'這份版本已有你的評語，請重新整理查看。':String(e.message||'').startsWith('rise:')?e.message.slice(5):'操作未完成。請保留輸入、重新確認登入與網路後再試。',true);
  const read=(type,id=null)=>client.rpc('rise_workflow_read',{p_area:type,p_id:id}).then(checked);
- const action=(type,data)=>client.rpc(['course_create','course_publish'].includes(type)?'rise_training_manage':'rise_workflow_action',{p_action:type,p_data:data}).then(checked);
+ const action=async(type,data)=>{
+  if(['competition_submit','certify'].includes(type)){
+   const ready=await client.rpc('rise_program_revision');
+   if(ready.error||ready.data!=='20261006')throw Error('rise:本次教學功能的後端更新尚未完成，請管理員執行 backend/program-upgrade.sql。輸入內容仍保留。');
+  }
+  return client.rpc(['course_create','course_publish'].includes(type)?'rise_training_manage':'rise_workflow_action',{p_action:type,p_data:data}).then(checked);
+ };
  root.innerHTML='<nav class="wf-tabs" aria-label="學習功能"><a href="assignments.html">'+(staff?'作業批閱':'我的作業')+'</a>'+(staff?'<a href="ta-training.html">助教培訓認證</a>':'')+'<a href="competitions.html">提問競賽</a><a href="learning-report.html">學習成效</a></nav><div id="wf-main"></div>';
  const main=root.querySelector('#wf-main');
  function section(parent,title,description=''){

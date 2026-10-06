@@ -1,6 +1,6 @@
 'use strict';
 window.RISE_QUESTION_HISTORY=async function({client,user,profile,question:q,root,report,reload}){
- const r=await client.from('rise_question_versions').select('*').eq('question_id',q.id).order('version',{ascending:false});if(r.error)throw r.error;
+ const r=await client.from('rise_question_versions').select('*').eq('question_id',q.id).order('version',{ascending:false});if(r.error){if(['PGRST205','42P01'].includes(r.error.code))throw Error('rise:提問歷程與三要素批閱尚未啟用，請管理員執行 backend/program-upgrade.sql。');throw r.error;}
  const versions=r.data||[],latest=versions[0];if(!latest)throw Error('rise:請管理員執行 backend/program/01-question-history.sql。');
  const el=(tag,text,parent=root)=>{const n=document.createElement(tag);n.textContent=text;parent.append(n);return n;};
  el('h4','提問版本歷程');for(const v of versions){const card=el('section','');card.className='auth-record';el('h5','第 '+v.version+' 版 · '+new Date(v.created_at).toLocaleString('zh-TW'),card);el('strong',v.title,card);el('p',v.body,card).style.whiteSpace='pre-wrap';if(v.change_note)el('p','修改說明：'+v.change_note,card);}
