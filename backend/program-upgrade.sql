@@ -1,9 +1,20 @@
 -- RISE program upgrade, 2026-10-06. Existing production database only.
 -- Run this ONE file, or run program/01..04 in order; do not rerun setup.sql.
 begin;
-do $$begin
- if to_regclass('rise_work.teacher_access') is null or to_regclass('public.rise_question_images') is null or to_regclass('public.rise_watch_sessions') is null or to_regclass('public.rise_advisor_usage') is null then
- raise exception 'Prerequisites missing: teacher-course-access.sql, qa-upgrade.sql, watch-history.sql, question-advisor.sql. Read backend/program/README.md.';
+do $$
+declare missing text;
+begin
+ select string_agg(file, ', ' order by step) into missing
+ from (values
+  (1,'qa-upgrade.sql',to_regclass('public.rise_question_images') is not null),
+  (2,'course-assignments.sql',to_regclass('rise_work.classifications') is not null and to_regclass('rise_work.entries') is not null),
+  (3,'training-course-management.sql',to_regprocedure('public.rise_training_manage(text,jsonb)') is not null),
+  (4,'teacher-course-access.sql',to_regclass('rise_work.teacher_access') is not null and to_regprocedure('rise_private.teacher_student_access(uuid)') is not null),
+  (5,'watch-history.sql',to_regclass('public.rise_watch_sessions') is not null),
+  (6,'question-advisor.sql',to_regclass('public.rise_advisor_usage') is not null)
+ ) as checks(step,file,installed) where not installed;
+ if missing is not null then
+  raise exception 'Missing prerequisites: %. Run backend/program-preflight.sql to identify missing objects and install order.',missing;
  end if;
 end $$;
 -- 01-question-history.sql
