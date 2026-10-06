@@ -796,6 +796,21 @@
     if (a) await showEvidence($('#my-evidence'), a.attachments || []);
     renderWatchHistory();
 
+    if(['ta','teacher','admin'].includes(profile.role)){
+      try{
+        const certResult=await client.rpc('rise_my_ta_certification');
+        if(!certResult.error){
+          const panel=document.createElement('section');panel.className='auth-card';
+          const heading=document.createElement('h2');heading.textContent='數思助教認證（Certified TA of the Reasoning Program）';panel.append(heading);
+          const items=Array.isArray(certResult.data)?certResult.data:[];
+          if(!items.length){const p=document.createElement('p');p.textContent='目前沒有培訓認證紀錄。';panel.append(p);}
+          for(const item of items){const p=document.createElement('p');const state={valid:'有效',expired:'已到期',approved:'已核准',returned:'待補件',revoked:'已撤銷',pending:'待審核'}[item.status]||item.status;p.textContent=(item.course_title||'培訓課程')+'：'+state+(item.valid_until&&item.status==='valid'?'（有效至 '+new Date(item.valid_until).toLocaleDateString('zh-TW')+'）':'');panel.append(p);}
+          const forum=document.createElement('a');forum.href='ta-forum.html';forum.textContent='前往月度助教論壇 →';panel.append(forum);
+          root.querySelector('.auth-grid')?.prepend(panel);
+        }
+      }catch{ /* 認證功能尚未安裝時不影響會員中心 */ }
+    }
+
     const deleteInput = $('#delete-account-confirmation');
     const deleteButton = $('#delete-account');
 
@@ -1529,6 +1544,12 @@
           const result=await client.rpc('rise_submit_question',{p_id:submissionId,p_subject:$('#q-subject').value,p_title:$('#q-title').value.trim(),p_body:questionBody,p_images:uploaded});
           if(result.error?.code==='PGRST202')throw Error('rise:圖片問答後端尚未安裝，請管理員執行 backend/qa-upgrade.sql。');
           checked(result);
+          const analysisHash=form.dataset.advisorAnalysisHash;
+          if(analysisHash){
+            const linked=await client.rpc('rise_link_question_analysis',{p_question_id:submissionId,p_version:1,p_input_hash:analysisHash});
+            delete form.dataset.advisorAnalysisHash;
+            if(linked.error)report('問題已送出，但 AI 分析尚未附加到此版本；可通知教師或管理員檢查設定。',true);
+          }
           clear();uploaded=[];submissionId=null;form.reset();offset=0;report('問題與圖片已送出。');await draw();
         }catch(err){report(errorText(err)+' 如已開始上傳，請保留此頁重試；已上傳圖片會保留。',true);}
         finally{busy=false;b.disabled=false;picker.disabled=!!submissionId;showPreview();}

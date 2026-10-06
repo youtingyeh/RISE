@@ -6,6 +6,11 @@ window.RISE_QUESTION_HISTORY=async function({client,user,profile,question:q,root
  el('h4','提問版本歷程');for(const v of versions){const card=el('section','');card.className='auth-record';el('h5','第 '+v.version+' 版 · '+new Date(v.created_at).toLocaleString('zh-TW'),card);el('strong',v.title,card);el('p',v.body,card).style.whiteSpace='pre-wrap';if(v.change_note)el('p','修改說明：'+v.change_note,card);}
  const staff=['ta','teacher','admin'].includes(profile.role),own=q.user_id===user.id;
  if(!staff&&!own)return;
+ if(staff){
+  const ai=el('section','');ai.className='auth-record';el('h4','AI 學習分析標籤（待教師確認）',ai);
+  const load=el('button','查看此提問已分享的 AI 標籤',ai);load.type='button';const out=el('div','',ai);
+  load.onclick=async()=>{load.disabled=true;try{const x=await client.rpc('rise_question_ai_context',{p_question_id:q.id});if(x.error)throw x.error;out.replaceChildren();const items=Array.isArray(x.data)?x.data:[];if(!items.length){el('p','此提問沒有學生分享的 AI 分析。',out);}for(const item of items){const card=el('div','第 '+item.version+' 版 · 模型 '+item.model, out);for(const tag of item.tags||[]){const names={calculation_slip:'運算疏忽',logic_gap:'邏輯斷層',concept_misuse:'概念誤用'};el('p',(names[tag.code]||tag.code)+'（模型信心 '+Math.round(Number(tag.confidence||0)*100)+'%）：'+tag.reason,card);}}}catch(err){report(String(err.message||err).replace(/^rise:/,''),true);}finally{load.disabled=false;}};
+ }
  const form=el('form','');el('h4',staff?'三要素批閱（第 '+latest.version+' 版）':'修訂並重新提交',form);
  const specs=staff?[['analysis','思路分析',''],['improvement','改進建議',''],['followup','延伸提問','']]:[['title','問題標題',latest.title],['body','完整問題與思考過程',latest.body],['change_note','這次修改了什麼？','']];
  for(const [key,label,value] of specs){const l=el('label',label,form);l.style.display='block';const input=el('textarea','',l);input.name=key;input.value=value;input.required=true;input.maxLength=staff?3000:key==='title'?160:key==='change_note'?2000:10000;input.rows=key==='body'?7:3;}

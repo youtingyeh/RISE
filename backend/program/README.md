@@ -18,6 +18,7 @@
 1. 先執行唯讀的 `backend/program-preflight.sql`；它會逐項顯示存在／缺少及原始碼連結，不能只憑舊錯誤訊息認定所有項目都缺少。在既有 Supabase 專案備份後，確認原站後端已安裝。必要前置：`course-assignments.sql`、`training-course-management.sql`、`teacher-course-access.sql`、`qa-upgrade.sql`、`watch-history.sql`、`question-advisor.sql`。原有帳號、審核、Storage 設定應保留。**不要重跑初始 setup.sql。**
    若需補裝 `course-assignments.sql`，後續重套 `training-course-management.sql` 與 `teacher-course-access.sql`；若補裝 `qa-upgrade.sql`，後續重套 `teacher-course-access.sql`，最後再執行本次更新，避免舊 RPC 覆蓋課程權限。若連 `rise_profiles` 都缺少，先確認是否選錯 Supabase 專案，不要重跑 `setup.sql`。
 2. 在 SQL Editor 執行 **`backend/program-upgrade.sql` 全文**。它包含本次四個 migration，單一交易，可重複執行。失敗時不留下半套本次更新。
+2a. 本階段若要啟用問答歷程、AI 標籤連結、會員中心認證狀態與年度報告，再執行 `backend/program-refinement.sql`。此檔案不建立教材、不修改三學科頁面，也不替既有單元指定學科。
 3. 或依序執行 `01-question-history.sql` → `02-learning-modules.sql` → `03-community-events.sql` → `04-operations-data.sql`；與上一步擇一。
 4. 重新部署 `supabase/functions/rise-question-advisor/index.ts`。既有 `OPENAI_API_KEY`、`OPENAI_MODEL`、`RISE_SITE_ORIGIN` 保留；service-role key 僅於後端使用。前端不可填入秘密金鑰。
 5. GitHub Pages 部署後以管理員、指定課程教師、其他課程教師及學生測試。新頁面若提示尚未啟用，先確認 SQL 執行成功。

@@ -12,7 +12,7 @@ window.RISE_QUESTION_ADVISOR = function ({client, form, config}) {
   function invalidate() {
     const wasPending = Boolean(controller);
     version++; controller?.abort(); controller = null; button.disabled = false;
-    if (reviewed) status.textContent = '內容已修改，請重新分析。下方為修改前的建議。';
+    if (reviewed) { delete form.dataset.advisorAnalysisHash; status.textContent = '內容已修改，請重新分析。下方為修改前的建議。'; }
     else if (wasPending) status.textContent = '內容已修改，已取消這次分析。可再次分析或直接送出問題。';
     result.querySelectorAll('button').forEach(b => b.disabled = true);
   }
@@ -41,10 +41,10 @@ window.RISE_QUESTION_ADVISOR = function ({client, form, config}) {
       });
       const data=await response.json().catch(()=>({}));
       if (!response.ok) throw Error(response.status===404 || data.code==='not_configured' ? 'AI 顧問尚未啟用，請管理員完成後端設定。你仍可直接送出問題。' : typeof data.error==='string' ? data.error : 'AI 顧問暫時無法使用，你仍可直接送出問題。');
-      if (current!==version || JSON.stringify(read())!==snapshot) { if(current===version)status.textContent='內容已修改，請重新分析。'; return; }
+      if (current!==version || JSON.stringify(read())!==snapshot) { delete form.dataset.advisorAnalysisHash; if(current===version)status.textContent='內容已修改，請重新分析。'; return; }
       const advice=data.advice;
       if (!advice || !['assumptions','concepts','relations','next_steps'].every(k=>Array.isArray(advice[k])&&advice[k].every(x=>typeof x==='string')) || typeof advice.revised_question!=='string' || typeof advice.summary!=='string') throw Error('AI 回覆格式不完整，請稍後重試。');
-      reviewed=snapshot;
+      reviewed=snapshot; form.dataset.advisorAnalysisHash=typeof data.analysis_hash==='string'?data.analysis_hash:'';
       paragraph(result,'p',advice.summary);
       for (const [key,label] of [['assumptions','假設檢查（Hypothesis Check）'],['concepts','概念重複（Concept Redundancy）'],['relations','關聯強度分析（Relevance Strength Analysis）'],['next_steps','下一步可以怎麼問']]) {
         paragraph(result,'h4',label); const list=document.createElement('ul'); result.append(list);

@@ -58,7 +58,7 @@ export async function handler(req:Request):Promise<Response> {
     const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(draft)));
     const hash=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
     const saved=await db.rpc('rise_record_ai_analysis',{p_user_id:user.id,p_hash:hash,p_model:model,p_tags:advice.error_tags});
-    return reply({advice,analysis_saved:!saved.error});
+    return reply({advice,analysis_saved:!saved.error,analysis_hash:saved.error?null:hash});
   } catch(error) {
     // Do not log prompts, tokens, provider response bodies or personal information.
     return reply({error:error instanceof Error&&['TimeoutError','AbortError'].includes(error.name)?'AI 分析逾時，請稍後重試。':'AI 顧問暫時無法使用，你仍可直接送出問題。'},503);
