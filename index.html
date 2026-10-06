@@ -114,15 +114,15 @@
     window.addEventListener("load", function () {
       if (!window.RISE_DATA) {
         window.riseReport(
-          "content.js 沒有成功提供網站資料。\n" +
-          "請確認檔名是 content.js，且內容已完整儲存。"
+          "content.js?v=program-20261006-1 沒有成功提供網站資料。\n" +
+          "請確認檔名是 content.js?v=program-20261006-1，且內容已完整儲存。"
         );
       }
 
       if (document.getElementById("fallback-home")) {
         window.riseReport(
-          "首頁仍處於備用畫面，script.js 尚未完成網站渲染。\n" +
-          "請確認使用的是上一則「15 個檔案版本」的 script.js，" +
+          "首頁仍處於備用畫面，script.js?v=program-20261006-1 尚未完成網站渲染。\n" +
+          "請確認使用的是上一則「15 個檔案版本」的 script.js?v=program-20261006-1，" +
           "不是之前下載套件中的舊版。"
         );
       }
@@ -137,17 +137,17 @@
 
   <script
     defer
-    src="./content.js"
-    onerror="riseReport('無法載入 content.js。請確認它與 index.html 放在同一個資料夾。')"
+    src="./content.js?v=program-20261006-1"
+    onerror="riseReport('無法載入 content.js?v=program-20261006-1。請確認它與 index.html 放在同一個資料夾。')"
   ></script>
 
   <script
     defer
-    src="./script.js?v=clear-actions-20261002-1"
-    onerror="riseReport('無法載入 script.js。請確認檔名不是 script(1).js 或 script.js.txt。')"
+    src="./script.js?v=program-20261006-1"
+    onerror="riseReport('無法載入 script.js?v=program-20261006-1。請確認檔名不是 script(1).js 或 script.js?v=program-20261006-1.txt。')"
   ></script>
 <link rel="stylesheet" href="role-navigation.css?v=20260915-1">
-<script src="role-navigation.js?v=admin-zone-20261005-1" defer></script>
+<script src="role-navigation.js?v=program-20261006-1" defer></script>
 <link rel="stylesheet" href="theme-rise.css?v=20260922-1">
 </head>
 
@@ -160,7 +160,7 @@
     <div id="error-details"></div>
   </section>
 
-  <!-- 正常載入後，script.js 會替換這個區塊。 -->
+  <!-- 正常載入後，script.js?v=program-20261006-1 會替換這個區塊。 -->
   <div id="app">
     <main id="fallback-home">
       <h1>RISE</h1>

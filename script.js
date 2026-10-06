@@ -472,7 +472,7 @@
   function sciencePage() {
     return `${heading("SCIENCE EXPLORATION", "科學探索", "先找到你有興趣的學科與問題，再選擇文章、影片或教材。")}
       <section class="section container"><div class="card-grid">${subjectCards()}</div>
-      <h2>已發布探索主題</h2><p>選擇探索主題，查看其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>`;
+      <h2>三層教材與單元習作</h2><p>核心講義、延伸閱讀、挑戰題庫；每堂 30 分鐘內，搭配 3–5 題練習。</p><a class="button" href="modules.html">進入科學探索單元 →</a><h2>已發布探索主題</h2><p>選擇探索主題，查看其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>`;
   }
 
   function subjectPage(id) {
@@ -1299,14 +1299,10 @@ function setupCalendar() {
   }
 
   function learningPage() {
-    return `${heading("LEARNING PATHWAYS", "學習路徑", "選擇學科，透過閱讀、觀看與練習，逐步整理自己的理解。")}
-      <section class="section container"><div class="card-grid">
-      <article class="member"><p class="eyebrow">01 · READ</p><h2>閱讀文章</h2><p>先閱讀說明，記下概念、假設與不理解的地方。</p><button class="button secondary" data-learning-kind="article">選擇文章</button></article>
-      <article class="member"><p class="eyebrow">02 · WATCH</p><h2>影片學習</h2><p>觀看講解，暫停思考並整理推理步驟。</p><button class="button secondary" data-learning-kind="video">選擇影片</button></article>
-      <article class="member"><p class="eyebrow">03 · PRACTICE</p><h2>教材練習</h2><p>使用講義或練習材料，留下解題過程與疑問。</p><button class="button secondary" data-learning-kind="material">選擇教材</button></article></div>
-      <p class="small muted">這是建議的學習方式，可依教材說明調整順序；並非固定課程或先修要求。</p>
-      <h2>選擇你的學習單元</h2><p>依老師安排的單元與教材順序學習；點開單元查看內容。</p><div data-resource-feed="learning"></div>
-      <section class="note"><h2>遇到問題時</h2><p>把嘗試過的方法和卡住的地方整理好，可以附上題目或解題圖片，向教師與助教提問。</p>${link("questions.html","前往我的問題","button")}</section></section>`;
+    const structure=D.moduleStructure||{layers:[{title:'核心講義'},{title:'延伸閱讀'},{title:'挑戰題庫'}]};
+    return `${heading("SCIENCE MODULES","科學探索學習單元","閱讀概念、延伸探索，並用完整推理回答習作。")}
+    <section class="section container"><div class="card-grid">${structure.layers.map((layer,i)=>`<article class="member"><p class="eyebrow">0${i+1}</p><h2>${e(layer.title)}</h2></article>`).join('')}</div>
+    <p>每堂課 30 分鐘內，搭配 3–5 題練習與視覺化工具。提交與修訂會保留版本，教師以思路分析、改進建議及延伸提問回饋。</p>${link("modules.html","選擇學習單元 →","button")}${link("science.html","返回科學探索","button secondary")}</section>`;
   }
 
   const questionFields = [

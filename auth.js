@@ -1446,7 +1446,9 @@
           report('回覆已保存。'); if (workbench) await draw(); else await discussion(q,box);
         } catch(err) {report(errorText(err),true);} finally {if(b.isConnected)b.disabled=false;}
       };
-      box.append(entries,more,form);await answers();
+      box.append(entries,more);await answers();
+      if(!staff)box.append(form);
+      await window.RISE_QUESTION_HISTORY({client,user,profile,question:q,root:box,report,reload:async()=>{await draw();}});
     }
     const refresh = () => draw().catch(err=>report(errorText(err),true));
     $('#q-prev').onclick=()=>{offset=Math.max(0,offset-size);refresh();};
@@ -1781,6 +1783,10 @@ function loadSDK() {
             await window.RISE_VIDEO_MANAGER({client,user,profile,root,report});
           }
         }
+      } else if (page === 'program') {
+        if(await loadUser())await window.RISE_PROGRAM({client,user,profile,root,report});
+      } else if (page === 'program-public') {
+        await window.RISE_PROGRAM({client,user:null,profile:{role:'guest'},root,report});
       } else if (page === 'admin-teacher-access') {
         if(await loadUser()){try{await window.RISE_TEACHER_ACCESS.admin({client,profile,root});}catch(e){report(window.RISE_TEACHER_ACCESS.error(e),true);}}
       } else if (page === 'admin-courses') {

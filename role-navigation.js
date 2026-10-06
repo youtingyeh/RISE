@@ -26,10 +26,10 @@
   window.addEventListener('pageshow',()=>{if(client)refreshRole();});
   window.addEventListener('focus',()=>{if(client)refreshRole();});
   const groups = [
-    ['學生專區', [['science.html','科學探索'],['explore.html','影音探索'],['questions.html','我的提問'],['assignments.html','我的作業'],['competitions.html','提問競賽'],['learning-report.html','學習紀錄'],['discussions.html','討論題公告']]],
-    ['助教專區', [['support.html','助教工作台'],['staff-questions.html','待答工作台'],['assignments.html','作業批閱'],['ta-training.html','培訓與認證'],['competitions.html','提問競賽'],['learning-report.html','學習成效']]],
-    ['教師專區', [['support.html','教師工作台'],['staff-questions.html','待答工作台'],['assignments.html','作業與批閱'],['ta-training.html','培訓課程'],['competitions.html','競賽與評審'],['learning-report.html','學習成效'],['discussions.html?view=teacher','討論題公告'],['resources.html?destination=science','科學探索教材管理']]],
-    ['管理員專區', [['admin-console.html','管理總覽'],['admin-console.html#member-management','會員管理'],['admin-console.html#activity-statistics','活躍度統計'],['admin-review.html','教師與助教資格審核'],['admin-teacher-access.html','教師課程權限'],['admin-courses.html','課程分類管理'],['admin-videos.html','影音探索管理']]]
+    ['學生專區', [['science.html','科學探索'],['modules.html','單元教材與習作'],['explore.html','影音探索'],['questions.html','我的提問'],['assignments.html','我的作業'],['competitions.html','提問競賽'],['learning-report.html','學習紀錄'],['discussions.html','討論題公告'],['dialogues.html','對談提問徵集'],['competition-gallery.html','得獎作品展覽'],['yearbook.html','數思年鑑']]],
+    ['助教專區', [['support.html','助教工作台'],['staff-questions.html','待答工作台'],['assignments.html','作業批閱'],['ta-training.html','培訓與認證'],['ta-forum.html','月度助教論壇'],['competitions.html','提問競賽'],['learning-report.html','學習成效']]],
+    ['教師專區', [['support.html','教師工作台'],['staff-questions.html','待答工作台'],['assignments.html','作業與批閱'],['ta-training.html','培訓課程'],['modules.html','單元教材與習作'],['plc.html','教師共備社群'],['club-grants.html','社團補助申請'],['dialogues.html','對談提問徵集'],['competitions.html','競賽與評審'],['learning-report.html','學習成效'],['discussions.html?view=teacher','討論題公告'],['resources.html?destination=science','科學探索教材管理']]],
+    ['管理員專區', [['admin-console.html','管理總覽'],['admin-console.html#member-management','會員管理'],['admin-console.html#activity-statistics','活躍度統計'],['admin-review.html','教師與助教資格審核'],['admin-teacher-access.html','教師課程權限'],['admin-courses.html','課程分類管理'],['admin-videos.html','影音探索管理'],['admin-publication.html','年鑑與展覽管理'],['club-grants.html','社團補助審核']]]
   ];
   function mount(nav) {
     if (nav.dataset.roleNavigation===role) return;
@@ -75,9 +75,10 @@
     document.querySelectorAll('a[href]').forEach(a=>{
       const u=new URL(a.getAttribute('href'),location.href),p=u.pathname.split('/').pop();
       let roles=null;
-      if(['support.html','staff-questions.html','ta-training.html'].includes(p))roles=['ta','teacher','admin'];
+      if(['support.html','staff-questions.html','ta-training.html','ta-forum.html'].includes(p))roles=['ta','teacher','admin'];
+      if(['plc.html','club-grants.html'].includes(p))roles=['teacher','admin'];
       if((p==='resources.html'&&!u.searchParams.has('id'))||(p==='discussions.html'&&u.searchParams.get('view')==='teacher'))roles=['teacher','admin'];
-      if(['admin-teacher-access.html','admin-courses.html','admin-console.html','admin-videos.html','admin-review.html'].includes(p))roles=['admin'];
+      if(['admin-publication.html','admin-teacher-access.html','admin-courses.html','admin-console.html','admin-videos.html','admin-review.html'].includes(p))roles=['admin'];
       if(roles)a.hidden=!roles.includes(role);
     });
   };

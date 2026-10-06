@@ -139,3 +139,10 @@ window.RISE_DATA = {
   resources: []
 };
 
+
+// Teaching structure used by the module editor and learner pages. Empty modules are not sample lessons.
+window.RISE_DATA.moduleStructure = {
+ maxMinutes:30,minExercises:3,maxExercises:5,
+ layers:[{key:'core',title:'核心講義'},{key:'reading',title:'延伸閱讀'},{key:'challenge',title:'挑戰題庫'}],
+ visualProviders:['GeoGebra','Desmos','PhET'],catalogURL:'modules.html'
+};

@@ -90,6 +90,7 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
  async function training(){
   if(!staff){main.textContent='此頁限教師、助教與管理員使用。';return;}
   const seq=++request,data=await read('training');if(seq!==request||!alive)return;main.replaceChildren();
+  text(main,'數思助教認證（Certified TA of the Reasoning Program）','h2');const forum=document.createElement('a');forum.href='ta-forum.html';forum.textContent='前往月度助教論壇 →';main.append(forum);
   text(main,'此為平台內部培訓認證，與教師／助教帳號資格分開；核發不會自動變更帳號角色。認證有效期間一年，可由管理員撤銷。');
   if(teacher){const editor=actionEditor(main,'建立培訓課程','設定培訓教材與考核內容，儲存為草稿或發布給參與培訓的教師與助教。');
    form(editor,field('title','課程名稱','text')+field('body','教材與考核作業','textarea',trainingTemplate)+'<label><input name="published" type="checkbox">立即發布</label>','建立課程',async(values,f)=>{await action('course_create',{...values,published:f.querySelector('[name="published"]').checked});await training();});}
@@ -103,9 +104,9 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
     const d=record(box,(admin?'申請人 '+(newest.applicant_name||applicant.slice(0,8))+' · ':'我的成果 · ')+'共 '+versions.length+' 版');
     const valid=cert?.decision==='approved'&&new Date(cert.valid_until)>new Date();
     text(d,cert?'認證狀態：'+(valid?'有效至 '+date(cert.valid_until):cert.decision==='returned'?'待補件':cert.decision==='revoked'?'已撤銷':'已到期')+'；審核意見：'+cert.note:'尚待審核');
-    if(valid){text(d,'認證編號：'+cert.id);button(d,'下載內部培訓認證紀錄',async()=>{const blob=new Blob(['RISE 平台內部培訓認證\n課程：'+course.title+'\n帳號：'+applicant+'\n認證編號：'+cert.id+'\n核發：'+date(cert.created_at)+'\n有效至：'+date(cert.valid_until)+'\n非學位或法定專業資格；當前有效性請以網站紀錄為準。'],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='RISE-training-'+cert.id+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);});}
+    if(valid){text(d,'認證編號：'+cert.id);button(d,'下載內部培訓認證紀錄',async()=>{const blob=new Blob(['數思助教認證（Certified TA of the Reasoning Program）\nRISE 平台內部培訓認證\n課程：'+course.title+'\n帳號：'+applicant+'\n認證編號：'+cert.id+'\n核發：'+date(cert.created_at)+'\n有效至：'+date(cert.valid_until)+'\n非學位或法定專業資格；當前有效性請以網站紀錄為準。'],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='RISE-training-'+cert.id+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);});}
     for(const v of versions){const history=record(d,'第 '+v.version+' 版 · '+date(v.created_at));text(history,v.body);for(const c of data.certificates.filter(c=>c.submission_id===v.id))text(history,date(c.created_at)+' · '+c.decision+'：'+c.note);}
-    if(admin)form(d,field('decision','審核決定','select',options([['returned','退回補件'],['approved','核發一年認證'],['revoked','撤銷認證']]))+field('note','依四項能力說明審核理由'),'保存審核紀錄',async(values)=>{await action('certify',{id:newest.id,...values});await training();});
+    if(admin)form(d,field('decision','審核決定','select',options([['returned','退回補件'],['approved','核發一年認證'],['revoked','撤銷認證']]))+field('note','依四項能力說明審核理由')+['communication','diagnosis','review','ethics'].map((key,i)=>'<label style="display:block"><input name="'+key+'" type="checkbox">'+['教學溝通技巧通過','錯誤診斷方法通過','試批作業與批閱標準考核通過','學生回饋倫理通過'][i]+'</label>').join(''),'保存審核紀錄',async(values,f)=>{await action('certify',{id:newest.id,...values,competencies:Object.fromEntries(['communication','diagnosis','review','ethics'].map(k=>[k,f.querySelector('[name="'+k+'"]').checked]))});await training();});
    }
   }
  }
@@ -121,12 +122,12 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
   const latest=data.own[0];
   if(['student','ta'].includes(role)&&item.state==='open'&&new Date(item.deadline)>new Date()){
    const editor=section(box,latest?'修改我的投稿':'提交問題作品','請勿在作品中寫入姓名、學校、信箱等識別資料。評審介面不顯示投稿帳號，但無法自動移除你寫在作品內的個資。');
-   const f=form(editor,field('division','組別','select',options([['高中','高中'],['大專','大專']]))+field('field','領域','select',options(['自然科學','人文','社會','跨領域'].map(v=>[v,v])))+field('title','問題標題','text')+field('body','問題、背景、動機及可能影響','textarea',latest?.body||''),'保存投稿版本',async(values)=>{await action('competition_submit',{id:item.id,expected_version:latest?.version||0,...values});await competition(item,box);});
-   if(latest){f.querySelector('[name="title"]').value=latest.title;f.querySelector('[name="division"]').value=latest.division;f.querySelector('[name="field"]').value=latest.field;}
+   const f=form(editor,field('division','組別','select',options([['高中','高中'],['大專','大專']]))+field('field','領域','select',options(['自然科學','人文','社會','跨領域'].map(v=>[v,v])))+field('title','問題標題','text')+field('body','問題內容','textarea',latest?.body||'')+field('background','說明背景','textarea',latest?.background||'')+field('motivation','提問動機','textarea',latest?.motivation||'')+field('impact','可能影響','textarea',latest?.impact||'')+'<label><input name="public_consent" type="checkbox">同意得獎後匿名公開此作品文字（非必要）</label>','保存投稿版本',async(values,f)=>{await action('competition_submit',{id:item.id,expected_version:latest?.version||0,...values,public_consent:f.querySelector('[name="public_consent"]').checked});await competition(item,box);});
+   if(latest){f.querySelector('[name="public_consent"]').checked=latest.public_consent;f.querySelector('[name="title"]').value=latest.title;f.querySelector('[name="division"]').value=latest.division;f.querySelector('[name="field"]').value=latest.field;}
   }
-  for(const entry of data.own){const d=record(box,'我的投稿第 '+entry.version+' 版 · '+date(entry.created_at));text(d,entry.title,'h4');text(d,entry.body);for(const g of data.judgments.filter(g=>g.entry_id===entry.id))text(d,'評審：創新 '+g.innovation+'、深度 '+g.depth+'、適切 '+g.appropriateness+'、啟發 '+g.inspiration+'。'+g.note);}
+  for(const entry of data.own){const d=record(box,'我的投稿第 '+entry.version+' 版 · '+date(entry.created_at));text(d,entry.title,'h4');text(d,entry.body);for(const [key,label] of [['background','說明背景'],['motivation','提問動機'],['impact','可能影響']])if(entry[key])text(d,label+'：'+entry[key]);for(const g of data.judgments.filter(g=>g.entry_id===entry.id))text(d,'評審：創新 '+g.innovation+'、深度 '+g.depth+'、適切 '+g.appropriateness+'、啟發 '+g.inspiration+'。'+g.note);}
   if(data.entries.length)text(box,'評審工作台：請先確認無利益衝突。若認出投稿人或有指導關係，請聯絡主辦人處理後再評分。','h3');
-  for(const entry of data.entries){const d=record(box,'作品 '+entry.id.slice(0,8)+' · '+entry.division+'/'+entry.field+' · '+entry.title);text(d,entry.body);
+  for(const entry of data.entries){const d=record(box,'作品 '+entry.id.slice(0,8)+' · '+entry.division+'/'+entry.field+' · '+entry.title);text(d,entry.body);for(const [key,label] of [['background','說明背景'],['motivation','提問動機'],['impact','可能影響']])if(entry[key])text(d,label+'：'+entry[key]);
    const g=data.judgments.find(g=>g.entry_id===entry.id);if(g)text(d,'已提交評語：'+g.note);
    else if(item.state==='judging')form(d,['innovation','depth','appropriateness','inspiration'].map((k,i)=>field(k,['創新性','深度','適切性','啟發性'][i],'select',options([0,1,2,3,4,5].map(n=>[String(n),String(n)])))).join('')+field('note','評分理由與改進建議'),'確認提交評分（不覆寫）',async(values)=>{await action('competition_judge',{id:entry.id,...values});await competition(item,box);});
   }

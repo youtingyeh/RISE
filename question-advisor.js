@@ -5,7 +5,7 @@ window.RISE_QUESTION_ADVISOR = function ({client, form, config}) {
   const read = () => Object.fromEntries(fields.map(key => [key, form.querySelector('#q-'+key)?.value.trim() || '']));
   const box = document.createElement('section');
   box.className = 'auth-card'; box.dataset.advisor = '';
-  box.innerHTML = '<h3>AI 問題顧問（試用）</h3><p>先寫下問題，再檢查假設、概念是否重複或混淆，以及問題與證據的關聯。AI 提供修改方向，不代替教師判斷，也不會自動送出問題。</p><p>按下分析會將本表的文字傳送至 OpenAI；不傳送附件、帳號姓名或信箱。請先移除文字中的個人資料。建議可能有誤，請自行確認。</p><button type="button" data-analyze>請 AI 檢查我的提問</button><p data-status role="status" aria-live="polite"></p><div data-result></div>';
+  box.innerHTML = '<h3>AI 問題顧問（試用）</h3><p>先寫下問題，再檢查假設、概念是否重複或混淆，以及問題與證據的關聯。AI 提供修改方向，不代替教師判斷，也不會自動送出問題。</p><p>按下分析會將本表的文字傳送至 OpenAI；不傳送附件、帳號姓名或信箱。系統會在你的帳號下保存錯誤類型、模型信心及建議摘要，供學習分析；不保存本次草稿全文。請先移除文字中的個人資料。建議可能有誤，請自行確認。</p><button type="button" data-analyze>請 AI 檢查我的提問</button><p data-status role="status" aria-live="polite"></p><div data-result></div>';
   form.querySelector('button[type="submit"]').before(box);
   const button = box.querySelector('[data-analyze]'), status = box.querySelector('[data-status]'), result = box.querySelector('[data-result]');
   let version = 0, controller = null, reviewed = null;
@@ -46,10 +46,15 @@ window.RISE_QUESTION_ADVISOR = function ({client, form, config}) {
       if (!advice || !['assumptions','concepts','relations','next_steps'].every(k=>Array.isArray(advice[k])&&advice[k].every(x=>typeof x==='string')) || typeof advice.revised_question!=='string' || typeof advice.summary!=='string') throw Error('AI 回覆格式不完整，請稍後重試。');
       reviewed=snapshot;
       paragraph(result,'p',advice.summary);
-      for (const [key,label] of [['assumptions','假設檢查'],['concepts','概念重複與混淆'],['relations','關聯強度與理由'],['next_steps','下一步可以怎麼問']]) {
+      for (const [key,label] of [['assumptions','假設檢查（Hypothesis Check）'],['concepts','概念重複（Concept Redundancy）'],['relations','關聯強度分析（Relevance Strength Analysis）'],['next_steps','下一步可以怎麼問']]) {
         paragraph(result,'h4',label); const list=document.createElement('ul'); result.append(list);
         for(const item of advice[key]) paragraph(list,'li',item);
       }
+      paragraph(result,'h4','常見錯誤初步標籤（待教師確認）');
+      const tagNames={calculation_slip:'運算疏忽',logic_gap:'邏輯斷層',concept_misuse:'概念誤用'};
+      for(const tag of advice.error_tags||[])if(tagNames[tag.code])paragraph(result,'p',tagNames[tag.code]+'：'+tag.reason);
+      if(!advice.error_tags?.length)paragraph(result,'p','本次未識別出有足夠依據的錯誤類型。');
+      if(data.analysis_saved===false)paragraph(result,'p','本次建議已產生，但分析紀錄未能保存，請通知管理員檢查後端設定。');
       paragraph(result,'h4','改寫參考（不會自動套用）'); paragraph(result,'p',advice.revised_question);
       const adopt=paragraph(result,'button','將改寫參考放入「我真正想問什麼？」'); adopt.type='button';
       adopt.addEventListener('click',()=>{
