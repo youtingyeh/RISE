@@ -43,3 +43,27 @@ body[data-page=home] .breadcrumb{display:none}
 @media(max-width:420px){.rise-hero h1{font-size:2.2rem}.rise-board{padding:22px 20px}.rise-cycle{grid-template-columns:1fr}.rise-community-list>div{grid-template-columns:1fr;gap:6px}.rise-hero .actions{flex-direction:column;align-items:stretch}.rise-board-caption{font-size:.78rem}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
 @media print{body{background:white}.site-header,.auth-nav,.demo-bar,.site-footer,.rise-hero .actions{display:none}.rise-board{box-shadow:none}.rise-hero-grid{grid-template-columns:1fr}.auth-shell{padding:0;max-width:none}.auth-card,.rise-track{break-inside:avoid}}
+
+/* Shared left-aligned header for both generated and account pages. */
+.site-header > .container,
+.site-header .nav-wrap {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:14px;
+  padding-block:18px;
+}
+.site-header nav[aria-label="主要導覽"] {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-start;
+  align-self:stretch;
+  width:100%;
+  max-width:none;
+  margin:0 !important;
+  gap:6px 18px !important;
+  text-align:left;
+}
+.site-header .menu-button { display:none; }
+.site-header nav[aria-label="主要導覽"] > a { padding-block:10px; }
