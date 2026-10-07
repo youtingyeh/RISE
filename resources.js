@@ -127,6 +127,7 @@
   async function start(){
     try{
       db=window.supabase.createClient(cfg.url,cfg.publishableKey);
+      if(window.RISE_PUBLIC_RESOURCES)window.RISE_PUBLIC_RESOURCES({client:db,root:document.querySelector('#public-resources')}).catch(()=>{});
       window.RISE_NAV_CLIENT=db;
       window.dispatchEvent(new Event('rise-nav-client'));
       const identity=await db.auth.getUser();user=identity.data?.user;

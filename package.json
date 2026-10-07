@@ -1,0 +1,8 @@
+{
+  "name": "rise-site-checks",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": { "check": "node tools/static-check.mjs", "test": "node tools/test.mjs" },
+  "devDependencies": { "@electric-sql/pglite": "0.5.8", "jsdom": "26.1.0", "linkedom": "0.18.13" }
+}

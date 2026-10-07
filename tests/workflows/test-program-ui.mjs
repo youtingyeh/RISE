@@ -16,9 +16,9 @@ for(const role of ['student','ta','teacher','admin','guest'])for(const area of [
 const historySource=await readFile(new URL('../../question-history.js',import.meta.url),'utf8');
 for(const role of ['student','ta','teacher']){
  const {document,window}=parseHTML('<html><body><div id="root"></div></body></html>');const calls=[],root=document.querySelector('#root'),reports=[];vm.runInContext(historySource,vm.createContext({window,document}));
- const client={from:()=>({select:()=>({eq:()=>({order:async()=>({data:[{version:2,title:'A <img>',body:'Text',change_note:'Updated',created_at:'2026-10-01'}]})})})}),rpc:async(name,args)=>{calls.push({name,args});return {data:null};}};
+ const client={from:()=>({select:()=>({eq:()=>({order:async()=>({data:[{version:2,title:'A <img>',body:'Text',change_note:'Updated',created_at:'2026-10-01'}]})})})}),rpc:async(name,args)=>{calls.push({name,args});return {data:name==='rise_question_timeline'?{items:[]}:null};}};
  await window.RISE_QUESTION_HISTORY({client,user:{id:'u'},profile:{role},question:{id:'q',user_id:'u'},root,report:s=>reports.push(s),reload:async()=>{}});
  assert.equal(root.querySelector('img'),null);const f=root.querySelector('form');for(const input of f.querySelectorAll('textarea')){assert(input.required);input.value='Reasoning';}await f.onsubmit({preventDefault(){}});
- assert.equal(calls[0].name,role==='student'?'rise_revise_question':'rise_review_question');assert.equal(calls[0].args.p_version,2);
+ const saved=calls.find(c=>c.name===(role==='student'?'rise_revise_question':'rise_review_question'));assert(saved);assert.equal(saved.args.p_version,2);
 }
 console.log('PASS 40 program/role screens, explicit action dialogs, restricted community/management forms, question version and triple-feedback forms.');

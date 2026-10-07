@@ -820,6 +820,13 @@
 
     if (deleteInput && deleteButton) {
       const expectedEmail = String(user.email || '').trim().toLowerCase();
+      const cancelDelete=document.createElement('button');cancelDelete.type='button';cancelDelete.className='secondary';
+      cancelDelete.textContent='中止未完成的刪除流程';deleteButton.after(cancelDelete);
+      cancelDelete.onclick=async()=>{
+        cancelDelete.disabled=true;
+        try{checked(await client.rpc('rise_cancel_account_delete'));report('已中止刪除流程，可繼續使用帳號；先前已移除的附件無法復原。');}
+        catch(err){report(errorText(err),true);}finally{cancelDelete.disabled=false;}
+      };
 
       deleteInput.addEventListener('input', () => {
         deleteButton.disabled =
@@ -834,11 +841,15 @@
         )) return;
 
         deleteButton.disabled = true;
+        cancelDelete.disabled = true;
         deleteInput.disabled = true;
         deleteButton.textContent = '正在刪除帳號…';
         report('正在永久刪除帳號，請勿關閉頁面。');
 
         try {
+          const start=await client.rpc('rise_prepare_account_delete');
+          if(start.error?.code==='PGRST202')throw Error('rise:安全刪除功能尚未更新，請管理員執行 backend/security-hardening.sql。');
+          checked(start);
           const preparation = await client.rpc('rise_drive_prepare_delete');
           if (preparation.error?.code !== 'PGRST202') {
             const hasDriveFiles = checked(preparation);
@@ -871,6 +882,11 @@
               checked(await client.storage.from('rise-teaching-files').remove(materials.map(f=>user.id+'/'+f.name)));
             }
           }
+          while (true) {
+            const workFiles=checked(await client.storage.from('rise-work-files').list(user.id,{limit:100}));
+            if(!workFiles.length)break;
+            checked(await client.storage.from('rise-work-files').remove(workFiles.map(f=>user.id+'/'+f.name)));
+          }
           checked(await client.rpc('rise_delete_my_account'));
 
           try {
@@ -887,6 +903,7 @@
 
           location.replace('index.html?account=deleted');
         } catch (err) {
+          cancelDelete.disabled = false;
           deleteInput.disabled = false;
           deleteButton.textContent = '永久刪除我的帳號';
           deleteButton.disabled =
@@ -1050,9 +1067,15 @@
       button.onclick = async () => {
         button.disabled = true;
         try {
-          const data = file.provider === 'google-drive'
-            ? await driveRequest('download', { id: file.path }, true)
-            : checked(await client.storage.from('rise-credentials').download(file.path));
+          let data;
+          if(file.provider==='google-drive')data=await driveRequest('download',{id:file.path},true);
+          else {
+            // Generated on demand after Storage SELECT RLS; never persist the bearer URL.
+            const signed=checked(await client.storage.from('rise-credentials').createSignedUrl(file.path,60));
+            const response=await fetch(signed.signedUrl,{referrerPolicy:'no-referrer',credentials:'omit',cache:'no-store'});
+            if(!response.ok)throw Error('rise:下載連結已失效或無法下載，請重新點選附件。');
+            data=await response.blob();
+          }
           const url = URL.createObjectURL(data), a = document.createElement('a');
           a.href = url; a.download = file.name; a.click();
           setTimeout(() => URL.revokeObjectURL(url), 60000);
@@ -1465,9 +1488,9 @@
           report('回覆已保存。'); if (workbench) await draw(); else await discussion(q,box);
         } catch(err) {report(errorText(err),true);} finally {if(b.isConnected)b.disabled=false;}
       };
-      box.append(entries,more);await answers();
+      const history=await window.RISE_QUESTION_HISTORY({client,user,profile,question:q,root:box,report,reload:async()=>{await draw();}});
+      if(!history?.timeline){box.append(entries,more);await answers();}
       if(!staff)box.append(form);
-      await window.RISE_QUESTION_HISTORY({client,user,profile,question:q,root:box,report,reload:async()=>{await draw();}});
     }
     const refresh = () => draw().catch(err=>report(errorText(err),true));
     $('#q-prev').onclick=()=>{offset=Math.max(0,offset-size);refresh();};
@@ -1862,7 +1885,6 @@ function loadSDK() {
 
   init();
 })();
-
 
 
 

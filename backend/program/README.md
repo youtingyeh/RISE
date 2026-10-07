@@ -15,6 +15,8 @@
 
 ## 上線順序
 
+2026-10-07 安全補強：完成下列既有更新（含 `program-refinement.sql`）後，最後執行 `backend/security-hardening.sql`，再執行唯讀 `backend/security-verify.sql`。詳見 `docs/SECURITY-UPGRADE-20261007.md`；安全補強本身不需要重新部署 Edge Function。
+
 1. 先執行唯讀的 `backend/program-preflight.sql`；它會逐項顯示存在／缺少及原始碼連結，不能只憑舊錯誤訊息認定所有項目都缺少。在既有 Supabase 專案備份後，確認原站後端已安裝。必要前置：`course-assignments.sql`、`training-course-management.sql`、`teacher-course-access.sql`、`qa-upgrade.sql`、`watch-history.sql`、`question-advisor.sql`。原有帳號、審核、Storage 設定應保留。**不要重跑初始 setup.sql。**
    若需補裝 `course-assignments.sql`，後續重套 `training-course-management.sql` 與 `teacher-course-access.sql`；若補裝 `qa-upgrade.sql`，後續重套 `teacher-course-access.sql`，最後再執行本次更新，避免舊 RPC 覆蓋課程權限。若連 `rise_profiles` 都缺少，先確認是否選錯 Supabase 專案，不要重跑 `setup.sql`。
 2. 在 SQL Editor 執行 **`backend/program-upgrade.sql` 全文**。它包含本次四個 migration，單一交易，可重複執行。失敗時不留下半套本次更新。
