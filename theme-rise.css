@@ -67,3 +67,17 @@ body[data-page=home] .breadcrumb{display:none}
 }
 .site-header .menu-button { display:none; }
 .site-header nav[aria-label="主要導覽"] > a { padding-block:10px; }
+
+/* Keep the header origin identical across static and generated templates. */
+body .site-header > .container {
+  width:calc(100% - 64px);
+  max-width:none;
+  margin-inline:32px;
+  padding:18px 0 !important;
+}
+@media(max-width:760px) {
+  body .site-header > .container {
+    width:calc(100% - 36px);
+    margin-inline:18px;
+  }
+}
