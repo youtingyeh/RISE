@@ -128,6 +128,9 @@
     if (/Database error saving new user/i.test(s)) {
       return '帳號資料建立失敗，請聯絡管理員檢查資料庫註冊設定。';
     }
+    if (code === 'same_password' || /new password should be different from the old password/i.test(s)) {
+      return '新密碼與目前密碼相同，請改用不同的新密碼，再按「更新密碼」。';
+    }
     if (code === 'weak_password' || /password.*(weak|least|contain)/i.test(s)) {
       return '密碼不符合帳號服務要求，請使用至少 12 個字元並混合大小寫字母、數字及符號。';
     }
@@ -533,6 +536,7 @@
 
     } else if (page === 'reset') {
       form(
+        '<p>請設定與目前密碼不同的新密碼，至少 12 個字元。</p>' +
         password() +
         button('更新密碼') +
         `
