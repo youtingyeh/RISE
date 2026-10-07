@@ -54,9 +54,9 @@ console.log('PASS SQL: repeatable migration, first request, cooldown, daily caps
 // Real HTML DOM: analyze button must not submit, overwrite, or disable normal submission.
 const {document,window}=parseHTML('<html><body><form id="question-form">'+Object.keys(draft).map(k=>'<input id="q-'+k+'">').join('')+'<button type="submit">送出</button></form></body></html>');
 const form=document.querySelector('form');for(const [k,v] of Object.entries(draft))form.querySelector('#q-'+k).value=v;
-let uiMode='ok',pendingResolve;
+let uiMode='ok',pendingResolve,analysisHash='a'.repeat(64);
 const ui=vm.createContext({document,window,URL,Event:window.Event,AbortController,TypeError,Error,setTimeout,clearTimeout,
- fetch:async()=>{if(uiMode==='pending')await new Promise(r=>pendingResolve=r);return Response.json(uiMode==='ok'||uiMode==='pending'?{advice}:{code:'not_configured'},{status:uiMode==='error'?503:200});}});
+ fetch:async()=>{const hash=analysisHash;if(uiMode==='pending')await new Promise(r=>pendingResolve=r);return Response.json(uiMode==='ok'||uiMode==='pending'?{advice,analysis_hash:hash}:{code:'not_configured'},{status:uiMode==='error'?503:200});}});
 vm.runInContext(await read('question-advisor.js'),ui);window.confirm=()=>true;
 window.RISE_QUESTION_ADVISOR({client:{auth:{getSession:async()=>({data:{session:{access_token:'valid'}}})}},form,config:{url:'https://project.test',publishableKey:'public'}});
 const analyze=form.querySelector('[data-analyze]'),submit=form.querySelector('[type="submit"]'),result=form.querySelector('[data-result]'),status=form.querySelector('[data-status]');
@@ -76,3 +76,17 @@ assert.equal(window.RISE_PARSE_YOUTUBE('https://youtu.be/abcdefghijk'),'abcdefgh
 assert(!(await read('resources.js')).includes("$('#res-learning')"));
 console.log('PASS video: independent admin link, script order, non-admin denied, no duration field, URL validation; removed obsolete resource selector');
 
+
+uiMode='ok';analyze.click();await flush();assert.equal(form.dataset.advisorAnalysisHash,'a'.repeat(64));
+uiMode='pending';analyze.click();await flush();assert.equal(form.dataset.advisorAnalysisHash,undefined);
+const staleResolve=pendingResolve;
+form.dispatchEvent(new window.Event('input',{bubbles:true}));
+analysisHash='b'.repeat(64);uiMode='ok';analyze.click();await flush();
+assert.equal(form.dataset.advisorAnalysisHash,'b'.repeat(64));
+staleResolve();await flush();assert.equal(form.dataset.advisorAnalysisHash,'b'.repeat(64));
+uiMode='error';analyze.click();await flush();assert.equal(form.dataset.advisorAnalysisHash,undefined);
+uiMode='pending';analyze.click();await flush();
+form.dispatchEvent(new window.Event('rise:question-submitting'));
+assert.equal(analyze.disabled,false);assert.equal(form.dataset.advisorAnalysisHash,undefined);
+pendingResolve();await flush();assert.equal(form.dataset.advisorAnalysisHash,undefined);
+console.log('PASS analysis lifecycle: new request clears hash, stale response preserves newer analysis, errors clear hash, submission cancels pending analysis.');

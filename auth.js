@@ -705,7 +705,7 @@
           </p>
           <p>
             可前往教師與助教資源。
-            作業批閱與課程管理功能尚未開放。
+            可從所屬專區進入作業批閱與課程工具，實際可用功能依核准身分及課程權限顯示。
           </p>
           <a href="support.html">教師與助教資源 →</a>
         </aside>
@@ -1533,6 +1533,10 @@
       $('#question-form').onsubmit=async event=>{
         event.preventDefault();const form=event.target,b=form.querySelector('button[type="submit"]');if(busy||b.disabled)return;
         busy=true;b.disabled=true;picker.disabled=true;
+        const analysisAtSubmit=form.dataset.advisorAnalysisHash;
+        form.dispatchEvent(new Event('rise:question-submitting'));
+        const inputStates=[...form.querySelectorAll('input,select,textarea,button')].map(el=>[el,el.disabled]);
+        inputStates.forEach(([el])=>{el.disabled=true;});
         try {
           const reflection=reflectionFields.map(([id,label])=>({label,value:$('#q-'+id).value.trim()})).filter(x=>x.value).map(x=>'【'+x.label+'】\n'+x.value).join('\n\n');
           const questionBody=[$('#q-body').value.trim(),reflection].filter(Boolean).join('\n\n');
@@ -1548,15 +1552,24 @@
           const result=await client.rpc('rise_submit_question',{p_id:submissionId,p_subject:$('#q-subject').value,p_title:$('#q-title').value.trim(),p_body:questionBody,p_images:uploaded});
           if(result.error?.code==='PGRST202')throw Error('rise:圖片問答後端尚未安裝，請管理員執行 backend/qa-upgrade.sql。');
           checked(result);
-          const analysisHash=form.dataset.advisorAnalysisHash;
+          // The question is committed. Optional analysis and list refresh must not
+          // turn this into a failed submission or invite a duplicate submission.
+          const questionId=submissionId,analysisHash=analysisAtSubmit;
+          clear();uploaded=[];submissionId=null;form.reset();offset=0;
+          let warning='';
           if(analysisHash){
-            const linked=await client.rpc('rise_link_question_analysis',{p_question_id:submissionId,p_version:1,p_input_hash:analysisHash});
-            delete form.dataset.advisorAnalysisHash;
-            if(linked.error)report('問題已送出，但 AI 分析尚未附加到此版本；可通知教師或管理員檢查設定。',true);
+            try {
+              checked(await client.rpc('rise_link_question_analysis',{p_question_id:questionId,p_version:1,p_input_hash:analysisHash}));
+            } catch {
+              warning='AI 分析尚未附加到此版本，可通知教師或管理員檢查設定。';
+            }
           }
-          clear();uploaded=[];submissionId=null;form.reset();offset=0;report('問題與圖片已送出。');await draw();
+          try { await draw(); } catch {
+            warning += ' 問題清單暫時無法更新，請按「重新整理」查看。';
+          }
+          report('問題與圖片已送出。'+(warning?' '+warning.trim()+' 不必重複送出。':''),Boolean(warning));
         }catch(err){report(errorText(err)+' 如已開始上傳，請保留此頁重試；已上傳圖片會保留。',true);}
-        finally{busy=false;b.disabled=false;picker.disabled=!!submissionId;showPreview();}
+        finally{inputStates.forEach(([el,disabled])=>{el.disabled=disabled;});busy=false;b.disabled=false;picker.disabled=!!submissionId;showPreview();}
       };
     }
     await draw();

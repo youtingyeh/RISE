@@ -5,12 +5,13 @@ window.RISE_QUESTION_ADVISOR = function ({client, form, config}) {
   const read = () => Object.fromEntries(fields.map(key => [key, form.querySelector('#q-'+key)?.value.trim() || '']));
   const box = document.createElement('section');
   box.className = 'auth-card'; box.dataset.advisor = '';
-  box.innerHTML = '<h3>AI 問題顧問（試用）</h3><p>先寫下問題，再檢查假設、概念是否重複或混淆，以及問題與證據的關聯。AI 提供修改方向，不代替教師判斷，也不會自動送出問題。</p><p>按下分析會將本表的文字傳送至 OpenAI；不傳送附件、帳號姓名或信箱。系統會在你的帳號下保存錯誤類型、模型信心及建議摘要，供學習分析；不保存本次草稿全文。請先移除文字中的個人資料。建議可能有誤，請自行確認。</p><button type="button" data-analyze>請 AI 檢查我的提問</button><p data-status role="status" aria-live="polite"></p><div data-result></div>';
+  box.innerHTML = '<h3>AI 問題顧問（試用）</h3><p>先寫下問題，再檢查假設、概念是否重複或混淆，以及問題與證據的關聯。AI 提供修改方向，不代替教師判斷，也不會自動送出問題。</p><p>按下分析會將本表的文字傳送至 OpenAI；不傳送附件、帳號姓名或信箱。系統會在你的帳號下保存錯誤類型、模型信心及建議摘要，供學習分析。若分析後未更動文字便送出問題，會將該次分析標籤附於問題，供有權限的教師與助教參考；不保存本次草稿全文。請先移除文字中的個人資料。建議可能有誤，請自行確認。</p><button type="button" data-analyze>請 AI 檢查我的提問</button><p data-status role="status" aria-live="polite"></p><div data-result></div>';
   form.querySelector('button[type="submit"]').before(box);
   const button = box.querySelector('[data-analyze]'), status = box.querySelector('[data-status]'), result = box.querySelector('[data-result]');
   let version = 0, controller = null, reviewed = null;
   function invalidate() {
     const wasPending = Boolean(controller);
+    delete form.dataset.advisorAnalysisHash;
     version++; controller?.abort(); controller = null; button.disabled = false;
     if (reviewed) { delete form.dataset.advisorAnalysisHash; status.textContent = '內容已修改，請重新分析。下方為修改前的建議。'; }
     else if (wasPending) status.textContent = '內容已修改，已取消這次分析。可再次分析或直接送出問題。';
@@ -18,6 +19,9 @@ window.RISE_QUESTION_ADVISOR = function ({client, form, config}) {
   }
   form.addEventListener('input', invalidate);
   form.addEventListener('change', invalidate);
+  form.addEventListener('rise:question-submitting', () => {
+    if (controller) { invalidate(); status.textContent='已停止尚未完成的分析，正在送出問題。'; }
+  });
   form.addEventListener('reset', () => { invalidate(); reviewed=null; result.replaceChildren(); status.textContent=''; });
   client.auth.onAuthStateChange?.((event) => {
     if (event === 'SIGNED_OUT') { invalidate(); reviewed=null; result.replaceChildren(); status.textContent='請先登入後再使用 AI 顧問。'; }
@@ -28,6 +32,7 @@ window.RISE_QUESTION_ADVISOR = function ({client, form, config}) {
     const draft = read(), snapshot = JSON.stringify(draft);
     if (!draft.title || !draft.body) { status.textContent='請先填寫問題標題與問題內容。'; return; }
     if (Object.values(draft).join('').length > 12000) { status.textContent='分析文字過長，請縮短至 12000 字以內。'; return; }
+    delete form.dataset.advisorAnalysisHash;
     const current=++version;
     controller=new AbortController(); const requestController=controller;
     const timer=setTimeout(()=>requestController.abort(),55000);
@@ -41,7 +46,8 @@ window.RISE_QUESTION_ADVISOR = function ({client, form, config}) {
       });
       const data=await response.json().catch(()=>({}));
       if (!response.ok) throw Error(response.status===404 || data.code==='not_configured' ? 'AI 顧問尚未啟用，請管理員完成後端設定。你仍可直接送出問題。' : typeof data.error==='string' ? data.error : 'AI 顧問暫時無法使用，你仍可直接送出問題。');
-      if (current!==version || JSON.stringify(read())!==snapshot) { delete form.dataset.advisorAnalysisHash; if(current===version)status.textContent='內容已修改，請重新分析。'; return; }
+      if (current!==version) return;
+      if (JSON.stringify(read())!==snapshot) { delete form.dataset.advisorAnalysisHash; status.textContent='內容已修改，請重新分析。'; return; }
       const advice=data.advice;
       if (!advice || !['assumptions','concepts','relations','next_steps'].every(k=>Array.isArray(advice[k])&&advice[k].every(x=>typeof x==='string')) || typeof advice.revised_question!=='string' || typeof advice.summary!=='string') throw Error('AI 回覆格式不完整，請稍後重試。');
       reviewed=snapshot; form.dataset.advisorAnalysisHash=typeof data.analysis_hash==='string'?data.analysis_hash:'';

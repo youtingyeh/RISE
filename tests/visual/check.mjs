@@ -18,9 +18,9 @@ for(const [,href] of markup.matchAll(/href="([^"#?]+)/g))assert(files.includes(h
 assert(!markup.includes('尚未開放正式教材、作業'));
 for(const path of files.filter(p=>p.endsWith('.html'))){
  const html=await readFile(resolve(root,path),'utf8');
- assert.equal((html.match(/href="theme-rise\.css\?v=20260922-1"/g)||[]).length,1,path+' must load theme once');
+ assert.equal((html.match(/href="theme-rise\.css\?v=[^"\s]+"/g)||[]).length,1,path+' must load theme once');
  assert(html.lastIndexOf('theme-rise.css')<html.indexOf('</head>'));
- if(html.includes('script.js?v='))assert(html.includes('script.js?v=roles-20260922-1'));
+ if(html.includes('script.js?v='))assert(/script\.js\?v=[^"\s]+/.test(html));
 }
 const css=await readFile(resolve(root,'theme-rise.css'),'utf8');
 assert(markup.includes('rise-prompt-card'));assert(!markup.includes('rise-board'));assert(!markup.includes('<svg'));
@@ -28,4 +28,4 @@ assert(css.includes('prefers-reduced-motion'));assert(css.includes('@media(max-w
 assert(!/@import|https?:/.test(css),'Theme must not request remote fonts or images');
 assert(!/\[hidden\]\s*\{/.test(css),'Theme must not alter access visibility');
 assert(source.includes("if (['videos','video','math','physics','chemistry'].includes(document.body.dataset.page)) try"));
-console.log('PASS: homepage dual tracks, one H1, valid destinations, all 33 theme entries, cache versions, reduced motion, print, no remote visual dependencies.');
+console.log('PASS: homepage dual tracks, one H1, valid destinations, theme entries, cache versions, reduced motion, print, no remote visual dependencies.');

@@ -54,7 +54,11 @@
       const setOpen = open => { panel.hidden = !open; button.setAttribute('aria-expanded',String(open)); };
       const open = () => { controls.forEach(c=>c(false)); setOpen(true); };
       controls.push(setOpen);
-      button.addEventListener('click',()=>panel.hidden ? open() : setOpen(false));
+      button.addEventListener('click',e=>{
+        // Mouse pointerenter has already opened the panel before click arrives.
+        if(e.pointerType==='mouse') open();
+        else panel.hidden ? open() : setOpen(false);
+      });
       group.addEventListener('pointerenter',e=>{ if(e.pointerType === 'mouse') open(); });
       group.addEventListener('pointerleave',()=>{ if(!group.contains(document.activeElement)) setOpen(false); });
       group.addEventListener('focusout',e=>{ if(!group.contains(e.relatedTarget)) setOpen(false); });

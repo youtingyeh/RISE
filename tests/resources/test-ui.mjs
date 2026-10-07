@@ -8,5 +8,6 @@ async function make(role){
 }
 for(const role of [null,'student','ta']){const {d}=await make(role);assert(!d.window.document.querySelector('#res-new'));d.window.close();}
 for(const role of ['teacher','admin']){const {d,calls}=await make(role);d.window.document.querySelector('#res-new').click();assert(d.window.document.querySelector('#res-upload'));d.window.document.querySelector('#res-title').value='<script>alert(1)</script>';d.window.document.querySelector('#res-body').value='Text';d.window.document.querySelector('#res-preview').click();assert.equal(d.window.document.querySelector('#res-text-preview script'),null);assert(d.window.document.querySelector('#res-text-preview').textContent.includes('<script>'));
-const form=d.window.document.querySelector('#res-form');await form.onsubmit({preventDefault(){},target:form,submitter:{value:'published'}});assert.equal(calls[0][0],'rise_save_resource');assert.equal(calls[0][1].p_document.status,'published');d.window.close();}
+const form=d.window.document.querySelector('#res-form');await form.onsubmit({preventDefault(){},target:form,submitter:{value:'published'}});const save=calls.find(c=>c[0]==='rise_save_resource');assert(save);assert.equal(save[1].p_document.status,'published');d.window.close();}
 console.log('PASS reader roles cannot edit, teacher/admin editor, literal-text preview, publish submission');
+

@@ -21,7 +21,7 @@ function setup(initialRole,verified=true,error=false){
 const flush=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
 for(const role of [null,'student','ta','teacher','admin']){
  const s=setup(role);assert.deepEqual(s.buttons(),['學生專區']);await flush();
- const expected=role==='admin'?['學生專區','助教專區','教師專區']:role==='ta'?['學生專區','助教專區']:role==='teacher'?['學生專區','教師專區']:['學生專區'];
+ const expected=role==='admin'?['學生專區','助教專區','教師專區','管理員專區']:role==='ta'?['學生專區','助教專區']:role==='teacher'?['學生專區','教師專區']:['學生專區'];
  assert.deepEqual(s.buttons(),expected);
  s.setRole(null);s.authListeners[0]('SIGNED_OUT');assert.deepEqual(s.buttons(),['學生專區']);await flush();assert.deepEqual(s.buttons(),['學生專區']);
 }
@@ -30,3 +30,14 @@ const changed=setup('admin');await flush();changed.setRole('student');changed.li
 const auth=await readFile(new URL('../../auth.js',import.meta.url),'utf8');assert(auth.includes("if (!['teacher','ta','admin'].includes(profile.role))"));
 const sql=await readFile(new URL('../../backend/qa-upgrade.sql',import.meta.url),'utf8');assert(sql.includes('if not rise_private.can_answer() then raise exception'));
 console.log('PASS: guest/student/TA/teacher/admin navigation, default deny, unverified and failed profile lookup, sign-out, role change; staff route and RPC guard present.');
+
+const menu=setup('student');await flush();
+const group=menu.nav.children.find(x=>x.tag==='div'),button=group.children[0],panel=group.children[1];
+group.handlers.pointerenter({pointerType:'mouse'});assert.equal(panel.hidden,false);
+button.handlers.click({pointerType:'mouse'});assert.equal(panel.hidden,false);
+group.handlers.keydown({key:'Escape',preventDefault(){}});assert.equal(panel.hidden,true);
+button.handlers.click({pointerType:''});assert.equal(panel.hidden,false);
+button.handlers.click({pointerType:''});assert.equal(panel.hidden,true);
+button.handlers.click({pointerType:'touch'});assert.equal(panel.hidden,false);
+button.handlers.click({pointerType:'touch'});assert.equal(panel.hidden,true);
+console.log('PASS menu: mouse hover then click stays open; Escape, keyboard and touch toggle correctly.');
