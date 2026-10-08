@@ -65,7 +65,9 @@
       group.addEventListener('keydown', e => {
         if(e.key === 'Escape') { e.preventDefault(); setOpen(false); button.focus(); }
         if(e.target === button && ['ArrowDown','ArrowUp'].includes(e.key)) {
-          e.preventDefault(); open(); (e.key === 'ArrowDown' ? panel.firstElementChild : panel.lastElementChild).focus();
+          e.preventDefault(); open();
+          const links=[...panel.querySelectorAll('a')].filter(a=>!a.hidden&&!a.classList.contains('rise-feature-hidden'));
+          (e.key === 'ArrowDown' ? links[0] : links.at(-1))?.focus();
         }
       });
       group.append(button,panel); nav.append(group);

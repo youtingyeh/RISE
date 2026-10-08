@@ -45,6 +45,12 @@ for(const page of ['support.html','resources.html','resources.html?id=example'])
  const {dom,w}=await setup(page,state(false));assert(w.document.querySelector('main').classList.contains('rise-area-main-hidden'));dom.window.close();
 }
 {
+ const data=state(false);data.flags.competitions=true;
+ const {dom,w}=await setup('index.html',data);w.eval(nav);await pause();
+ w.document.querySelector('.rise-nav-group button').dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));
+ assert.equal(w.document.activeElement.getAttribute('href'),'competitions.html');dom.window.close();
+}
+{
  const data=state(true,true);const {dom,w,api}=await setup('admin-console.html');let writes=0,fail=false;
  w.confirm=()=>true;
  w.RISE_NAV_CLIENT={auth:{onAuthStateChange:()=>{}},rpc:(name,args)=>name==='rise_site_features'?{abortSignal:async()=>({data:structuredClone(data)})}:{abortSignal:()=>Promise.resolve().then(()=>{
