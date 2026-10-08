@@ -59,6 +59,9 @@ window.RISE_ADMIN_CONSOLE = async function({client,user,profile,root,report}) {
     </div>
   </form>
 </dialog>`;
+ const features=document.createElement('section');features.id='site-feature-management';features.className='auth-card';root.prepend(features);
+ if(window.RISE_ADMIN_FEATURES)window.RISE_ADMIN_FEATURES({root:features,user,profile}).catch(()=>{features.textContent='開放設定載入失敗，請重新整理。';});
+ const featureLink=document.createElement('a');featureLink.href='#site-feature-management';featureLink.className='admin-tool-link';featureLink.textContent='網站功能開放設定 →';root.querySelector('.admin-tool-grid')?.prepend(featureLink);
  async function stats(){
   const seq=++statsRequest;$('#admin-metric-status').textContent='正在讀取統計…';$('#admin-metrics').replaceChildren();$('#admin-daily').replaceChildren();
   try{const s=checked(await client.rpc('rise_admin_statistics'));if(!alive||seq!==statsRequest)return;
@@ -155,9 +158,7 @@ if (statsButton) {
  client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||(session?.user&&session.user.id!==user.id))clear();});
  window.addEventListener('pageshow',e=>{if(e.persisted){clear();location.reload();}});
  await Promise.all([stats(),members()]);
- if(alive&&['#member-management','#activity-statistics'].includes(location.hash))$(location.hash)?.scrollIntoView({block:'start'});
+ if(alive&&['#member-management','#activity-statistics','#site-feature-management'].includes(location.hash))$(location.hash)?.scrollIntoView({block:'start'});
 
 };
-
-
 

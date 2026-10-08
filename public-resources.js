@@ -4,7 +4,7 @@ window.RISE_PUBLIC_RESOURCES=async function({client,root}){
  if(!root)return;
  const node=(tag,text,parent=root)=>{const e=document.createElement(tag);e.textContent=text;parent.append(e);return e;};
  const render=async(action,title,destination)=>{
-  const section=node('section','');section.className='auth-card';node('h3',title,section);
+  const section=node('section','');section.className='auth-card';section.dataset.siteFeature=action==='oer_public'?'yearbook':'gallery';node('h3',title,section);
   try{
    const result=await client.rpc('rise_program_api',{p_action:action,p_data:{}});
    if(result.error)throw result.error;

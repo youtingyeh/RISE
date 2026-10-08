@@ -9,7 +9,7 @@ create table storage.buckets(id text primary key,name text,public boolean,file_s
 create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text,owner_id text);
 create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;
 alter table storage.objects enable row level security;grant usage on schema auth,storage to authenticated;grant select,insert,update,delete on storage.objects to authenticated;`);
-for(const file of ['setup','staff-upgrade','google-drive','qa-upgrade','teaching-resources','resource-placement','watch-history','review-mail','course-assignments','training-course-management','teacher-course-access','discussions','video-management','question-advisor','program-upgrade','program-refinement','admin-console','security-hardening','security-hardening']){
+for(const file of ['setup','staff-upgrade','google-drive','qa-upgrade','teaching-resources','resource-placement','watch-history','review-mail','course-assignments','training-course-management','teacher-course-access','discussions','video-management','question-advisor','program-upgrade','program-refinement','admin-console','security-hardening','security-hardening','site-features']){
  try{await pg.exec(await readFile(new URL('../../backend/'+file+'.sql',import.meta.url),'utf8'));}catch(e){console.error('Migration failed: '+file);throw e;}
 }
 const ids=Object.fromEntries(['student','other','ta','teacher','admin','admin2','unverified','orphan'].map((k,i)=>[k,'00000000-0000-4000-8000-'+String(i+1).padStart(12,'0')]));

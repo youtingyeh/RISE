@@ -1280,8 +1280,8 @@ function setupCalendar() {
       <section class="section container">
         <div class="rise-section-intro"><div><p class="eyebrow">TWO TRACKS, ONE JOURNEY</p><h2>思考，從兩條路一起出發。</h2></div><p>數理訓練讓想法有依據，提問練習讓理解更深入。兩條主軸相互支持，將知識轉化為可以帶走的能力。</p></div>
         <div class="rise-tracks">
-          <article class="rise-track"><span class="track-no">01 / 數理能力</span><h3>把「我會了」變成「我懂為什麼」</h3><p>閱讀教材、觀察現象、寫下每一步推理。重點不只在答案，而是你如何建立概念之間的連結。</p><div class="track-tags"><span>概念理解</span><span>邏輯推演</span><span>錯誤分析</span></div><a class="text-link" href="science.html">進入科學探索 →</a></article>
-          <article class="rise-track questioning"><span class="track-no">02 / 提問力</span><h3>把「我好奇」變成一個好問題</h3><p>整理觀察、背景與動機，辨識假設，思考需要什麼證據。讓一個疑問，開啟下一段探索。</p><div class="track-tags"><span>問題意識</span><span>假設檢查</span><span>清楚表達</span></div><a class="text-link" href="questions.html">整理並送出我的問題 →</a></article>
+          <article class="rise-track" data-site-feature="science"><span class="track-no">01 / 數理能力</span><h3>把「我會了」變成「我懂為什麼」</h3><p>閱讀教材、觀察現象、寫下每一步推理。重點不只在答案，而是你如何建立概念之間的連結。</p><div class="track-tags"><span>概念理解</span><span>邏輯推演</span><span>錯誤分析</span></div><a class="text-link" href="science.html">進入科學探索 →</a></article>
+          <article class="rise-track questioning" data-site-feature="questions"><span class="track-no">02 / 提問力</span><h3>把「我好奇」變成一個好問題</h3><p>整理觀察、背景與動機，辨識假設，思考需要什麼證據。讓一個疑問，開啟下一段探索。</p><div class="track-tags"><span>問題意識</span><span>假設檢查</span><span>清楚表達</span></div><a class="text-link" href="questions.html">整理並送出我的問題 →</a></article>
         </div>
       </section>
       <section class="section soft"><div class="container">
@@ -1290,7 +1290,7 @@ function setupCalendar() {
         <div class="actions">${link("assignments.html","作業與修訂歷程","button secondary")}${link("explore.html","瀏覽影音探索","button secondary")}</div>
         <p class="rise-section-note">作業、討論及競賽內容依教師發布與平台開放情況提供；個人學習功能需登入使用。</p>
       </div></section>
-      <section class="section container">${sectionHeading("EXPLORE THE SCIENCES","從一個概念，走向更大的世界","science.html","查看學科 →")}<div class="card-grid">${subjectCards()}</div></section>
+      <section class="section container" data-site-feature="science">${sectionHeading("EXPLORE THE SCIENCES","從一個概念，走向更大的世界","science.html","查看學科 →")}<div class="card-grid">${subjectCards()}</div></section>
       <section class="container"><div class="rise-community">
         <div><p class="eyebrow">LEARN TOGETHER</p><h2>讓學習成為一場對話。</h2><p>以學生的問題為起點，串起助教的陪伴與教師的經驗。《數思新生》期待建立一個持續交流、教學相長的教育社群。</p><a href="about.html">了解計畫理念 →</a></div>
         <div class="rise-community-list"><div><strong>學生</strong><p>主動探索、完整表達，從回饋中修正想法。</p></div><div><strong>助教</strong><p>理解學生的思考脈絡，以再提問引導再思考。</p></div><div><strong>教師</strong><p>發展教材與討論題，支持深度理解與專業回饋。</p></div></div>

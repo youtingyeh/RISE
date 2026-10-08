@@ -1,15 +1,18 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
+<script src="auth-config.js" defer></script>
+<link rel="stylesheet" href="site-features.css?v=availability-20261007-1">
+<script src="site-features.js?v=availability-20261007-1" defer></script>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="RISE 數學、物理、化學教學文章、教材與影片。">
 
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>教學資源｜RISE</title>
 <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="auth.css?v=qa-20260915"><link rel="stylesheet" href="resources.css?v=placement-20260915">
-<script src="auth-config.js" defer></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" defer></script><script src="public-resources.js?v=security-20261007-1" defer></script><script src="resources.js?v=security-20261007-1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" defer></script><script src="public-resources.js?v=availability-20261007-1" defer></script><script src="resources.js?v=security-20261007-1" defer></script>
 <link rel="stylesheet" href="role-navigation.css?v=20260915-1">
-<script src="role-navigation.js?v=audit-20261007-1" defer></script>
+<script src="role-navigation.js?v=availability-20261007-1" defer></script>
 <link rel="stylesheet" href="theme-rise.css?v=header-20261007-2">
 </head>
 <body data-auth-page="resources">
@@ -23,17 +26,15 @@
 <div class="auth-heading"><p class="eyebrow">RISE · ACCOUNT</p><h1>教學資源</h1><p>數學、物理與化學的文章、教材與影片。</p></div>
 
 <p id="auth-status" class="auth-status" role="status" aria-live="polite"></p>
-<section aria-labelledby="oer-heading">
+<section aria-labelledby="oer-heading" data-site-feature-any="yearbook gallery dialogues">
 <h2 id="oer-heading">公開教育資源（OER）與對談成果</h2>
 <p>僅展示經審核發布與授權公開的成果；教材與作品內容由團隊維護。</p>
 <p><a href="dialogues.html">活動前提交對談提問摘要 →</a> · <a href="yearbook.html">數思年鑑 →</a></p>
 <div id="public-resources" class="resource-grid" aria-live="polite"></div>
 </section>
-<div id="auth-root"></div>
+<div id="auth-root" data-site-feature="science"></div>
 <noscript><p>帳號操作需要 JavaScript。公開教材仍可從上方導覽瀏覽。</p></noscript>
 </main>
 <footer class="site-footer"><div class="container"><strong>RISE</strong><p>Reasoning and Inquiry for Science Education</p><p>國立臺灣大學數思新生計畫 · 數學／物理／化學</p></div></footer>
 </body></html>
-
-
 
