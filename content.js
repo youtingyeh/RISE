@@ -6,14 +6,15 @@ window.RISE_DATA = {
     name: "RISE",
     chineseName: "國立臺灣大學數思新生計畫",
     englishName: "Reasoning and Inquiry for Science Education",
-    introduction: "從理解概念、寫出推理，到提出值得探索的問題。"
+    introduction: "從理解概念、寫出推理，到提出值得探索的問題。",
+    ...(window.RISE_SITE_INFO || {})
   },
 
   about: {
     origin: "《數思新生》以青少年數理能力與提問力的雙軌培育為核心。計畫重視抽象概念、邏輯推理與結構化思考，透過練習、錯誤分析及回饋，協助學生由理解知識走向運用能力。",
     goals: "數理軌以模組教材、過程導向練習與助教回饋支持能力養成；提問軌引導學生說明問題背景、動機與可能影響，並規劃訓練營、競賽及學者對談。教師、助教與學生社群共同支持持續學習。",
     audience: "數理模組主要面向具數理興趣與傾向的高中生；計畫中的提問訓練營與競賽另涵蓋高中及大專學生。各活動正式資格以後續公告為準。",
-    contact: "聯絡單位與聯絡方式待填。"
+    contact: "網站與計畫聯絡：ytyeh@g.ntu.edu.tw"
   },
 
   subjects: [

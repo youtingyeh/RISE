@@ -1,12 +1,16 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
+<meta charset="UTF-8">
+<script src="site-info.js?v=public-review-20261012-1" defer></script>
+<script src="site-shell.js?v=public-review-20261012-1" defer></script>
+<link rel="stylesheet" href="site-shell.css?v=public-review-20261012-1">
 <script src="auth-config.js" defer></script>
 <link rel="stylesheet" href="site-features.css?v=availability-20261007-1">
-<script src="site-features.js?v=availability-20261007-1" defer></script>
-  <meta charset="UTF-8">
+<script src="site-features.js?v=public-review-20261012-1" defer></script>
+  
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="RISE 國立臺灣大學數思新生計畫範例網站，提供高中生數學、物理、化學、推理與提問學習資源。">
+  
 
   <title>RISE｜國立臺灣大學數思新生計畫</title>
 
@@ -75,59 +79,26 @@
     }
   </style>
 
-  <!-- 診斷程式必須放在外部檔案之前。 -->
+  <!-- Keep a public fallback even if the main scripts fail. -->
   <script>
     window.riseProblems = [];
-
     window.riseReport = function (message) {
       if (!window.riseProblems.includes(message)) {
         window.riseProblems.push(message);
+        console.error('[RISE page load]', message);
       }
-
-      var panel = document.getElementById("load-status");
-      var details = document.getElementById("error-details");
-
-      if (panel && details) {
-        panel.hidden = false;
-        details.textContent = window.riseProblems.join("\n\n");
-      }
+      var panel = document.getElementById('load-status');
+      if (panel) panel.hidden = false;
     };
-
-    window.addEventListener("error", function (event) {
-      // 收集 JavaScript 語法及執行錯誤。
-      if (event.message) {
-        var file = event.filename
-          ? event.filename.split("/").pop()
-          : "未知檔案";
-
-        window.riseReport(
-          "程式執行錯誤：" + event.message +
-          "\n檔案：" + file +
-          "\n行數：" + (event.lineno || "未知")
-        );
-      }
+    window.addEventListener('error', function (event) {
+      if (event.message) window.riseReport(event.message);
     });
-
-    window.addEventListener("DOMContentLoaded", function () {
-      if (window.riseProblems.length) {
-        window.riseReport(window.riseProblems[0]);
-      }
+    window.addEventListener('DOMContentLoaded', function () {
+      if (window.riseProblems.length) document.getElementById('load-status').hidden = false;
     });
-
-    window.addEventListener("load", function () {
-      if (!window.RISE_DATA) {
-        window.riseReport(
-          "content.js?v=program-20261006-1 沒有成功提供網站資料。\n" +
-          "請確認檔名是 content.js?v=program-20261006-1，且內容已完整儲存。"
-        );
-      }
-
-      if (document.getElementById("fallback-home")) {
-        window.riseReport(
-          "首頁仍處於備用畫面，script.js?v=program-20261006-1 尚未完成網站渲染。\n" +
-          "請確認使用的是上一則「15 個檔案版本」的 script.js?v=program-20261006-1，" +
-          "不是之前下載套件中的舊版。"
-        );
+    window.addEventListener('load', function () {
+      if (!window.RISE_DATA || document.getElementById('fallback-home')) {
+        window.riseReport('Public page rendering incomplete');
       }
     });
   </script>
@@ -135,23 +106,42 @@
   <link
     rel="stylesheet"
     href="./style.css"
-    onerror="riseReport('找不到 style.css。請確認檔名與所在資料夾。')"
+    onerror="riseReport('Required website asset failed to load')"
   >
 
   <script
     defer
-    src="./content.js?v=program-20261006-1"
-    onerror="riseReport('無法載入 content.js?v=program-20261006-1。請確認它與 index.html 放在同一個資料夾。')"
+    src="./content.js?v=public-review-20261012-1"
+    onerror="riseReport('Required website asset failed to load')"
   ></script>
 
   <script
     defer
-    src="./script.js?v=availability-20261008-1"
-    onerror="riseReport('無法載入 script.js?v=program-20261006-1。請確認檔名不是 script(1).js 或 script.js?v=program-20261006-1.txt。')"
+    src="./script.js?v=public-review-20261012-1"
+    onerror="riseReport('Required website asset failed to load')"
   ></script>
 <link rel="stylesheet" href="role-navigation.css?v=20260915-1">
-<script src="role-navigation.js?v=availability-20261008-2" defer></script>
+<script src="role-navigation.js?v=public-review-20261012-1" defer></script>
 <link rel="stylesheet" href="theme-rise.css?v=header-20261007-2">
+<!-- generated social metadata -->
+<meta name="description" content="RISE 數思新生：青少年數理能力暨提問力雙軌培育計畫。從數學、物理與化學探索概念，透過推理、提問與師生回饋持續學習。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:site_name" content="RISE 數思新生">
+<meta property="og:title" content="RISE｜國立臺灣大學數思新生計畫">
+<meta property="og:description" content="RISE 數思新生：青少年數理能力暨提問力雙軌培育計畫。從數學、物理與化學探索概念，透過推理、提問與師生回饋持續學習。">
+<meta property="og:url" content="https://youtingyeh.github.io/RISE/index.html">
+<meta property="og:image" content="https://youtingyeh.github.io/RISE/assets/rise-share.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="RISE 數思新生：數學、物理、化學與提問力">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RISE｜國立臺灣大學數思新生計畫">
+<meta name="twitter:description" content="RISE 數思新生：青少年數理能力暨提問力雙軌培育計畫。從數學、物理與化學探索概念，透過推理、提問與師生回饋持續學習。">
+<meta name="twitter:image" content="https://youtingyeh.github.io/RISE/assets/rise-share.png">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://youtingyeh.github.io/RISE/index.html">
+<!-- end social metadata -->
 </head>
 
 <body data-page="home">
@@ -159,8 +149,7 @@
   <!-- 錯誤提示獨立放置，不會被網站程式覆蓋。 -->
   <section id="load-status" role="alert" hidden>
     <h2>網站尚未完整載入</h2>
-    <p>請將下方錯誤文字複製給我，便能針對原因修正。</p>
-    <div id="error-details"></div>
+    <p>網站暫時無法完整載入，請稍後重新整理；若持續發生，請來信 <a data-site-contact href="mailto:ytyeh@g.ntu.edu.tw">ytyeh@g.ntu.edu.tw</a>。</p>
   </section>
 
   <!-- 正常載入後，script.js?v=program-20261006-1 會替換這個區塊。 -->
@@ -184,7 +173,7 @@
         <a href="team.html">核心團隊</a>
       </nav>
 
-      <p>這是備用首頁，完整網站載入後會自動替換。</p>
+      <p>從理解概念、寫出推理，到提出值得探索的問題。</p>
 
       <noscript>
         <p>

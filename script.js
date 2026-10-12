@@ -8,7 +8,7 @@
 
   if (!D || !D.site || !Array.isArray(D.subjects)) {
     const message =
-      "網站資料未完整載入，請確認 content.js 使用的是「15 個檔案版本」。";
+      "網站暫時無法完整載入，請稍後重新整理；若持續發生，請透過個資告知頁的聯絡信箱通知我們。";
 
     if (typeof window.riseReport === "function") {
       window.riseReport(message);
@@ -34,7 +34,8 @@
       if (!await window.RISE_LEARNING.ready) return;
     } catch (err) {
       app.innerHTML = '<main class="container section"><h1>暫時無法進入學習功能</h1><p id="gate-error"></p><a class="button" href="login.html">前往登入</a> <a href="index.html">返回首頁</a></main>';
-      document.getElementById('gate-error').textContent = err.message;
+      console.error('[RISE learning load]', err);
+      document.getElementById('gate-error').textContent = '學習功能暫時無法載入，請稍後重新整理。';
       return;
     }
   }
@@ -884,6 +885,7 @@
     const about = D.about || {};
 
     const sections = [
+      ["identity", "計畫與平台", `《${D.site.title || "數思新生"}》以「${D.site.subtitle || "青少年數理能力暨提問力雙軌培育計畫"}」為副標；RISE 為本網站的平台簡稱。計畫書所列單位為國立臺灣大學理學院，營運中心為擬設。`],
       ["origin", "計畫緣起", about.origin],
       ["goals", "核心目標", about.goals],
       ["audience", "適合對象", about.audience],
@@ -900,6 +902,7 @@
               `<a href="#${id}">${title}</a>`
             ).join("")}
             ${link("team.html", "認識核心團隊 →", "text-link")}
+            ${link("join.html", "加入我們 →", "text-link")}
           </aside>
 
           <article>
@@ -907,7 +910,7 @@
             ${sections.map(([id, title, text]) => `
               <section id="${id}" class="content-section">
                 <h3>${title}</h3>
-                <p class="preline">${e(text || "內容待填。")}</p>
+                <p class="preline">${id === "contact" ? `網站與計畫聯絡：<a data-site-contact href="mailto:ytyeh@g.ntu.edu.tw">ytyeh@g.ntu.edu.tw</a>` : e(text || "內容待公布。")}</p>
               </section>
             `).join("")}
           </article>
@@ -1272,7 +1275,7 @@ function setupCalendar() {
               <li><span aria-hidden="true">02</span><div><h3>試著推理</h3><p>你怎麼解釋？有什麼依據？</p></div></li>
               <li><span aria-hidden="true">03</span><div><h3>繼續追問</h3><p>如果條件改變，答案也會變嗎？</p></div></li>
             </ol>
-            <a class="text-link" href="questions.html">寫下我的第一個問題 →</a>
+            <a class="text-link" href="questions.html">寫下我的第一個問題（登入後使用） →</a>
           </aside>
         </div>
         <div class="container rise-hero-foot"><span>能力導向的學習</span><span>看見推理的過程</span><span>學生 × 助教 × 教師</span></div>
@@ -1280,8 +1283,8 @@ function setupCalendar() {
       <section class="section container">
         <div class="rise-section-intro"><div><p class="eyebrow">TWO TRACKS, ONE JOURNEY</p><h2>思考，從兩條路一起出發。</h2></div><p>數理訓練讓想法有依據，提問練習讓理解更深入。兩條主軸相互支持，將知識轉化為可以帶走的能力。</p></div>
         <div class="rise-tracks">
-          <article class="rise-track" data-site-feature="science"><span class="track-no">01 / 數理能力</span><h3>把「我會了」變成「我懂為什麼」</h3><p>閱讀教材、觀察現象、寫下每一步推理。重點不只在答案，而是你如何建立概念之間的連結。</p><div class="track-tags"><span>概念理解</span><span>邏輯推演</span><span>錯誤分析</span></div><a class="text-link" href="science.html">進入科學探索 →</a></article>
-          <article class="rise-track questioning" data-site-feature="questions"><span class="track-no">02 / 提問力</span><h3>把「我好奇」變成一個好問題</h3><p>整理觀察、背景與動機，辨識假設，思考需要什麼證據。讓一個疑問，開啟下一段探索。</p><div class="track-tags"><span>問題意識</span><span>假設檢查</span><span>清楚表達</span></div><a class="text-link" href="questions.html">整理並送出我的問題 →</a></article>
+          <article class="rise-track" data-site-feature="science" data-public-introduction><span class="track-no">01 / 數理能力</span><h3>把「我會了」變成「我懂為什麼」</h3><p>閱讀教材、觀察現象、寫下每一步推理。重點不只在答案，而是你如何建立概念之間的連結。</p><div class="track-tags"><span>概念理解</span><span>邏輯推演</span><span>錯誤分析</span></div><a class="text-link" href="science.html">進入科學探索 →</a></article>
+          <article class="rise-track questioning" data-site-feature="questions" data-public-introduction><span class="track-no">02 / 提問力</span><h3>把「我好奇」變成一個好問題</h3><p>整理觀察、背景與動機，辨識假設，思考需要什麼證據。讓一個疑問，開啟下一段探索。</p><div class="track-tags"><span>問題意識</span><span>假設檢查</span><span>清楚表達</span></div><a class="text-link" href="questions.html">整理並送出我的問題（登入後使用） →</a></article>
         </div>
       </section>
       <section class="section soft"><div class="container">
@@ -1496,7 +1499,7 @@ function setupCalendar() {
   if(page === "video") {
     const mediaScript=document.createElement("script");
     mediaScript.src=new URL("./media.js", document.currentScript ? document.currentScript.src : document.baseURI).href;
-    mediaScript.onerror=()=>{const p=document.createElement("p");p.textContent="影片加強功能載入失敗，請確認 media.js。";document.querySelector("#player")?.after(p);};
+    mediaScript.onerror=()=>{const p=document.createElement("p");p.textContent="影片功能暫時無法載入，請重新整理後再試。";document.querySelector("#player")?.after(p);};
     document.head.append(mediaScript);
   }
 })();

@@ -382,6 +382,12 @@
         `
       );
 
+      // This selects application intent only; the database remains responsible for roles.
+      const requestedKind = new URLSearchParams(location.search).get('kind');
+      if (['student', 'teacher', 'ta'].includes(requestedKind)) {
+        root.querySelector('input[name="kind"][value="' + requestedKind + '"]').checked = true;
+      }
+
       bindForm(async f => {
         if (!cfg.privacyURL) {
           throw Error(
@@ -1871,15 +1877,12 @@ function loadSDK() {
     } catch (err) {
       console.error('[RISE auth initialization error]', err);
 
-      const detail = String(
-        err?.message || err || '未知錯誤'
-      );
-
-      report('帳號服務初始化失敗：' + detail, true);
-
+      // Show one friendly message; diagnostics remain in the developer console.
+      report('', false);
       notice.hidden = false;
-      notice.textContent =
-        '帳號服務初始化失敗：' + detail;
+      notice.setAttribute('role', 'alert');
+      notice.textContent = '帳號服務暫時無法載入，請重新整理後再試。若持續發生，請透過頁尾聯絡信箱通知我們。';
+
   }
   }
 

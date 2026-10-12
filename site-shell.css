@@ -1,0 +1,7 @@
+.site-footer .footer-grid{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.site-footer p,.site-footer a{overflow-wrap:anywhere}
+#join-main{max-width:1050px;overflow-wrap:anywhere}
+#join-main h1{font-size:clamp(2rem,6vw,3.4rem)}
+#join-main .content-section{scroll-margin-top:180px}
+#join-main .actions{display:flex;flex-wrap:wrap;gap:12px}
+@media(max-width:600px){.site-footer .footer-grid{grid-template-columns:minmax(0,1fr)}#join-main .button{white-space:normal;max-width:100%;box-sizing:border-box}}

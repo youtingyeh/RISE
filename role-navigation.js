@@ -72,7 +72,7 @@
       });
       group.append(button,panel); nav.append(group);
     });
-    nav.append(link('team.html','核心團隊'),link('schedule.html','重要日程'),link('account.html','會員中心'));
+    nav.append(link('team.html','核心團隊'),link('schedule.html','重要日程'),link('join.html','加入我們'),link('account.html','會員中心'));
     nav.riseCloseMenus=()=>controls.forEach(c=>c(false));
   }
   const scan = () => {

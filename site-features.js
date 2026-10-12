@@ -62,7 +62,7 @@
  }
  function scan(){
   document.querySelectorAll('a[href]').forEach(a=>{const key=keyFor(a.getAttribute('href'));a.classList.toggle('rise-feature-hidden',!!key&&!available(key));});
-  document.querySelectorAll('[data-site-feature]').forEach(el=>el.classList.toggle('rise-feature-hidden',!available(el.dataset.siteFeature)));
+  document.querySelectorAll('[data-site-feature]').forEach(el=>el.classList.toggle('rise-feature-hidden',!(available(el.dataset.siteFeature)||(el.hasAttribute('data-public-introduction')&&['loading','error'].includes(status)))));
   document.querySelectorAll('[data-site-feature-any]').forEach(el=>el.classList.toggle('rise-feature-hidden',!el.dataset.siteFeatureAny.split(' ').some(available)));
   document.querySelectorAll('.video-card').forEach(el=>el.classList.toggle('rise-feature-hidden',!available('videos')));
   document.querySelectorAll('.rise-nav-group').forEach(group=>{
