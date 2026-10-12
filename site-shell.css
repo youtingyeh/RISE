@@ -5,3 +5,5 @@
 #join-main .content-section{scroll-margin-top:180px}
 #join-main .actions{display:flex;flex-wrap:wrap;gap:12px}
 @media(max-width:600px){.site-footer .footer-grid{grid-template-columns:minmax(0,1fr)}#join-main .button{white-space:normal;max-width:100%;box-sizing:border-box}}
+
+.join-page #site-account-nav{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:flex-end;padding:8px 24px}
