@@ -261,7 +261,6 @@
               ${e(D.site.name)}
             </a>
             <p>${e(D.site.chineseName)}</p>
-            <p class="small">${e(D.site.englishName)}</p>
           </div>
 
           <nav class="footer-nav" aria-label="頁尾導覽">
@@ -891,7 +890,7 @@
     ];
 
     return `
-      ${heading("ABOUT RISE", "關於計畫", D.site.englishName)}
+      ${heading("ABOUT RISE", "關於計畫", D.site.subtitle || "青少年數理能力暨提問力雙軌培育計畫")}
       <section class="section container">
         <div class="content-layout">
           <aside class="section-index">
