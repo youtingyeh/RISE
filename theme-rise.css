@@ -732,6 +732,90 @@ body .auth-shell .wf-create-button{background:var(--ink);border-color:var(--ink)
 #join-main li{margin-bottom:6px}
 #join-main li::marker{color:var(--vermilion)}
 
+/* ===== 12. 全站一致：各功能頁沿用同一套配色、字型與左右邊界 ===== */
+/* 帳號列、帳號頁、加入我們、重要日程與一般頁面使用相同的內容寬度（1200px，左右留白 32px／手機 18px）。 */
+.auth-nav{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:4px 16px;color:#fff;line-height:1.8;font-family:var(--font-sans);padding-inline:max(32px,calc((100% - 1200px)/2))}
+.join-page #site-account-nav{padding:6px max(32px,calc((100% - 1200px)/2))}
+.auth-shell{max-width:1264px;padding-inline:32px;font-family:var(--font-sans)}
+#join-main{max-width:none}
+#join-main>section,#join-main>.note,#join-main>nav.actions{max-width:880px}
+.rise-calendar-hero-inner,.rise-calendar-container{width:min(1200px,calc(100% - 64px))}
+
+/* 卡片內的英文狀態標籤與中文標題重複，不再顯示 */
+.auth-shell .auth-card>.eyebrow:first-child{display:none}
+
+/* 帳號頁共用元件 */
+.auth-shell h2{color:var(--ink)}
+.auth-record{border-top-color:var(--rule)}
+.auth-shell dt{color:var(--muted)}
+.auth-shell dialog{color:var(--ink)}
+body .program-dialog{border:1px solid var(--rule);border-radius:14px}
+body .program-dialog::backdrop{background:rgba(29,43,70,.6)}
+
+/* 管理頁 */
+.admin-metric{border:1px solid var(--rule)}
+.admin-metric span{color:var(--muted)}
+.admin-table-wrap th,.admin-table-wrap td{border-color:var(--rule)}
+.admin-table-wrap caption{color:var(--ink)}
+#admin-role-dialog{border-color:var(--rule);border-radius:14px;color:var(--ink)}
+#admin-role-dialog::backdrop{background:rgba(29,43,70,.6)}
+.admin-danger{background:#9b2c22;border-color:#9b2c22}
+.admin-danger:hover{background:#7c2018;border-color:#7c2018}
+.admin-tool-group+.admin-tool-group{border-top-color:var(--rule)}
+
+/* 作業、培訓、競賽 */
+.wf-tabs a{color:var(--text)}
+.wf-tabs a:hover{color:var(--ink);border-bottom-color:var(--rule-strong)}
+.wf-record{border-top-color:var(--rule)}
+.auth-shell .wf-editor-dialog{border-color:var(--rule);border-radius:14px}
+.wf-editor-dialog::backdrop{background:rgba(29,43,70,.6)}
+.wf-create-entry>div:not([hidden]){border-top-color:var(--rule)}
+body .auth-shell .wf-create-button:focus-visible{outline-color:var(--vermilion)}
+
+/* 討論題公告 */
+.discussion-announcement{border-top-color:var(--rule)}
+.discussion-announcement h3{color:var(--ink)}
+.discussion-meta{color:var(--muted)}
+.discussion-excerpt{color:var(--text)}
+.discussion-badge{background:#e8f0fb;color:var(--cobalt)}
+.discussion-badge.is-closed{background:var(--paper-2);color:var(--muted)}
+
+/* 教學資源與探索主題列表 */
+.resource-video{background:var(--ink);border-radius:var(--radius)}
+#res-files p{background:var(--paper-2);border-radius:6px}
+.resource-organize-row{border-bottom-color:var(--rule)}
+#resource-organizer input,#resource-organizer select{border-color:var(--rule-strong);border-radius:8px;color:var(--ink)}
+.resource-destinations button{border-color:var(--rule-strong);color:var(--ink)}
+.resource-destinations button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.resource-feed-controls select{color:var(--ink);border-color:var(--rule-strong);border-radius:8px}
+.resource-feed-controls label{color:var(--ink)}
+#feed-detail li{border-bottom-color:var(--rule)}
+[data-resource-feed] .member .eyebrow{color:var(--subject,var(--muted));letter-spacing:.06em}
+
+/* 功能開放設定 */
+.site-feature-row{background:#fff}
+.site-feature-row button[aria-checked="false"]{background:#fff;color:var(--ink);border:1px solid var(--rule-strong)}
+
+/* 個資告知頁 */
+.privacy-alert{border-left-color:var(--vermilion);background:#fbeeec;border-radius:0 8px 8px 0}
+.privacy-contact{border-color:var(--rule);background:var(--paper-2);border-radius:8px}
+.privacy-index{padding:4px 0 4px 20px;border:0;border-left:2px solid var(--rule);border-radius:0;background:none}
+.privacy-index strong{color:var(--muted);font-size:.95rem}
+.privacy-index a:hover{color:var(--vermilion)}
+
+/* 重要日程頁 */
+.rise-calendar-button:focus-visible{outline:3px solid var(--vermilion)}
+.rise-calendar-day.is-today{background:var(--paper-2)}
+.rise-calendar-day.is-today .rise-calendar-date{background:var(--vermilion);color:#fff}
+.rise-calendar-event{background:#fbeeec}
+.rise-calendar-footer{background:var(--paper-2)}
+
+@media(max-width:760px){
+  .auth-nav,.join-page #site-account-nav{padding-inline:18px}
+  .auth-shell{padding-inline:18px}
+  .rise-calendar-hero-inner,.rise-calendar-container{width:calc(100% - 36px)}
+}
+
 /* ===== 11. 版面斷點 ===== */
 @media(max-width:1100px){
   .rise-hero-grid{gap:44px}
