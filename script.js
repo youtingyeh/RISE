@@ -210,7 +210,7 @@
           : ""
       }
 
-      <div style="background:#132d4c;color:white">
+      <div style="background:var(--strip,#132d4c);color:white">
         <nav
           class="container"
           id="site-account-nav"
@@ -312,9 +312,7 @@
     return D.subjects.map((subject, index) => `
       <a class="subject-card ${e(subject.id)}"
          href="${e(subject.id)}.html">
-        <span class="eyebrow">
-          0${index + 1} / ${e(subject.english)}
-        </span>
+        <span class="eyebrow">${e(subject.english)}</span>
         <h3>${e(subject.name)}</h3>
         <p>${e(subject.focus)}</p>
         <span class="text-link">進入學科探索 →</span>
@@ -1262,20 +1260,20 @@ function setupCalendar() {
       <section class="rise-hero">
         <div class="container rise-hero-grid">
           <div>
-            <p class="edition">數思新生 · 青少年雙軌培育計畫</p>
-            <h1>讓每一次提問，<br>成為<em>理解的起點。</em></h1>
+            <p class="edition"><strong>《數思新生》</strong>青少年數理能力暨提問力雙軌培育計畫</p>
+            <h1>讓每一次提問，<br>成為理解的起點。</h1>
             <p class="intro">不只學會答案，更要看見思考的過程。從數理推演到追問未知，練習把直覺化為理由，把好奇化為值得探索的問題。</p>
-            <div class="actions">${link("science.html","開始科學探索 →","button")}${link("questions.html","提出我的問題","button secondary")}</div>
+            <div class="actions">${link("science.html","開始科學探索","button")}${link("questions.html","提出我的問題","button secondary")}</div>
           </div>
-          <aside class="rise-prompt-card" aria-label="探索與提問的三個起點">
-            <p class="eyebrow">一個好問題，從這裡開始</p>
-            <h2>你想弄懂的，<br>是什麼？</h2>
-            <ol class="rise-prompt-list">
-              <li><span aria-hidden="true">01</span><div><h3>先觀察</h3><p>哪個現象，讓你好奇？</p></div></li>
-              <li><span aria-hidden="true">02</span><div><h3>試著推理</h3><p>你怎麼解釋？有什麼依據？</p></div></li>
-              <li><span aria-hidden="true">03</span><div><h3>繼續追問</h3><p>如果條件改變，答案也會變嗎？</p></div></li>
+          <aside class="rise-prompt-card" aria-label="提問示例：助教如何回饋一個問題">
+            <p class="rise-sheet-meta"><strong>提問示例</strong><span>數列與級數・第 2 版</span></p>
+            <p class="rise-sheet-question">為什麼 1 + ½ + ¼ + ⅛ + … 加下去會<span class="rise-mark-circle">停在 2</span>，但 1 + ½ + ⅓ + ¼ + … 卻會<span class="rise-mark-wave">一直變大</span>？</p>
+            <ol class="rise-sheet-notes" aria-label="助教回饋">
+              <li><span class="rise-note-kind">思路分析</span><p>你注意到兩串的每一項都越來越小，這個比較抓得很準。</p></li>
+              <li><span class="rise-note-kind">改進建議</span><p>把後面的項分組看看：⅓＋¼、⅕ 到 ⅛……每一組至少有多大？</p></li>
+              <li><span class="rise-note-kind">延伸提問</span><p>「每一項都趨近 0」，就足以保證總和收斂嗎？</p></li>
             </ol>
-            <a class="text-link" href="questions.html">寫下我的第一個問題（登入後使用） →</a>
+            <a class="text-link" href="questions.html">寫下我的第一個問題（登入後使用）</a>
           </aside>
         </div>
         <div class="container rise-hero-foot"><span>能力導向的學習</span><span>看見推理的過程</span><span>學生 × 助教 × 教師</span></div>
@@ -1283,8 +1281,8 @@ function setupCalendar() {
       <section class="section container">
         <div class="rise-section-intro"><div><p class="eyebrow">TWO TRACKS, ONE JOURNEY</p><h2>思考，從兩條路一起出發。</h2></div><p>數理訓練讓想法有依據，提問練習讓理解更深入。兩條主軸相互支持，將知識轉化為可以帶走的能力。</p></div>
         <div class="rise-tracks">
-          <article class="rise-track" data-site-feature="science" data-public-introduction><span class="track-no">01 / 數理能力</span><h3>把「我會了」變成「我懂為什麼」</h3><p>閱讀教材、觀察現象、寫下每一步推理。重點不只在答案，而是你如何建立概念之間的連結。</p><div class="track-tags"><span>概念理解</span><span>邏輯推演</span><span>錯誤分析</span></div><a class="text-link" href="science.html">進入科學探索 →</a></article>
-          <article class="rise-track questioning" data-site-feature="questions" data-public-introduction><span class="track-no">02 / 提問力</span><h3>把「我好奇」變成一個好問題</h3><p>整理觀察、背景與動機，辨識假設，思考需要什麼證據。讓一個疑問，開啟下一段探索。</p><div class="track-tags"><span>問題意識</span><span>假設檢查</span><span>清楚表達</span></div><a class="text-link" href="questions.html">整理並送出我的問題（登入後使用） →</a></article>
+          <article class="rise-track" data-site-feature="science" data-public-introduction><span class="track-no">數理能力</span><h3>把「我會了」變成「我懂為什麼」</h3><p>閱讀教材、觀察現象、寫下每一步推理。重點不只在答案，而是你如何建立概念之間的連結。</p><div class="track-tags"><span>概念理解</span><span>邏輯推演</span><span>錯誤分析</span></div><a class="text-link" href="science.html">進入科學探索 →</a></article>
+          <article class="rise-track questioning" data-site-feature="questions" data-public-introduction><span class="track-no">提問力</span><h3>把「我好奇」變成一個好問題</h3><p>整理觀察、背景與動機，辨識假設，思考需要什麼證據。讓一個疑問，開啟下一段探索。</p><div class="track-tags"><span>問題意識</span><span>假設檢查</span><span>清楚表達</span></div><a class="text-link" href="questions.html">整理並送出我的問題（登入後使用） →</a></article>
         </div>
       </section>
       <section class="section soft"><div class="container">
