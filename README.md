@@ -1,119 +1,69 @@
-# RISE｜國立臺灣大學數思新生計畫（範例網站）
+# RISE｜國立臺灣大學數思新生計畫
 
 Reasoning and Inquiry for Science Education
 
-此儲存庫是依計畫書方向建立的網站範例，服務對象以高中生為主，內容涵蓋數學、物理、化學、提問訓練、影片導讀與教師審核流程。網站目前仍是範例版本；正式教材、團隊名單、日程與聯絡資訊須依計畫營運狀況更新。
+RISE 是數學、物理、化學與提問力的教育平台。前端採靜態 HTML/CSS/JavaScript；帳號、資料與附件使用 Supabase。正式教材、團隊名單與活動由團隊維護，頁面中的範例與規劃不代表已開課或完成營運驗收。
 
-## 網站架構
+## 本機開發
 
-- 公開頁面：首頁、關於計畫、三學科探索、影音目錄、教學資源、日程與團隊。
-- 登入後頁面：學習路徑、提問工作台、個別影片與個人觀看紀錄。
-- 帳號頁面：註冊、登入、信箱驗證、密碼重設、會員中心與教師資格申請。
-- 管理頁面：教師申請審核；真正權限由 Supabase 資料庫角色與 RLS 判斷，不信任前端字串。
-
-## 首次安裝
-
-1. 建立 Supabase 專案。
-2. 在 Supabase SQL Editor 執行 `backend/setup.sql`，建立帳號資料、教師申請、審核事件與權限規則。
-3. 再執行 `backend/watch-history.sql`，建立個人觀看紀錄與儲存函式。此檔可重複執行，不會刪除既有觀看資料。
-4. 執行 `backend/delete-account.sql`，安裝登入使用者自助永久刪除本人帳號的安全函式。
-5. 在 Supabase Authentication 開啟 Email provider 與 Confirm email，密碼最低長度建議設為 12。
-6. 設定 Site URL 與 Redirect URLs，詳細步驟見 `backend/ACCOUNT-SETUP.md`。
-7. 在 `auth-config.js` 只填 Project URL、publishable／anon key、正式網站網址與已核定的個資告知頁網址。
-8. 使用者完成註冊及信箱驗證後，才可登入受保護的學習頁面。
-
-## 安全注意事項
-
-- 可以公開：Project URL、publishable key 或 legacy anon key。
-- 禁止放入 GitHub：`service_role`、secret key、資料庫密碼、SMTP 密碼或任何管理憑證。
-- GitHub Pages 是公開靜態網站。若 MP4 放在公開儲存庫，知道網址的人仍能下載；真正私密影片須改用私有儲存與後端短效網址。
-- 前端登入閘門改善使用流程，但真正資料權限必須由 Supabase RLS 與 RPC 驗證。
-- `privacyURL` 必須使用 HTTPS 並連至目前有效的個人資料蒐集告知事項；未設定時註冊會保持停用。
-- 自助刪除函式沒有 user id 參數，只能刪除目前登入的一般帳號；管理員帳號須由後台審慎處理。
-
-## 新增影片
-
-在 `content.js` 的 `videos` 陣列新增物件。每筆 `id` 必須唯一，`subject` 使用 `math`、`physics` 或 `chemistry`。
-
-YouTube 範例：
-
-```javascript
-{
-  id: "math-001",
-  subject: "math",
-  title: "影片標題",
-  summary: "影片簡介",
-  speaker: "講者姓名",
-  level: "入門",
-  duration: "20 分鐘",
-  source: "youtube",
-  youtubeId: "YouTube影片ID",
-  question: "觀看前問題",
-  reflection: "觀看後反思",
-  chapters: [
-    { seconds: 0, title: "開始" }
-  ],
-  demo: false
-}
-```
-
-自有影片範例：
-
-```javascript
-{
-  id: "physics-001",
-  subject: "physics",
-  title: "影片標題",
-  summary: "影片簡介",
-  source: "file",
-  videoUrl: "videos/physics-001.mp4",
-  poster: "images/physics-001.jpg",
-  chapters: [],
-  demo: false
-}
-```
-
-## 自動檢查
-
-每次推送至 `main` 或建立 Pull Request 時，GitHub Actions 會執行：
-
-- 全部 JavaScript 語法檢查。
-- HTML 本機連結與重複 `id` 檢查。
-- 必要檔案檢查。
-- `content.js` 學科與影片資料關聯檢查。
-- `script.js` 動態帳號列掛載點檢查。
-
-本機可執行：
+使用 Node.js 24（與 CI 一致），在儲存庫根目錄執行：
 
 ```bash
-find . -type f -name '*.js' -not -path './.git/*' -print0 | xargs -0 -n1 node --check
-node tools/static-check.mjs
+npm ci --ignore-scripts
+npm run check
+npm test
+python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-## 上線前驗收
+依賴統一由根目錄的 `package.json` 與 `package-lock.json` 管理，不需在測試子目錄另行安裝。`npm run check` 包含 JavaScript 語法、本機連結、重複 id、三學科資料與敏感金鑰樣式檢查；`npm test` 會在各腳本所需的工作目錄執行完整測試。
 
-1. 無痕視窗未登入，直接開啟 `learning.html`、`inquiry.html`、`video-detail.html?id=...`，應導向登入頁。
-2. 登入後，頁首應顯示帳號信箱、會員中心與登出按鈕。
-3. 播放影片約 20 秒後暫停，會員中心應出現觀看紀錄。
-4. 不同帳號不能讀取彼此的申請、審核紀錄或觀看紀錄。
-5. 一般使用者不能呼叫管理員審核 RPC；管理員自動具備教師資格，無須提交教師申請。
-6. 一般帳號輸入完整信箱後可永久刪除自己；不得刪除其他帳號，管理員帳號不得從前台自刪。
+資料庫測試使用 PGlite 與模擬的 Auth/Storage；前端與 Edge Function 測試會模擬外部服務。通過測試不代表正式 Supabase、SMTP、Google Drive 或 AI 已部署或連通。
 
-## 教師附件、助教與學生問答升級
+GitHub Actions 會在推送至 `main` 或建立 Pull Request 時執行相同檢查。CI 與網站部署流程獨立，不能把測試通過當作部署完成。
 
-已安裝的專案請在 SQL Editor 新增 snippet，執行 `backend/staff-upgrade.sql`。不要重跑 setup.sql。此 migration 可重複執行，保留既有帳號與案件。
+## 網站與程式入口
 
-- 註冊學生、教師或助教；教師及助教先取得一般帳號，驗證信箱後到 teacher-apply.html 提交審核。
-- 證明附件 1–3 份，每份最多 5 MiB，PDF/JPEG/PNG/WebP；私有 rise-credentials bucket，本人及管理員可下載，不可覆寫。
-- 管理員在 admin-review.html 看附件並核准正確角色。舊申請預設為教師。
-- questions.html：學生僅查看自己的問題；教師、助教與管理員共用問答工作台。回覆不自動寄信。
-- 自助刪帳會先透過 Storage API 清除本人證明，再刪除 Auth 帳號。若刪帳中斷，附件可能已移除，帳號仍存在，可重試；不要直接 DELETE storage.objects。
-- 補件替換後的舊附件仍保留於本人私有目錄以供歷次審核追溯，於刪帳時一併移除。中斷上傳的檔案亦如此。
+- 公開資訊：首頁、關於計畫、加入我們、核心團隊、重要日程。
+- 學生：科學探索、三學科、單元教材與習作、我的提問、作業、競賽、學習紀錄及討論題公告。
+- 教師／助教：依核准角色及課程範圍存取待答、批閱、培訓與共備功能。
+- 管理員：會員、資格審核、課程權限、影音與網站功能開關。
+- `learning.html`、`inquiry.html` 保留舊連結相容性；不重新加入「學習路徑」學生導覽。現在的主要入口為 `science.html`、`modules.html`、`questions.html`。
 
-驗收：以兩名學生、一名助教及一名管理員測試隔離、附件下載、退回補件、核准、回覆及刪帳。此版已在本機 PostgreSQL 相容測試環境驗證 migration 重複執行、跨帳號隔離、核准助教、角色撤銷及禁止舊 RPC 繞過附件要求；實際 SMTP 與 Storage 檔案操作仍須於 Supabase 安裝後驗收。
+| 位置 | 用途 |
+| --- | --- |
+| `content.js`、`site-info.js` | 學科、內容欄位與公開計畫資訊 |
+| `script.js` | 首頁、三學科、影音與其他動態公開頁 |
+| `auth.js`、`role-navigation.js` | 登入、帳號、問答及角色導覽 |
+| `learning-workflows.js`、`program.js` | 作業、培訓、競賽、單元與社群流程 |
+| `theme-rise.css` | 全站主題，設計說明見 [視覺指引](docs/VISUAL-20261013.md) |
+| `backend/`、`supabase/` | SQL、部署指引與 Edge Functions |
+| `tools/`、`tests/` | 維護工具與回歸測試 |
 
+教材與影片請使用教師／管理員的既有管理入口；影音管理見 [部署與操作說明](backend/VIDEO-MANAGEMENT-SETUP.md)。`content.js` 保留基本內容與範例欄位，不能以它取代後端的已發布資料與權限。
 
+## 後端與部署文件
 
-## Google Drive 附件（選用）
+未來目標是校內網頁伺服器與自架 Supabase；目前設定與正式部署狀態仍須核實。先讀 [Codex 交接與部署約束](docs/CODEX-HANDOFF.md)。
 
-完整部署與驗收步驟見 `backend/GOOGLE-DRIVE-SETUP.md`。先執行 `backend/google-drive.sql`，再部署 `supabase/functions/rise-drive/index.ts`，最後由管理員在審核頁按「連接 Google Drive 並啟用」。未啟用前保留原儲存方式；舊附件仍可讀取。Google 憑證只放 Supabase Secrets。
+既有專案**不要重跑初始 `backend/setup.sql`**。先盤點目前 schema 與備份，再依相依順序補齊增量更新；舊 migration 仍可能是新環境的必要前置，不能因日期較早就刪除或隨意重跑。初始帳號安裝文件只涵蓋基礎功能，不能代替完整部署。
+
+| 項目 | 文件 |
+| --- | --- |
+| 帳號與 Auth URL | [基礎帳號設定](backend/ACCOUNT-SETUP.md) |
+| 教學／社群更新及前置檢查 | [模組與 SQL 順序](backend/program/README.md) |
+| RLS、附件與安全刪帳 | [安全補強與驗收](docs/SECURITY-UPGRADE-20261007.md) |
+| 教師課程授權 | [課程範圍設定](backend/TEACHER-COURSE-ACCESS.md) |
+| 教材與附件 | [教學資源](backend/TEACHING-RESOURCES-SETUP.md)、[Google Drive](backend/GOOGLE-DRIVE-SETUP.md) |
+| 審核通知與 AI | [通知信](backend/REVIEW-MAIL-SETUP.md)、[AI 顧問](backend/QUESTION-ADVISOR-SETUP.md) |
+| 網站功能開關 | [開放控制與限制](docs/SITE-FEATURES.md) |
+
+## 維護與安全
+
+- 前端只放 Supabase Project URL、publishable／anon key 等公開設定。`service_role`、資料庫密碼、SMTP 密碼與其他私密金鑰不得提交到 GitHub。
+- 角色與課程隔離由後端 RLS／RPC 驗證，不能只靠隱藏前端入口。附件維持私有；公開儲存庫內的影片不能視為私密內容。
+- `privacyURL` 必須以 HTTPS 指向有效個資告知頁；自助刪帳只處理本人，附件透過 Storage／Drive API 清理，不直接刪除 `storage.objects` 冒充實體檔案刪除。
+- 調整頁面標題或介紹後，可執行 `node tools/generate-site-metadata.mjs` 更新 metadata 與 sitemap，檢查差異後再跑完整檢查。此工具會改寫 HTML 與 sitemap，不是唯讀檢查。
+- GitHub Pages 現有基址為 `/RISE/`；搬站時須分別核對 Auth callback、redirect、CORS、Edge Function 設定及外部服務，不能只更換網頁網址。
+- 舊版程式與一次性檢查記錄可用 `git log --all -- <path>`、`git show <commit>:<path>` 查閱。還原時只取需要的變更，避免覆蓋後續功能。
+
+上線前仍須以隔離測試帳號驗證登入／重設密碼、跨帳號與跨課程隔離、提問及批閱、觀看紀錄、附件下載與清理失敗重試。不要刪除真實學生資料作為測試，也不要把 GitHub 更新當成正式資料庫遷移已完成。

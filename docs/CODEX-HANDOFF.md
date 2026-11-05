@@ -10,7 +10,7 @@
 - 國立臺灣大學數思新生計畫，免費對外提供教育服務，有營運預算。
 - 靜態 HTML/CSS/JavaScript；backend/ 保存 SQL 與部署說明，supabase/ 保存相關後端程式，tools/ 與 tests/ 保存檢查工具。
 - 已確認目錄包含 questions.html、staff-questions.html、ta-training.html、teacher-course-access.js 等；檔案存在不代表功能已驗收。
-- README 保留早期學習路徑等敘述，可能與使用者後續決策不同；先比對程式與本文件，不直接照舊安裝清單重跑。
+- 本機開發與維護入口見 README；正式後端狀態仍須另行核實，不以文件代替驗收，也不直接重跑初始安裝清單。
 - 正式 Supabase schema、已部署函式、Secrets、SMTP、附件儲存位置與校內設備目前未核對。
 - 計畫書 PDF 曾於對話提供，但本次未讀取；需要逐條比對時，請確認儲存庫是否有正式版本，否則請使用者提供。不可聲稱已完全符合計畫書。
 

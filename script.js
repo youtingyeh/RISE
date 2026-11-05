@@ -20,7 +20,7 @@
   }
 
   // 先驗證登入，再建立表單或播放器；直接輸入網址也適用。
-  if (['learning', 'inquiry', 'video'].includes(document.body.dataset.page)) {
+  if (['learning', 'video'].includes(document.body.dataset.page)) {
     app.innerHTML = '<main class="container section"><h1>確認登入狀態</h1><p>正在準備你的學習空間…</p></main>';
     try {
       await new Promise((resolve, reject) => {
@@ -84,9 +84,7 @@
   }catch(error){catalogError=true;console.warn('[RISE video catalog]',error.message);}
 
   const videos = D.videos || [];
-  const resources = D.resources || [];
   const team = D.team || [];
-  const events = D.events || [];
 
   function getSubject(id) {
     return D.subjects.find((item) => item.id === id);
@@ -94,33 +92,6 @@
 
   function validYouTubeId(id) {
     return /^[A-Za-z0-9_-]{11}$/.test(id || "");
-  }
-
-  function safeURL(value) {
-    const raw = String(value || "").trim();
-
-    if (!raw || /[\u0000-\u0020\\]/.test(raw)) return "";
-
-    if (/^https?:\/\//i.test(raw)) {
-      try {
-        const url = new URL(raw);
-        return url.protocol === "https:"
-          ? url.href
-          : "";
-      } catch {
-        return "";
-      }
-    }
-
-    if (
-      /^files\/[^?#]+$/i.test(raw) &&
-      !raw.includes("..") &&
-      !raw.includes(":")
-    ) {
-      return raw;
-    }
-
-    return "";
   }
 
   function link(href, label, className = "button") {
@@ -308,7 +279,7 @@
   /* ===== 共用卡片 ===== */
 
   function subjectCards() {
-    return D.subjects.map((subject, index) => `
+    return D.subjects.map(subject => `
       <a class="subject-card ${e(subject.id)}"
          href="${e(subject.id)}.html">
         <span class="eyebrow">${e(subject.english)}</span>
@@ -356,115 +327,6 @@
     `;
   }
 
-  function resourceRow(resource) {
-    const url = safeURL(resource.url);
-
-    return `
-      <article class="resource-row">
-        <div>
-          <span class="badge">${e(resource.type || "資源")}</span>
-          <h3>${e(resource.title)}</h3>
-          <p>${e(resource.description)}</p>
-        </div>
-        ${
-          url
-            ? `<a class="button secondary"
-                  href="${e(url)}"
-                  target="_blank"
-                  rel="noopener noreferrer">
-                 開啟資源 ↗
-               </a>`
-            : '<span class="badge">檔案待提供</span>'
-        }
-      </article>
-    `;
-  }
-
-  /* ===== 首頁 ===== */
-
-  function homePage() {
-    const entries = [
-      ["about.html", "01", "關於計畫", "計畫緣起、目標與聯絡資訊"],
-      ["team.html", "02", "核心團隊", "參與成員與專長領域"],
-      ["schedule.html", "03", "重要日程", "活動與時程公告"],
-      ["resources.html", "04", "教學資源", "講義、學習單與延伸材料"]
-    ];
-
-    return `
-      <section class="hero">
-        <div class="container hero-grid">
-          <div>
-            <p class="eyebrow">${e(D.site.englishName)}</p>
-            <div class="hero-wordmark">${e(D.site.name)}</div>
-            <h1>${e(D.site.chineseName)}</h1>
-            <p class="hero-description">${e(D.site.introduction)}</p>
-
-            <div class="actions">
-              ${link("explore.html", "瀏覽影音", "button gold")}
-              ${link("science.html", "探索三學科", "button light")}
-            </div>
-          </div>
-
-          <aside class="hero-directory" aria-label="學科入口">
-            <p class="eyebrow">EXPLORE THE DISCIPLINES</p>
-            ${D.subjects.map((subject, index) => `
-              <a href="${e(subject.id)}.html">
-                <span class="small">
-                  0${index + 1} / ${e(subject.english)}
-                </span>
-                <strong>${e(subject.name)}</strong>
-                <span class="focus">${e(subject.focus)} ↗</span>
-              </a>
-            `).join("")}
-          </aside>
-        </div>
-      </section>
-
-      <section class="section container">
-        ${sectionHeading(
-          "LEARNING COLLECTION",
-          "影音探索",
-          "explore.html",
-          "完整影音目錄 →"
-        )}
-        <p class="muted">依學科尋找影片，進入單元導讀與反思。</p>
-        <div class="card-grid">
-          ${
-            videos.length
-              ? videos.slice(0, 3).map(videoCard).join("")
-              : emptyState("影音內容準備中")
-          }
-        </div>
-      </section>
-
-      <section class="section soft">
-        <div class="container">
-          ${sectionHeading(
-            "DISCIPLINES",
-            "三個學科，三種探索入口",
-            "science.html",
-            "科學探索 →"
-          )}
-          <div class="card-grid">${subjectCards()}</div>
-        </div>
-      </section>
-
-      <section class="section container">
-        ${sectionHeading("PROGRAM INFORMATION", "認識計畫")}
-        <div class="info-grid">
-          ${entries.map(([href, number, title, text]) => `
-            <a class="info-card" href="${href}">
-              <span class="eyebrow">${number}</span>
-              <h3>${title}</h3>
-              <p>${text}</p>
-              <span class="text-link">查看內容 →</span>
-            </a>
-          `).join("")}
-        </div>
-      </section>
-    `;
-  }
-
   /* ===== 科學探索與三學科頁 ===== */
 
   function sciencePage() {
@@ -478,7 +340,6 @@
     if (!subject) return notFoundPage();
 
     const subjectVideos = videos.filter((item) => item.subject === id);
-    const subjectResources = resources.filter((item) => item.subject === id);
     const topics = subject.topics || [];
 
     return `
@@ -855,27 +716,6 @@
     `;
   }
 
-  function setupPlayer() {
-    const loadButton = $("#load-video");
-    const video = selectedVideo();
-
-    if (!loadButton || !video || !validYouTubeId(video.youtubeId)) return;
-
-    loadButton.addEventListener("click", () => {
-      const frame = document.createElement("iframe");
-
-      frame.src = "https://www.youtube-nocookie.com/embed/" + video.youtubeId;
-      frame.title = video.title;
-      frame.referrerPolicy = "strict-origin-when-cross-origin";
-      frame.allow =
-        "accelerometer; autoplay; clipboard-write; encrypted-media; " +
-        "gyroscope; picture-in-picture; web-share";
-      frame.allowFullscreen = true;
-
-      $("#player").replaceChildren(frame);
-    });
-  }
-
   /* ===== 關於計畫 ===== */
 
   function aboutPage() {
@@ -957,288 +797,6 @@
     `;
   }
 
-/* ===== 重要日程 ===== */
-
-function schedulePage() {
-  const sorted = [...events]
-    .filter(event =>
-      /^\d{4}-\d{2}-\d{2}$/.test(event.date || "")
-    )
-    .sort((a, b) =>
-      String(a.date).localeCompare(String(b.date))
-    );
-
-  let content = sorted.map(event => {
-    const url = safeURL(event.url);
-
-    return `
-      <article class="schedule-row">
-        <div class="schedule-date">
-          <time datetime="${e(event.date)}">
-            ${e(event.date)}
-          </time>
-        </div>
-
-        <div>
-          <h2>${e(event.title)}</h2>
-
-          ${event.location ? `
-            <p>${e(event.location)}</p>
-          ` : ""}
-
-          ${event.description ? `
-            <p class="preline">${e(event.description)}</p>
-          ` : ""}
-
-          ${url ? `
-            <a
-              class="text-link"
-              href="${e(url)}"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              活動資訊 ↗
-            </a>
-          ` : ""}
-        </div>
-      </article>
-    `;
-  }).join("");
-
-  if (!sorted.length) {
-    content = emptyState(
-      "目前尚無公開活動",
-      "活動日期及參與方式確認後，將統一公布於此。"
-    );
-  }
-
-  return `
-    ${heading(
-      "PUBLIC CALENDAR",
-      "重要日程",
-      "公開活動日期與參與資訊將統一公告於此。"
-    )}
-
-    <section class="section container">
-      <div class="calendar" aria-labelledby="calendar-title">
-
-        <div class="calendar-toolbar">
-          <button
-            class="calendar-nav"
-            id="calendar-prev"
-            type="button"
-            aria-label="上一個月"
-          >
-            ←
-          </button>
-
-          <h2 id="calendar-title" aria-live="polite"></h2>
-
-          <button
-            class="calendar-nav"
-            id="calendar-next"
-            type="button"
-            aria-label="下一個月"
-          >
-            →
-          </button>
-        </div>
-
-        <div class="calendar-weekdays" aria-hidden="true">
-          ${["日", "一", "二", "三", "四", "五", "六"]
-            .map(day => `<span>${day}</span>`)
-            .join("")}
-        </div>
-
-        <div
-          class="calendar-grid"
-          id="calendar-grid"
-        ></div>
-
-        <p class="calendar-note">
-          本頁僅刊登已確認可公開的活動；內部規劃與未定案時程不在此顯示。
-        </p>
-      </div>
-    </section>
-
-    <section
-      class="section container public-events"
-      aria-labelledby="public-events-title"
-    >
-      <p class="eyebrow">PUBLIC EVENTS</p>
-      <h2 id="public-events-title">活動公告</h2>
-      ${content}
-    </section>
-  `;
-}
-
-function setupCalendar() {
-  const grid = document.getElementById("calendar-grid");
-  const title = document.getElementById("calendar-title");
-  const previous = document.getElementById("calendar-prev");
-  const next = document.getElementById("calendar-next");
-
-  if (!grid || !title || !previous || !next) return;
-
-  const today = new Date();
-
-  let visibleMonth = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    1
-  );
-
-  const publicEvents = events.filter(event =>
-    /^\d{4}-\d{2}-\d{2}$/.test(event.date || "")
-  );
-
-  function renderCalendar() {
-    const year = visibleMonth.getFullYear();
-    const month = visibleMonth.getMonth();
-
-    const firstWeekday = new Date(
-      year,
-      month,
-      1
-    ).getDay();
-
-    const dayCount = new Date(
-      year,
-      month + 1,
-      0
-    ).getDate();
-
-    title.textContent = new Intl.DateTimeFormat(
-      "zh-TW",
-      {
-        year: "numeric",
-        month: "long"
-      }
-    ).format(visibleMonth);
-
-    const cells = [];
-
-    for (
-      let index = 0;
-      index < firstWeekday;
-      index += 1
-    ) {
-      cells.push(`
-        <div
-          class="calendar-day is-empty"
-          aria-hidden="true"
-        ></div>
-      `);
-    }
-
-    for (let day = 1; day <= dayCount; day += 1) {
-      const dateKey =
-        `${year}-` +
-        `${String(month + 1).padStart(2, "0")}-` +
-        `${String(day).padStart(2, "0")}`;
-
-      const dayEvents = publicEvents.filter(
-        event => event.date === dateKey
-      );
-
-      const isToday =
-        year === today.getFullYear() &&
-        month === today.getMonth() &&
-        day === today.getDate();
-
-      const eventMarkup = dayEvents
-        .slice(0, 2)
-        .map(event => `
-          <li title="${e(event.title)}">
-            ${e(event.title)}
-          </li>
-        `)
-        .join("");
-
-      const moreCount = dayEvents.length - 2;
-
-      cells.push(`
-        <div class="
-          calendar-day
-          ${isToday ? "is-today" : ""}
-          ${dayEvents.length ? "has-event" : ""}
-        ">
-          <time datetime="${dateKey}">
-            ${day}
-          </time>
-
-          ${dayEvents.length ? `
-            <ul>
-              ${eventMarkup}
-
-              ${moreCount > 0 ? `
-                <li>另有 ${moreCount} 項</li>
-              ` : ""}
-            </ul>
-          ` : ""}
-        </div>
-      `);
-    }
-
-    grid.innerHTML = cells.join("");
-  }
-
-  previous.addEventListener("click", () => {
-    visibleMonth = new Date(
-      visibleMonth.getFullYear(),
-      visibleMonth.getMonth() - 1,
-      1
-    );
-
-    renderCalendar();
-  });
-
-  next.addEventListener("click", () => {
-    visibleMonth = new Date(
-      visibleMonth.getFullYear(),
-      visibleMonth.getMonth() + 1,
-      1
-    );
-
-    renderCalendar();
-  });
-
-  renderCalendar();
-}
-
-/* ===== 教學資源 ===== */
-
-  function resourcesPage() {
-    const content = D.subjects.map(subject => {
-      const items = resources.filter(item => item.subject === subject.id);
-
-      return `
-        <section class="content-section ${e(subject.id)}">
-          <p class="eyebrow">${e(subject.english)}</p>
-          <h2>${e(subject.name)}</h2>
-
-          ${items.length ? items.map(resourceRow).join("") : `
-            <article class="resource-row">
-              <div>
-                <h3>講義與學習單</h3>
-                <p>檔案名稱、說明與下載連結待填。</p>
-              </div>
-              <span class="badge">尚未提供</span>
-            </article>
-          `}
-        </section>
-      `;
-    }).join("");
-
-    return `
-      ${heading(
-        "TEACHING RESOURCES", "教學資源",
-        "依學科查找講義、學習單與延伸材料。"
-      )}
-      <section class="section container">${content}</section>
-    `;
-  }
-
   function notFoundPage() {
     return `
       ${heading(
@@ -1305,37 +863,12 @@ function setupCalendar() {
     <p>每堂課 30 分鐘內，搭配 3–5 題練習與視覺化工具。提交與修訂會保留版本，教師以思路分析、改進建議及延伸提問回饋。</p>${link("modules.html","選擇學習單元 →","button")}${link("science.html","返回科學探索","button secondary")}</section>`;
   }
 
-  const questionFields = [
-    ["background","我觀察到什麼？","描述現象、教材段落或問題出現的情境。"],
-    ["question","我真正想問什麼？","把問題寫成一句具體、可以討論的問句。"],
-    ["motivation","為什麼我想問？","說明你的疑惑，以及它與已學內容的關係。"],
-    ["assumptions","我用了哪些假設？","哪些是已知事實？哪些還只是猜想？"],
-    ["evidence","我可以怎麼探索？","列出需要的證據、比較方式或驗證方法。"],
-    ["impact","如果釐清了，能幫助我們理解什麼？","說明問題的可能影響，不必誇大。"],
-    ["revision","這次改了什麼？","記錄相較上一版的修改與理由。"]
-  ];
-
   function draftPanel(kind, fields, contextLabel) {
     return `<section class="draft-panel" data-draft-kind="${kind}" data-draft-context="${e(contextLabel)}"><h2>${kind==="question"?"我的問題草稿":"我的推理紀錄"}</h2>
       <p class="note">這是草稿工具：只有按「保存版本」才會儲存在此瀏覽器，不會上傳，也不會送交助教。共用電腦請匯出後清除此份紀錄；清除瀏覽器資料也會刪除紀錄。</p>
       <form id="draft-form">${fields.map(([id,label,hint])=>`<div class="draft-field"><label for="draft-${id}">${label}</label><p id="hint-${id}" class="small muted">${hint}</p><textarea id="draft-${id}" name="${id}" rows="4" maxlength="12000" aria-describedby="hint-${id}"></textarea></div>`).join("")}
       <div class="actions"><button type="submit" class="button">保存版本</button><button type="button" id="export-draft" class="button secondary">匯出目前草稿</button><button type="button" id="clear-draft" class="button secondary">清除此份紀錄</button></div></form>
       <p id="draft-status" role="status" aria-live="polite"></p><h3>此裝置上的版本</h3><div id="draft-history"></div></section>`;
-  }
-
-  function inquiryPage() {
-    return `${heading("QUESTION WORKSHOP", "把疑問變成值得探索的問題", "先留下想法，再檢查背景、假設與證據。問題可以修改，不必第一次就問得完整。")}
-      <section class="section container"><div class="content-layout"><aside class="section-index"><h2>提問自我檢查</h2><p>這些提示是依計畫設計的練習輔助，不是自動評分。</p><ul><li>我在問事實、關係，還是假設是否成立？</li><li>問題的範圍是否清楚？</li><li>是否存在其他解釋？</li><li>什麼證據會讓我改變想法？</li></ul><p class="small muted">計畫中的競賽關注創新性、深度、適切性與啟發性；目前未開放投稿。</p></aside>
-      <div><section class="note"><h2>需要教師或助教協助？</h2><p>本頁保留提問草稿；整理好之後，可到學生問答頁提交問題，並查看回覆。</p>${link("questions.html","提交問題／查看回覆","button")}</section>${draftPanel("question",questionFields,"提問練習")}</div></div></section>`;
-  }
-
-  function supportPage() {
-    return `${heading("TEACHING & FEEDBACK", "教師與助教支持", "共同關注學生怎麼想，以及下一次能怎麼改進。已核准的教師與助教可進入學生問答工作台。")}
-      <section class="section container"><div class="card-grid"><article class="member"><p class="eyebrow">01</p><h2>思路分析</h2><p>指出推理中使用的概念、成立的步驟與發生斷層的位置。</p></article><article class="member"><p class="eyebrow">02</p><h2>改進建議</h2><p>給出能實際採取的下一步，協助學生重新整理推理。</p></article><article class="member"><p class="eyebrow">03</p><h2>延伸提問</h2><p>透過再提問，引導學生檢查假設、比較方法與拓展理解。</p></article></div>
-      <section class="note"><h2>學生怎麼準備求助？</h2><p>留下題目或單元、已嘗試的方法、完整推理與卡住的位置。你可以在影片導讀頁保存推理紀錄，再匯出草稿。</p></section>
-      <section class="content-section"><h2>助教培訓與回饋品質</h2><p>計畫規劃教學溝通、錯誤診斷、批閱標準與學生回饋倫理等培訓，並透過試批考核與教師抽查維持品質。招募時間、資格與正式聯絡管道尚待公告。</p></section>
-      <section class="content-section"><h2>教師共備與學者對談</h2><p>教師共備聚焦教材、教案與學習案例；學者對談以學生事先整理的問題為出發點。未來可將問題、回應與延伸閱讀整理為開放資源。</p>${link("inquiry.html","先整理一份問題摘要","button secondary")}</section>
-      <section class="note"><h2>學生問答</h2><p>從待答工作台查看學生提交的問題並回覆；作業批閱與競賽管理另設獨立入口，依帳號權限及教師發布內容提供。</p>${link("staff-questions.html","進入待答工作台","button")}</section></section>`;
   }
 
   function addLearningRecord() {
@@ -1371,14 +904,8 @@ function setupCalendar() {
       <section class="section container"><div class="card-grid">${roles.map(([name,description])=>`<article class="member"><span class="badge">規劃職責</span><h2>${name}</h2><p>${description}</p><p class="small muted">成員待公布</p></article>`).join("")}</div></section>`;
   }
 
-  function programSchedulePage() {
-  return schedulePage();
-  }
-
   const titles = {
     learning: "學習路徑",
-    inquiry: "提問工作台",
-    support: "教師與助教",
     home: "首頁",
     about: "關於計畫",
     videos: "影音探索",
@@ -1387,17 +914,13 @@ function setupCalendar() {
     physics: "物理探索",
     chemistry: "化學探索",
     video: "影片導讀",
-    resources: "教學資源",
     team: "核心團隊",
-    schedule: "重要日程",
     notfound: "找不到頁面"
   };
 
   const renderers = {
     home: programHomePage,
     learning: learningPage,
-    inquiry: inquiryPage,
-    support: supportPage,
     about: aboutPage,
     videos: videosPage,
     science: sciencePage,
@@ -1405,9 +928,7 @@ function setupCalendar() {
     physics: () => subjectPage("physics"),
     chemistry: () => subjectPage("chemistry"),
     video: videoDetailPage,
-    resources: resourcesPage,
     team: programTeamPage,
-    schedule: programSchedulePage,
     notfound: notFoundPage
   };
 
@@ -1491,7 +1012,6 @@ function setupCalendar() {
   addLearningRecord();
   setupDrafts();
   setupFilters();
-  setupCalendar();
   // 播放器只由 media.js 建立，避免舊播放器繞過觀看紀錄。
   if(page === "video") {
     const mediaScript=document.createElement("script");

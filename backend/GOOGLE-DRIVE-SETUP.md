@@ -62,8 +62,8 @@ CLI 替代方式：`supabase functions deploy rise-drive --no-verify-jwt --proje
 使用 Node.js 24 或以上，在儲存庫根目錄執行：
 
 ```sh
-npm --prefix tests/google-drive install
-npm --prefix tests/google-drive test
+npm ci --ignore-scripts
+npm test
 ```
 
-測試使用本機 PGlite 與模擬 Google HTTP，不讀取真實帳號或寄信。
+依賴統一使用根目錄鎖定版本；完整測試包含 Google Drive 的資料庫、Edge API 與 DOM 回歸。測試使用本機 PGlite 與模擬 Google HTTP，不讀取真實帳號或寄信。
