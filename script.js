@@ -307,10 +307,15 @@
 
   /* ===== 共用卡片 ===== */
 
-  function subjectCards() {
-    return D.subjects.map((subject, index) => `
+  function subjectArt() {
+    return `<div class="rise-subject-art" aria-hidden="true"><div class="rise-subject-model"><i></i><i></i><i></i><i></i></div></div>`;
+  }
+
+  function subjectCards(withArt = false) {
+    return D.subjects.map(subject => `
       <a class="subject-card ${e(subject.id)}"
          href="${e(subject.id)}.html">
+        ${withArt ? subjectArt() : ""}
         <span class="eyebrow">${e(subject.english)}</span>
         <h3>${e(subject.name)}</h3>
         <p>${e(subject.focus)}</p>
@@ -323,21 +328,21 @@
     const subject = getSubject(video.subject);
     if (!subject) return "";
 
-    const cover = validYouTubeId(video.youtubeId)
+    const localPoster = /^(?:assets|images|videos)\/[a-z0-9_/-]+\.(?:avif|jpe?g|png|webp)$/i.test(video.poster || "");
+    const poster = safeURL(video.poster) || (localPoster ? video.poster : "");
+    const thumbnail = validYouTubeId(video.youtubeId)
+      ? `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`
+      : poster;
+    const cover = thumbnail
       ? `
         <img
-          src="https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg"
+          src="${e(thumbnail)}"
           alt=""
           loading="lazy"
         >
       `
       : `
-        <span class="eyebrow">${e(subject.english)}</span>
-        <strong>${e(subject.name)}</strong>
-        <div class="cover-bottom">
-          <span>${video.demo ? "範例影片" : "影片封面待提供"}</span>
-          <span>點選觀看影片</span>
-        </div>
+        <strong class="rise-art-fallback">${e(subject.name)}</strong>${subjectArt()}
       `;
 
     return `
@@ -347,6 +352,7 @@
           <div class="video-body">
             <span class="badge">${e(subject.name)}</span>
             <span class="small muted">${e(video.level)}</span>
+            ${video.demo ? '<span class="small muted">範例影片</span>' : ''}
             <h3>${e(video.title)}</h3>
             <p>${e(video.summary)}</p>
             <span class="text-link">查看影片導讀 →</span>
@@ -468,9 +474,12 @@
   /* ===== 科學探索與三學科頁 ===== */
 
   function sciencePage() {
+    const layers = D.moduleStructure?.layers || [];
     return `${heading("SCIENCE EXPLORATION", "科學探索", "先找到你有興趣的學科與問題，再選擇文章、影片或教材。")}
-      <section class="section container"><div class="card-grid">${subjectCards()}</div>
-      <h2>三層教材與單元習作</h2><p>核心講義、延伸閱讀、挑戰題庫；每堂 30 分鐘內，搭配 3–5 題練習。</p><a class="button" href="modules.html">進入科學探索單元 →</a><h2>已發布探索主題</h2><p>選擇探索主題，查看其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>`;
+      <section class="section container rise-science-overview"><div class="card-grid rise-science-cards">${subjectCards(true)}</div>
+        <section class="rise-module-guide" aria-labelledby="science-layers"><div><h2 id="science-layers">三層教材與單元習作</h2><p>每堂 30 分鐘內，搭配 3–5 題練習。</p><a class="button" href="modules.html">查看科學探索單元</a></div><ul>${layers.map(layer => `<li>${e(layer.title)}</li>`).join("")}</ul></section>
+        <section class="rise-topic-section"><h2>已發布探索主題</h2><p>選擇探索主題，查看其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>
+      </section>`;
   }
 
   function subjectPage(id) {
@@ -478,11 +487,10 @@
     if (!subject) return notFoundPage();
 
     const subjectVideos = videos.filter((item) => item.subject === id);
-    const subjectResources = resources.filter((item) => item.subject === id);
     const topics = subject.topics || [];
 
     return `
-      ${heading(subject.english, `${subject.name}探索`, subject.focus)}
+      <header class="page-heading rise-subject-heading ${e(id)}"><div class="container rise-subject-header"><div><p class="eyebrow">${e(subject.english)}</p><h1>${e(subject.name)}探索</h1><p>${e(subject.focus)}</p></div>${subjectArt()}</div></header>
 
       <section class="section container">
         <div class="content-layout">
@@ -538,6 +546,7 @@
 
             <section id="materials" class="content-section">
               <h2>${e(subject.name)}教學資源</h2>
+              <a class="text-link" href="modules.html">查看已發布單元及三層教材 →</a>
               <div data-resource-feed="science" data-subject="${e(id)}"></div>
             </section>
           </div>
@@ -558,8 +567,9 @@
 
       <section class="section container">
         <div class="content-layout">
-          <aside class="filters">
+          <aside class="filters rise-video-filters" aria-label="篩選影片">
             <h2>篩選影片</h2>
+            <button type="button" class="button secondary rise-filter-toggle" aria-expanded="false" aria-controls="filter-form">篩選影片</button>
 
             <form id="filter-form">
               <label for="search">搜尋關鍵字</label>
@@ -622,6 +632,11 @@
     const subject = $("#subject-filter");
     const level = $("#level-filter");
     const sort = $("#sort");
+    const toggle = $(".rise-filter-toggle");
+    toggle?.addEventListener("click", () => {
+      const open = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!open));
+    });
 
     let currentPage = 1;
     const pageSize = 12;
@@ -643,6 +658,8 @@
 
     function render(updateURL = true) {
       const query = search.value.trim().toLocaleLowerCase();
+      const active = [Boolean(query), subject.value !== "all", level.value !== "all"].filter(Boolean).length;
+      if (toggle) toggle.textContent = active ? `篩選影片（${active}）` : "篩選影片";
 
       const results = videos.filter(v => {
         const text = [

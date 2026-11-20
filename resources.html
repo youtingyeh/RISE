@@ -14,10 +14,11 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>教學資源｜RISE</title>
 <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="auth.css?v=qa-20260915"><link rel="stylesheet" href="resources.css?v=placement-20260915">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" defer></script><script src="public-resources.js?v=availability-20261007-1" defer></script><script src="resources.js?v=security-20261007-1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js" defer></script><script src="public-resources.js?v=availability-20261007-1" defer></script><script src="resources.js?v=interior-1" defer></script>
 <link rel="stylesheet" href="role-navigation.css?v=20260915-1">
 <script src="role-navigation.js?v=public-review-20261012-1" defer></script>
 <link rel="stylesheet" href="theme-rise.css?v=design-20261013-3">
+<link rel="stylesheet" href="rise-interior.css?v=1">
 <!-- generated social metadata -->
 <meta name="description" content="RISE 數學、物理、化學教學文章、教材與影片。">
 <meta property="og:type" content="website">
@@ -48,10 +49,14 @@
 <div class="auth-heading"><p class="eyebrow">RISE · ACCOUNT</p><h1>教學資源</h1><p>數學、物理與化學的文章、教材與影片。</p></div>
 
 <p id="auth-status" class="auth-status" role="status" aria-live="polite"></p>
-<section aria-labelledby="oer-heading" data-site-feature-any="yearbook gallery dialogues">
+<nav class="rise-resource-entrances" aria-label="教材與影音入口">
+  <a href="science.html" class="rise-resource-entry"><strong>科學探索</strong><span>依數學、物理、化學找文章與教材</span></a>
+  <a href="explore.html" class="rise-resource-entry"><strong>影音探索</strong><span>依學科、程度和關鍵字找影片</span></a>
+</nav>
+<section class="rise-resource-outcomes" aria-labelledby="oer-heading" data-site-feature-any="yearbook gallery dialogues">
 <h2 id="oer-heading">公開教育資源（OER）與對談成果</h2>
 <p>僅展示經審核發布與授權公開的成果；教材與作品內容由團隊維護。</p>
-<p><a href="dialogues.html">活動前提交對談提問摘要 →</a> · <a href="yearbook.html">數思年鑑 →</a></p>
+<div class="actions"><a class="button secondary" href="yearbook.html">數思年鑑</a><a class="button secondary" href="competition-gallery.html">競賽成果</a><a class="button secondary" href="dialogues.html">對談與提問摘要</a></div>
 <div id="public-resources" class="resource-grid" aria-live="polite"></div>
 </section>
 <div id="auth-root" data-site-feature="science"></div>
