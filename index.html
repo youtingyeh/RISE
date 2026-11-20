@@ -77,6 +77,23 @@
       white-space: pre-wrap;
       font-family: inherit;
     }
+
+    .rise-hero {
+      isolation: isolate;
+    }
+
+    .rise-hero-lens {
+      position: absolute;
+      inset: 0 auto auto 0;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    @media (prefers-reduced-motion: reduce), print {
+      .rise-hero-lens {
+        display: none;
+      }
+    }
   </style>
 
   <!-- Keep a public fallback even if the main scripts fail. -->
@@ -123,6 +140,7 @@
 <link rel="stylesheet" href="role-navigation.css?v=20260915-1">
 <script src="role-navigation.js?v=public-review-20261012-1" defer></script>
 <link rel="stylesheet" href="theme-rise.css?v=design-20261013-3">
+<script src="home-grid-lens.js?v=1" defer></script>
 <!-- generated social metadata -->
 <meta name="description" content="RISE 數思新生：青少年數理能力暨提問力雙軌培育計畫。從數學、物理與化學探索概念，透過推理、提問與師生回饋持續學習。">
 <meta property="og:type" content="website">
