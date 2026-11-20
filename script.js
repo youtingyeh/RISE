@@ -919,7 +919,7 @@
     const about = D.about || {};
 
     const sections = [
-      ["identity", "計畫與平台", `《${D.site.title || "數思新生"}》以「${D.site.subtitle || "青少年數理能力暨提問力雙軌培育計畫"}」為副標；RISE 為本網站的平台簡稱。計畫書所列單位為國立臺灣大學理學院，營運中心為擬設。`],
+      ["identity", "計畫與平台", `《${D.site.title || "數思新生"}》以「${D.site.subtitle || "青少年數理能力暨提問力雙軌培育計畫"}」為副標。RISE 為本網站的平台簡稱。`],
       ["origin", "計畫緣起", about.origin],
       ["goals", "核心目標", about.goals],
       ["audience", "適合對象", about.audience],
@@ -1492,7 +1492,7 @@ function setupCalendar() {
   function programTeamPage() {
     if(team.length)return teamPage();
     const roles=[["主持人與共同主持人","總體規劃、資源整合、年度策略與進度監督。"],["行政統籌","行政作業管理與法規行政支援。"],["課程組","數理教材重構、提問課程與影音製作。"],["助教組","助教招募培訓、任務管理與批閱制度。"],["活動組","營隊、提問競賽、講座與學者對談。"],["媒體與出版組","影片、文字紀錄、年鑑與平台維運。"],["諮詢委員會","教育策略、品質監控與成效檢討。"]];
-    return `${heading("PROGRAM TEAM","核心團隊","以下為計畫書規劃的職責架構；營運中心與實際成員名單尚待確認。")}
+    return `${heading("PROGRAM TEAM","核心團隊","以下為計畫書規劃的職責架構。實際成員名單尚待確認。")}
       <section class="section container"><div class="card-grid">${roles.map(([name,description])=>`<article class="member"><span class="badge">規劃職責</span><h2>${name}</h2><p>${description}</p><p class="small muted">成員待公布</p></article>`).join("")}</div></section>`;
   }
 

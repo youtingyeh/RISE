@@ -15,7 +15,8 @@ function setup(html,url='index.html'){
 {
  const d=setup('<footer class="site-footer">old</footer>');d.window.eval(info);d.window.eval(shell);await tick();
  let f=d.window.document.querySelector('footer');assert.equal(f.querySelectorAll('a[href="mailto:ytyeh@g.ntu.edu.tw"]').length,1);
- assert(f.textContent.includes('化學'));assert(f.textContent.includes('營運中心（擬設）'));
+ assert(f.textContent.includes('化學'));assert(f.textContent.includes('青少年數理能力暨提問力雙軌培育計畫'));
+ assert(!f.textContent.includes('營運中心'));assert.equal(d.window.RISE_SITE_INFO.organizer,undefined);
  f.outerHTML='<footer class="site-footer">replacement</footer>';await tick();f=d.window.document.querySelector('footer');assert(f.querySelector('a[href="join.html"]'));assert.equal(f.querySelectorAll('[aria-label="頁尾導覽"]').length,1);d.window.close();
 }
 // Outage preserves explicitly marked introductory text, never the feature entry or route.
