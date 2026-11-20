@@ -311,17 +311,33 @@
     return `<div class="rise-subject-art" aria-hidden="true"><div class="rise-subject-model"><i></i><i></i><i></i><i></i></div></div>`;
   }
 
-  function subjectCards(withArt = false) {
-    return D.subjects.map(subject => `
+  const subjectConcepts = {
+    math: { title: "等比級數", detail: "1 + ½ + ¼ + … 逐項逼近 2。" },
+    physics: { title: "楊氏雙縫干涉", detail: "兩道光波疊加，在屏幕上形成明暗條紋。" },
+    chemistry: { title: "質量守恆", detail: "2H₂ + O₂ → 2H₂O，反應前後氫、氧各自的原子數不變。" },
+  };
+
+  function conceptCanvas(id) {
+    return `<canvas class="rise-concept-canvas" data-concept="${e(id)}" width="720" height="336" aria-hidden="true"></canvas>`;
+  }
+
+  function subjectCards(withConcepts = false) {
+    return D.subjects.map(subject => {
+      const concept = withConcepts && subjectConcepts[subject.id];
+      if (concept) return `<a class="rise-concept-link ${e(subject.id)}" href="${e(subject.id)}.html" data-concept-surface>
+        ${conceptCanvas(subject.id)}
+        <div class="rise-concept-copy"><h3>${e(subject.name)}</h3><p><strong>${e(concept.title)}</strong>　${e(concept.detail)}</p><span class="text-link">進入學科探索 →</span></div>
+      </a>`;
+      return `
       <a class="subject-card ${e(subject.id)}"
          href="${e(subject.id)}.html">
-        ${withArt ? subjectArt() : ""}
         <span class="eyebrow">${e(subject.english)}</span>
         <h3>${e(subject.name)}</h3>
         <p>${e(subject.focus)}</p>
         <span class="text-link">進入學科探索 →</span>
       </a>
-    `).join("");
+    `;
+    }).join("");
   }
 
   function videoCard(video) {
@@ -475,8 +491,9 @@
 
   function sciencePage() {
     const layers = D.moduleStructure?.layers || [];
-    return `${heading("SCIENCE EXPLORATION", "科學探索", "先找到你有興趣的學科與問題，再選擇文章、影片或教材。")}
-      <section class="section container rise-science-overview"><div class="card-grid rise-science-cards">${subjectCards(true)}</div>
+    return `<div class="rise-concept-band">${heading("SCIENCE EXPLORATION", "科學探索", "先找到你有興趣的學科與問題，再選擇文章、影片或教材。")}
+      <div class="container rise-concept-list">${subjectCards(true)}</div></div>
+      <section class="section container rise-science-overview">
         <section class="rise-module-guide" aria-labelledby="science-layers"><div><h2 id="science-layers">三層教材與單元習作</h2><p>每堂 30 分鐘內，搭配 3–5 題練習。</p><a class="button" href="modules.html">查看科學探索單元</a></div><ul>${layers.map(layer => `<li>${e(layer.title)}</li>`).join("")}</ul></section>
         <section class="rise-topic-section"><h2>已發布探索主題</h2><p>選擇探索主題，查看其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>
       </section>`;
@@ -488,9 +505,12 @@
 
     const subjectVideos = videos.filter((item) => item.subject === id);
     const topics = subject.topics || [];
+    const concept = subjectConcepts[id];
 
     return `
-      <header class="page-heading rise-subject-heading ${e(id)}"><div class="container rise-subject-header"><div><p class="eyebrow">${e(subject.english)}</p><h1>${e(subject.name)}探索</h1><p>${e(subject.focus)}</p></div>${subjectArt()}</div></header>
+      <header class="page-heading rise-concept-hero ${e(id)}"><div class="container rise-concept-header"><div><p class="eyebrow">${e(subject.english)}</p><h1>${e(subject.name)}探索</h1><p>${e(subject.focus)}</p></div>
+        ${concept ? `<figure class="rise-concept-figure" data-concept-surface>${conceptCanvas(id)}<figcaption><strong>${e(concept.title)}</strong><p>${e(concept.detail)}</p><button type="button" class="rise-concept-replay" hidden>重播動畫</button></figcaption></figure>` : ""}
+      </div></header>
 
       <section class="section container">
         <div class="content-layout">
@@ -1317,7 +1337,7 @@ function setupCalendar() {
         <div class="actions">${link("assignments.html","作業與修訂歷程","button secondary")}${link("explore.html","瀏覽影音探索","button secondary")}</div>
         <p class="rise-section-note">作業、討論及競賽內容依教師發布與平台開放情況提供；個人學習功能需登入使用。</p>
       </div></section>
-      <section class="section container" data-site-feature="science">${sectionHeading("EXPLORE THE SCIENCES","從一個概念，走向更大的世界","science.html","查看學科 →")}<div class="card-grid">${subjectCards()}</div></section>
+      <section class="section rise-concept-band" data-site-feature="science"><div class="container">${sectionHeading("EXPLORE THE SCIENCES","從一個概念，走向更大的世界","science.html","查看學科 →")}<div class="rise-concept-list">${subjectCards(true)}</div></div></section>
       <section class="container"><div class="rise-community">
         <div><p class="eyebrow">LEARN TOGETHER</p><h2>讓學習成為一場對話。</h2><p>以學生的問題為起點，串起助教的陪伴與教師的經驗。《數思新生》期待建立一個持續交流、教學相長的教育社群。</p><a href="about.html">了解計畫理念 →</a></div>
         <div class="rise-community-list"><div><strong>學生</strong><p>主動探索、完整表達，從回饋中修正想法。</p></div><div><strong>助教</strong><p>理解學生的思考脈絡，以再提問引導再思考。</p></div><div><strong>教師</strong><p>發展教材與討論題，支持深度理解與專業回饋。</p></div></div>
@@ -1386,6 +1406,7 @@ function setupCalendar() {
       bars[1].style.width = `${harmonic * 20}%`;
       step.disabled = terms >= limit;
       reset.disabled = terms === 1;
+      window.dispatchEvent(new CustomEvent("rise:series-terms", { detail: terms }));
     }
 
     step.addEventListener("click", () => {
@@ -1532,6 +1553,8 @@ function setupCalendar() {
     </main>
     ${siteFooter()}
   `;
+
+  window.dispatchEvent(new Event("rise:page-rendered"));
 
   if (page === "home") {
     setupPromptNotes();
