@@ -1,0 +1,18 @@
+.video-card .video-cover:has(.rise-video-concept){
+  --cover-paper:#eef4fb;
+  --cover-grid:#dce7f4;
+  background:linear-gradient(var(--cover-grid) 1px,transparent 1px) center / 22px 22px,
+    linear-gradient(90deg,var(--cover-grid) 1px,transparent 1px) center / 22px 22px,
+    var(--cover-paper);
+}
+.video-card.physics .video-cover{--cover-paper:#eff7f4;--cover-grid:#dcece7}
+.video-card.chemistry .video-cover{--cover-paper:#fbf5eb;--cover-grid:#eee3d3}
+.rise-video-concept{
+  position:absolute;inset:0 0 auto;width:100%;height:calc(100% - 34px);object-fit:contain;
+  pointer-events:none;display:block
+}
+.rise-video-concept-caption{
+  position:absolute;inset:auto 0 0;padding:5px 10px 6px;text-align:center;
+  color:var(--ink);background:var(--cover-paper);font-size:.81rem;font-weight:700;
+  line-height:1.35;letter-spacing:.035em
+}

@@ -1,46 +1,5 @@
 /* Public learning pages and account/workspace layouts. */
 .rise-science-overview{padding-top:clamp(28px,5vw,62px)}
-.rise-science-cards{gap:16px}
-:is(.subject-card,.video-card,.rise-subject-heading).math{--art:#2b5ba8;--art-light:#bfd6f3;--art-paper:#eff5ff}
-:is(.subject-card,.video-card,.rise-subject-heading).physics{--art:#0e7166;--art-light:#b4e2d8;--art-paper:#edf8f5}
-:is(.subject-card,.video-card,.rise-subject-heading).chemistry{--art:#9a5a0e;--art-light:#f1cea2;--art-paper:#fff6e9}
-.rise-science-cards .subject-card{padding:20px 22px 24px;border-top:1px solid var(--rule);box-shadow:0 8px 24px #1d2b460b;transition:border-color .2s,box-shadow .2s}
-.rise-science-cards .subject-card:is(:hover,:focus-visible){border-color:var(--art);box-shadow:0 12px 24px #1d2b4616}
-.rise-science-cards .subject-card .eyebrow{margin-top:16px}
-.rise-science-cards .subject-card h3{margin-bottom:4px}
-.rise-subject-art{
-  position:relative;display:grid;place-items:center;min-height:160px;overflow:hidden;border-radius:7px;
-  color:var(--art);background:radial-gradient(ellipse at 32% 23%,#fff 0,transparent 66%),var(--art-paper);
-  perspective:620px;isolation:isolate;pointer-events:none
-}
-.rise-subject-art::after{content:'';position:absolute;z-index:-1;width:50%;height:16px;bottom:15%;background:var(--art);border-radius:50%;filter:blur(16px);opacity:.26}
-.rise-subject-model{position:relative;width:150px;height:105px;transform-style:preserve-3d;transform:rotateX(49deg) rotateZ(-28deg);transition:transform .48s ease}
-.rise-subject-model i{position:absolute;display:block}
-:is(.subject-card,.video-card):is(:hover,:focus-within) .rise-subject-model,.rise-subject-heading:hover .rise-subject-model{transform:rotateX(40deg) rotateZ(-17deg) translateY(-3px)}
-
-/* Coordinate plane, axes and a vector above the plane. */
-.math .rise-subject-model i:first-child{inset:0;border:1px solid #698dbe;border-radius:2px;background:repeating-linear-gradient(0deg,#7c9dc15e 0 1px,transparent 1px 15px),repeating-linear-gradient(90deg,#7c9dc15e 0 1px,transparent 1px 15px),linear-gradient(135deg,#fff,var(--art-light));box-shadow:8px 9px 0 #355d8f36,0 0 15px #fff8}
-.math .rise-subject-model i:nth-child(2){width:138px;height:2px;top:53px;left:6px;background:var(--art);transform:translateZ(2px)}
-.math .rise-subject-model i:nth-child(3){width:2px;height:94px;top:6px;left:75px;background:var(--art);transform:translateZ(2px)}
-.math .rise-subject-model i:nth-child(4){width:78px;height:14px;left:73px;top:46px;background:linear-gradient(180deg,#fc947a,var(--vermilion));clip-path:polygon(0 37%,74% 37%,74% 0,100% 50%,74% 100%,74% 63%,0 63%);transform-origin:left center;transform:rotateZ(-29deg) rotateY(-36deg) translateZ(5px)}
-
-/* Three translucent lens surfaces and an optical ray. */
-.physics .rise-subject-model{transform:rotateX(15deg) rotateY(-34deg) rotateZ(-12deg)}
-.physics:is(.subject-card,.video-card,.rise-subject-heading):is(:hover,:focus-within) .rise-subject-model{transform:rotateX(7deg) rotateY(-19deg) rotateZ(-7deg) translateY(-3px)}
-.physics .rise-subject-model i:nth-child(-n+3){inset:5px 31px;border-radius:50%;border:2px solid #5caa9c;background:radial-gradient(ellipse at 32% 30%,#fff9,transparent 34%),linear-gradient(151deg,#edfffbad,#a5d8cc69 54%,#3a998b60);box-shadow:inset 0 0 8px #f2fffd,0 0 9px #0e716629}
-.physics .rise-subject-model i:nth-child(2){transform:translateZ(13px)}
-.physics .rise-subject-model i:nth-child(3){transform:translateZ(26px)}
-.physics .rise-subject-model i:nth-child(4){top:50%;left:-38px;width:226px;height:12px;background:var(--art);clip-path:polygon(0 25%,35% 25%,65% 54%,100% 54%,100% 76%,65% 76%,35% 48%,0 48%);transform:translateZ(31px)}
-
-/* Offset lattice planes with repeated nodes. */
-.chemistry .rise-subject-model i:nth-child(-n+2){inset:0;border:1px solid #bd884f;border-radius:3px;background:radial-gradient(circle at 7px 7px,#fff0c9 1px,#c6843c 3px,#8d4f18 4px,transparent 5px) 5px 5px/25px 23px,linear-gradient(145deg,#fff8e5db,#e4ba7f99);box-shadow:5px 5px 0 #9a5a0e2e}
-.chemistry .rise-subject-model i:nth-child(2){transform:translate3d(12px,-9px,22px)}
-.chemistry .rise-subject-model i:nth-child(3){left:37px;top:35px;width:3px;height:29px;border-radius:2px;background:#9a5a0e9c;transform:rotateZ(-24deg) rotateX(52deg)}
-.chemistry .rise-subject-model i:nth-child(4){left:110px;top:66px;width:3px;height:29px;border-radius:2px;background:#9a5a0e9c;transform:rotateZ(-24deg) rotateX(52deg)}
-
-.rise-subject-heading{padding-block:30px;background-color:var(--art-paper)}
-.rise-subject-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(210px,.65fr);gap:20px;align-items:center}
-.rise-subject-heading .rise-subject-art{min-height:156px}
 .rise-module-guide,.rise-resource-outcomes{border:1px solid var(--rule);border-radius:10px;padding:clamp(18px,3vw,30px);background:var(--paper)}
 .rise-module-guide{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;align-items:center;margin:34px 0;background:var(--paper-2)}
 .rise-module-guide h2,.rise-topic-section h2,.rise-resource-outcomes h2{margin-top:0}
@@ -48,9 +7,7 @@
 .rise-module-guide li{padding:8px 12px;border-left:3px solid var(--cobalt);background:#fff;font-weight:650}
 .rise-topic-section{margin-top:34px}
 
-.video-card .video-cover{overflow:hidden;background:var(--art-paper,var(--paper-2));padding:0}
-.video-card .video-cover .rise-subject-art{height:100%;min-height:0;border-radius:0;flex:1}
-.rise-art-fallback{display:none}
+.video-card .video-cover{overflow:hidden;background:var(--paper-2);padding:0}
 .video-card .video-body>.small{margin-inline-end:8px}
 .rise-video-filters{border:1px solid var(--rule);border-radius:10px;padding:16px;background:var(--paper-2)}
 .rise-filter-toggle{display:none}
@@ -89,13 +46,7 @@
   .rise-video-filters form{margin-top:12px}
 }
 @media(max-width:640px){
-  .rise-subject-header,.rise-module-guide,.rise-resource-entrances{grid-template-columns:1fr}
-  .rise-subject-heading .rise-subject-art{min-height:136px}
-  .rise-science-cards .subject-card{padding:16px}
+  .rise-module-guide,.rise-resource-entrances{grid-template-columns:1fr}
   .rise-account-ui .admin-filters label{min-width:min(100%,180px)}
   .rise-account-ui :is(.admin-table-wrap,.wf-table-wrap) table{min-width:420px}
-}
-@media(prefers-reduced-motion:reduce){
-  :is(.subject-card,.video-card,.rise-subject-heading):is(:hover,:focus-within) .rise-subject-model{transform:rotateX(49deg) rotateZ(-28deg);transition:none}
-  .physics:is(.subject-card,.video-card,.rise-subject-heading):is(:hover,:focus-within) .rise-subject-model{transform:rotateX(15deg) rotateY(-34deg) rotateZ(-12deg)}
 }

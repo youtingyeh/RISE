@@ -307,15 +307,12 @@
 
   /* ===== 共用卡片 ===== */
 
-  function subjectArt() {
-    return `<div class="rise-subject-art" aria-hidden="true"><div class="rise-subject-model"><i></i><i></i><i></i><i></i></div></div>`;
-  }
-
   const subjectConcepts = {
     math: { title: "等比級數", detail: "1 + ½ + ¼ + … 逐項逼近 2。" },
     physics: { title: "楊氏雙縫干涉", detail: "兩道光波疊加，在屏幕上形成明暗條紋。" },
     chemistry: { title: "質量守恆", detail: "2H₂ + O₂ → 2H₂O，反應前後氫、氧各自的原子數不變。" },
   };
+  const videoConcepts = { math: "畢氏定理", physics: "斯涅爾折射定律", chemistry: "元素週期律" };
 
   function conceptCanvas(id) {
     return `<canvas class="rise-concept-canvas" data-concept="${e(id)}" width="720" height="336" aria-hidden="true"></canvas>`;
@@ -358,7 +355,8 @@
         >
       `
       : `
-        <strong class="rise-art-fallback">${e(subject.name)}</strong>${subjectArt()}
+        <canvas class="rise-video-concept" data-video-concept="${e(subject.id)}" width="720" height="336" aria-hidden="true"></canvas>
+        <span class="rise-video-concept-caption">${e(videoConcepts[subject.id] || subject.name)}</span>
       `;
 
     return `
@@ -712,6 +710,7 @@
         .slice(start, start + pageSize)
         .map(videoCard)
         .join("");
+      window.dispatchEvent(new Event("rise:video-cards-rendered"));
 
       $("#result-count").textContent =
         `${results.length} 筆內容${D.demo ? "（含範例）" : ""}`;
