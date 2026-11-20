@@ -52,17 +52,116 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
  function table(parent,headers,rows){const wrap=document.createElement('div');wrap.className='wf-table-wrap';wrap.innerHTML='<table><thead><tr>'+headers.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';parent.append(wrap);}
  async function attachment(parent,file){button(parent,'下載：'+file.name,async()=>{const data=checked(await client.storage.from('rise-work-files').download(file.path));const url=URL.createObjectURL(data);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);});}
  const isOwner=item=>teacher&&(admin||item.owner_id===user.id);
- async function assignment(item,box){
-  const seq=++request;const data=await read('assignment',item.id);if(seq!==request||!alive)return;
-  box.replaceChildren();text(box,item.title,'h3');text(box,item.body);text(box,'截止：'+date(item.due_at)+' · '+(item.closed?'已關閉':item.published?'開放中':'草稿'));
-  if(isOwner(item)){
-   button(box,item.published?'下架作業':'發布作業',async()=>{await action('assignment_state',{id:item.id,published:!item.published});await assignments();});
-   button(box,item.closed?'重新開放':'關閉繳交',async()=>{await action('assignment_state',{id:item.id,closed:!item.closed});await assignments();});
+ function assignmentState(item){
+  if(item.closed)return '已關閉';
+  if(!item.published)return '草稿';
+  return !item.due_at||new Date(item.due_at)>new Date()?'開放中':'已截止';
+ }
+ function assignmentBadge(parent,label,kind){
+  const badge=text(parent,label,'span');badge.className='wf-assignment-badge';badge.dataset.state=kind;return badge;
+ }
+ function renderAssignmentVersion(list,item,box,revision,reviews,isCurrent){
+  const version=document.createElement('li');version.className='wf-assignment-version';list.append(version);
+  const heading=document.createElement('div');heading.className='wf-assignment-version-heading';version.append(heading);
+  text(heading,'第 '+revision.version+' 版',staff?'h5':'h4');
+  if(isCurrent)assignmentBadge(heading,'最新版本','current');
+  const last=reviews.at(-1);
+  if(!last)assignmentBadge(heading,'待批閱','waiting');
+  else if(last.outcome==='completed')assignmentBadge(heading,'已完成','complete');
+  else assignmentBadge(heading,'請修訂','revise');
+  const submitted=text(heading,date(revision.created_at),'time');submitted.dateTime=revision.created_at;
+
+  const compare=document.createElement('div');compare.className='wf-assignment-compare';version.append(compare);
+  const answer=document.createElement('section');answer.className='wf-assignment-answer';compare.append(answer);
+  const panelHeading=staff?'h6':'h5';
+  text(answer,'作答原文',panelHeading);text(answer,revision.body);
+  if(revision.change_note){text(answer,'修改說明','strong');text(answer,revision.change_note);}
+  for(const file of revision.files||[])attachment(answer,file);
+
+  const feedback=document.createElement('section');feedback.className='wf-assignment-feedback';compare.append(feedback);
+  text(feedback,'批閱回饋',panelHeading);
+  if(!reviews.length)text(feedback,'尚無這一版的批閱回饋。');
+  for(const review of [...reviews].reverse()){
+   const card=document.createElement('div');card.className='wf-assignment-review';feedback.append(card);
+   const meta=text(card,date(review.created_at)+' · '+({ta:'助教',teacher:'教師',admin:'管理員'}[review.reviewer_role]||'教學人員'));
+   meta.classList.add('wf-assignment-meta');
+   const details=document.createElement('dl');details.className='wf-assignment-rubric';card.append(details);
+   for(const [label,value] of [['思路分析',review.analysis],['改進建議',review.improvement],['延伸提問',review.followup]]){
+    text(details,label,'dt');text(details,value,'dd');
+   }
+   text(card,'推理表現：'+review.score+'/4 · '+(review.outcome==='completed'?'完成':'請修訂'));
   }
-  if(isOwner(item)){const editor=actionEditor(box,'調整指派對象');const f=form(editor,'','儲存指派對象',async(values,f)=>{await action('assignment_audience',{id:item.id,...f.riseAudience()});await assignments();});await window.RISE_COURSES.audience(client,f,item);}
-  const own=data.revisions.filter(v=>v.student_id===user.id),latest=own[0];
-  if(role==='student'&&item.published&&!item.closed&&(!item.due_at||new Date(item.due_at)>new Date())){
+
+  if(staff&&!reviews.some(review=>review.reviewer_id===user.id)){
+   const label='撰寫批閱';
+   const editor=form(feedback,field('analysis','思路分析')+field('improvement','改進建議')+field('followup','延伸提問')+field('score','本版推理表現','select',options([['0','0：尚未提供可判讀推理'],['1','1：起步，主要概念待釐清'],['2','2：部分合理，推論尚有缺口'],['3','3：大致完整，少量修正'],['4','4：完整且能說明依據']]))+field('outcome','批閱結果','select',options([['revise','請修訂'],['completed','完成']])),'送出批閱（保存後不覆寫）',async values=>{
+    await action('assignment_review',{id:revision.id,...values});await assignment(item,box);
+   });
+   editor.id='wf-assignment-review-'+formCount;
+   editor.hidden=true;
+   const toggle=button(feedback,label,()=>{
+    editor.hidden=!editor.hidden;
+    toggle.textContent=editor.hidden?label:'收起批閱表單';
+    toggle.setAttribute('aria-expanded',String(!editor.hidden));
+    if(!editor.hidden)editor.querySelector('textarea').focus();
+   });
+   toggle.className='secondary';
+   toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls',editor.id);
+   feedback.insertBefore(toggle,editor);
+  }
+ }
+ function assignmentHistory(box,item,revisions,reviews){
+  const history=document.createElement('section');history.className='wf-assignment-history';box.append(history);
+  text(history,staff?'繳交與修訂歷程':'我的版本與批閱','h3');
+  if(!revisions.length){text(history,'尚無繳交紀錄。');return;}
+  const byStudent=new Map(),byVersion=new Map();
+  for(const revision of revisions){
+   if(!byStudent.has(revision.student_id))byStudent.set(revision.student_id,[]);
+   byStudent.get(revision.student_id).push(revision);
+  }
+  for(const review of reviews){
+   if(!byVersion.has(review.revision_id))byVersion.set(review.revision_id,[]);
+   byVersion.get(review.revision_id).push(review);
+  }
+  for(const versions of byStudent.values()){
+   versions.sort((a,b)=>b.version-a.version);
+   const group=document.createElement('section');group.className='wf-assignment-student';history.append(group);
+   if(staff)text(group,'學生 '+(versions[0].student_name||versions[0].student_id.slice(0,8)),'h4');
+   const list=document.createElement('ol');list.className='wf-assignment-timeline';list.setAttribute('aria-label','版本依新到舊排列');group.append(list);
+   versions.forEach((revision,index)=>renderAssignmentVersion(list,item,box,revision,byVersion.get(revision.id)||[],index===0));
+  }
+ }
+ async function assignment(item,box){
+  const seq=++request;
+  box.setAttribute('aria-busy','true');
+  let data;
+  try{data=await read('assignment',item.id);}finally{if(seq===request)box.removeAttribute('aria-busy');}
+  if(seq!==request||!alive)return false;
+  box.replaceChildren();
+  const title=text(box,item.title,'h2');title.tabIndex=-1;
+  const state=assignmentState(item);
+  const info=document.createElement('div');info.className='wf-assignment-info';box.append(info);
+  assignmentBadge(info,state,state==='開放中'?'open':'waiting');
+  text(info,'截止：'+date(item.due_at),'span');
+  const prompt=text(box,item.body);prompt.classList.add('wf-assignment-prompt');
+  const revisions=staff?data.revisions:data.revisions.filter(version=>version.student_id===user.id);
+  const latest=role==='student'?revisions.reduce((current,version)=>!current||version.version>current.version?version:current,null):null;
+  const canSubmit=role==='student'&&state==='開放中';
+  if(canSubmit){
+   const jump=document.createElement('a');jump.className='text-link wf-assignment-jump';jump.href='#wf-assignment-submission';
+   jump.textContent=latest?'前往撰寫修訂':'前往繳交作業';box.append(jump);
+  }
+  let audience;
+  if(isOwner(item)){
+   const controls=document.createElement('div');controls.className='wf-assignment-owner';box.append(controls);
+   button(controls,item.published?'下架作業':'發布作業',async()=>{await action('assignment_state',{id:item.id,published:!item.published});await assignments();});
+   button(controls,item.closed?'重新開放':'關閉繳交',async()=>{await action('assignment_state',{id:item.id,closed:!item.closed});await assignments();});
+   const editor=actionEditor(box,'調整指派對象');audience=form(editor,'','儲存指派對象',async(values,f)=>{await action('assignment_audience',{id:item.id,...f.riseAudience()});await assignments();});
+  }
+  assignmentHistory(box,item,revisions,data.reviews);
+  if(canSubmit){
    const editor=section(box,latest?'提交修訂版本':'繳交作業','每次提交都保留完整版本。批閱後可參考評語修訂；附件會跟隨各版本保留。');
+   editor.id='wf-assignment-submission';editor.tabIndex=-1;
    let uploaded=[];
    const f=form(editor,field('body','作答內容與完整推理','textarea',latest?.body||'')+field('change_note','這次修改了什麼？','textarea','',!!latest)+'<label>附件（選填，最多 3 份 PDF／JPG／PNG／WebP，每份 5 MB）<input name="uploads" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp"></label>'+(latest?.files?.length?'<label><input name="keep_files" type="checkbox" checked>保留上一版附件（新附件加總最多 3 份）</label>':''),'送出並保存版本',async(data,f)=>{
     const keep=f.querySelector('[name="keep_files"]')?.checked?(latest?.files||[]):[];
@@ -74,23 +173,29 @@ window.RISE_WORKFLOWS=async function({client,user,profile,root,report}){
    });
    f.querySelector('[type="file"]').onchange=()=>{uploaded=[];};
   }
-  text(box,staff?'繳交與修訂歷程':'我的版本與批閱','h3');
-  if(!data.revisions.length)text(box,'尚無繳交紀錄。');
-  for(const revision of data.revisions){
-   const d=record(box,(staff?'學生 '+(revision.student_name||revision.student_id.slice(0,8))+' · ':'')+'第 '+revision.version+' 版 · '+date(revision.created_at));
-   text(d,revision.body);if(revision.change_note)text(d,'修改說明：'+revision.change_note);for(const file of revision.files||[])await attachment(d,file);
-   const reviews=data.reviews.filter(g=>g.revision_id===revision.id);
-   for(const g of reviews){const review=section(d,'批閱回饋');text(review,date(g.created_at)+' · '+({ta:'助教',teacher:'教師',admin:'管理員'}[g.reviewer_role]||'教學人員'));text(review,'思路分析：'+g.analysis);text(review,'改進建議：'+g.improvement);text(review,'延伸提問：'+g.followup);text(review,'推理表現：'+g.score+'/4 · '+(g.outcome==='completed'?'完成':'請修訂'));}
-   if(staff&&!reviews.some(g=>g.reviewer_id===user.id))form(d,field('analysis','思路分析')+field('improvement','改進建議')+field('followup','延伸提問')+field('score','本版推理表現','select',options([['0','0：尚未提供可判讀推理'],['1','1：起步，主要概念待釐清'],['2','2：部分合理，推論尚有缺口'],['3','3：大致完整，少量修正'],['4','4：完整且能說明依據']]))+field('outcome','批閱結果','select',options([['revise','請修訂'],['completed','完成']])),'送出批閱（保存後不覆寫）',async(values)=>{await action('assignment_review',{id:revision.id,...values});await assignment(item,box);});
-  }
+  if(audience)await window.RISE_COURSES.audience(client,audience,item);
+  return seq===request&&alive;
  }
  async function assignments(){
   const seq=++request,data=await read('assignments');if(seq!==request||!alive)return;main.replaceChildren();
   if(teacher){const creator=actionEditor(main,'新增作業','新增題目、設定截止時間，並選擇要指派的課程組或學生。');
    const createForm=form(creator,field('title','作業標題','text')+field('subject','學科','select',subjects)+field('body','作業題目、要求與評量重點')+field('due_at','截止時間（依本機時區；選填）','datetime-local','',false)+'<label><input name="published" type="checkbox">立即發布</label>','建立作業',async(values,f)=>{await action('assignment_create',{...values,...f.riseAudience(),published:f.querySelector('[name="published"]').checked,due_at:values.due_at?new Date(values.due_at).toISOString():null});await assignments();});await window.RISE_COURSES.audience(client,createForm);}
-  const list=section(main,staff?'作業批閱工作台':'我的作業');const viewer=section(main,'作業詳情');viewer.hidden=true;
+  const list=section(main,staff?'作業批閱工作台':'我的作業');const viewer=section(main,'作業詳情');viewer.id='wf-assignment-viewer';viewer.hidden=true;
   if(!data.items.length)text(list,'目前沒有可查看的作業。');
-  for(const item of data.items)button(list,item.title+' · '+(item.closed?'已關閉':item.published?'已發布':'草稿'),async()=>{viewer.hidden=false;await assignment(item,viewer);viewer.scrollIntoView({block:'start',behavior:'smooth'});});
+  const index=document.createElement('ul');index.className='wf-assignment-index';list.append(index);
+  for(const item of data.items){
+   const row=document.createElement('li');index.append(row);
+   const select=button(row,'',async()=>{
+    if(!await assignment(item,viewer))return;
+    viewer.hidden=false;
+    index.querySelector('[aria-current]')?.removeAttribute('aria-current');select.setAttribute('aria-current','true');
+    viewer.querySelector('h2')?.focus({preventScroll:true});viewer.scrollIntoView({block:'start'});
+   });
+   select.className='secondary wf-assignment-choice';select.setAttribute('aria-controls',viewer.id);
+   const state=assignmentState(item);
+   text(select,item.title,'strong');assignmentBadge(select,state,state==='開放中'?'open':'waiting');
+   if(item.due_at)text(select,'截止：'+date(item.due_at),'small');
+  }
  }
  const trainingTemplate='培訓練習（試用版；須由管理員審閱後發布）\n\n一、教學溝通：針對「我完全不會」的學生，寫出三個不直接揭露答案的引導問題。\n二、錯誤診斷：學生主張 (a+b)²=a²+b²。說明可能的概念混淆，設計一個數值或圖形檢查。\n三、標準化批閱：對上一例分別撰寫思路分析、改進建議與延伸提問，依 0–4 級規準說明判斷。\n四、回饋倫理：說明如何避免羞辱性回饋、處理不確定的知識，以及保護學生個人資料。\n\n提交時請依序回答四項，修訂時保留修改說明。管理員須人工確認四項能力後才核發平台內部培訓認證。';
  async function training(){

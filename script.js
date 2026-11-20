@@ -492,7 +492,7 @@
   function sciencePage() {
     const layers = D.moduleStructure?.layers || [];
     return `<div class="rise-concept-band">${heading("SCIENCE EXPLORATION", "科學探索", "先找到你有興趣的學科與問題，再選擇文章、影片或教材。")}
-      <div class="container rise-concept-list">${subjectCards(true)}</div></div>
+      <div class="container rise-concept-list">${subjectCards(true)}</div><div class="container rise-wave-controls"><button type="button" class="rise-concept-replay rise-wave-toggle" hidden>暫停動畫</button></div></div>
       <section class="section container rise-science-overview">
         <section class="rise-module-guide" aria-labelledby="science-layers"><div><h2 id="science-layers">三層教材與單元習作</h2><p>每堂 30 分鐘內，搭配 3–5 題練習。</p><a class="button" href="modules.html">查看科學探索單元</a></div><ul>${layers.map(layer => `<li>${e(layer.title)}</li>`).join("")}</ul></section>
         <section class="rise-topic-section"><h2>已發布探索主題</h2><p>選擇探索主題，查看其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>
@@ -1337,7 +1337,7 @@ function setupCalendar() {
         <div class="actions">${link("assignments.html","作業與修訂歷程","button secondary")}${link("explore.html","瀏覽影音探索","button secondary")}</div>
         <p class="rise-section-note">作業、討論及競賽內容依教師發布與平台開放情況提供；個人學習功能需登入使用。</p>
       </div></section>
-      <section class="section rise-concept-band" data-site-feature="science"><div class="container">${sectionHeading("EXPLORE THE SCIENCES","從一個概念，走向更大的世界","science.html","查看學科 →")}<div class="rise-concept-list">${subjectCards(true)}</div></div></section>
+      <section class="section rise-concept-band" data-site-feature="science"><div class="container">${sectionHeading("EXPLORE THE SCIENCES","從一個概念，走向更大的世界","science.html","查看學科 →")}<div class="rise-concept-list">${subjectCards(true)}</div><div class="rise-wave-controls"><button type="button" class="rise-concept-replay rise-wave-toggle" hidden>暫停動畫</button></div></div></section>
       <section class="container"><div class="rise-community">
         <div><p class="eyebrow">LEARN TOGETHER</p><h2>讓學習成為一場對話。</h2><p>以學生的問題為起點，串起助教的陪伴與教師的經驗。《數思新生》期待建立一個持續交流、教學相長的教育社群。</p><a href="about.html">了解計畫理念 →</a></div>
         <div class="rise-community-list"><div><strong>學生</strong><p>主動探索、完整表達，從回饋中修正想法。</p></div><div><strong>助教</strong><p>理解學生的思考脈絡，以再提問引導再思考。</p></div><div><strong>教師</strong><p>發展教材與討論題，支持深度理解與專業回饋。</p></div></div>

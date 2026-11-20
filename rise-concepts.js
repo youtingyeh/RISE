@@ -55,20 +55,45 @@
     ctx.setLineDash([]);
   }
 
+  const slit = 88, screen = 310, screenWidth = 22;
+  const upper = 59, lower = 109, centre = 84;
+  const screenTop = 15, screenBottom = 153;
+  const wavelength = 7.2, slitWidth = 17.5;
+  const screenPaint = new WeakMap();
+
+  function fringeGradient(ctx) {
+    const existing = screenPaint.get(ctx);
+    if (existing) return existing;
+
+    const gradient = ctx.createLinearGradient(0, screenTop, 0, screenBottom);
+    const distance = screen - slit;
+    const dark = [17, 40, 47], bright = [211, 253, 232];
+    for (let y = screenTop; y <= screenBottom; y++) {
+      const sinTheta = (y - centre) / Math.hypot(distance, y - centre);
+      const beta = Math.PI * slitWidth * sinTheta / wavelength;
+      // Finite slit width adds a single-slit diffraction envelope to the interference fringes.
+      const envelope = beta === 0 ? 1 : (Math.sin(beta) / beta) ** 2;
+      const pathDifference = Math.hypot(distance, y - upper) - Math.hypot(distance, y - lower);
+      const intensity = envelope * Math.cos(Math.PI * pathDifference / wavelength) ** 2;
+      const rgb = dark.map((value, index) => Math.round(value + (bright[index] - value) * intensity));
+      gradient.addColorStop((y - screenTop) / (screenBottom - screenTop), `rgb(${rgb.join(',')})`);
+    }
+    screenPaint.set(ctx, gradient);
+    return gradient;
+  }
+
   function physics(ctx, phase, probe) {
-    const slit = 88, screen = 310;
-    const upper = 59, lower = 109, centre = 84;
-    const screenTop = 15, screenBottom = 153;
-    const wavelength = 7.8;
 
     ctx.save();
     ctx.beginPath();
     ctx.rect(slit, 0, screen - slit, height);
     ctx.clip();
-    for (const [y, color] of [[upper, 'rgba(14,113,102,.22)'], [lower, 'rgba(43,91,168,.19)']]) {
+    for (const [y, color] of [[upper, '#0e7166'], [lower, '#2b5ba8']]) {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
-      for (let radius = 3 + phase * 2 * wavelength; radius < 250; radius += 2 * wavelength) {
+      // Draw every second crest so the outgoing ripples remain legible at card size.
+      for (let radius = phase * 2 * wavelength; radius < 250; radius += 2 * wavelength) {
+        ctx.globalAlpha = Math.min(radius / 12, 1) * (0.44 - 0.27 * radius / 250);
         ctx.beginPath();
         ctx.arc(slit, y, radius, -Math.PI / 2, Math.PI / 2);
         ctx.stroke();
@@ -84,17 +109,11 @@
     ctx.strokeStyle = '#0e7166';
     for (const y of [upper, lower]) line(ctx, 27, y, slit - 7, y);
 
-    // Two coherent waves: the screen brightness follows cos²(π · path difference / λ).
-    for (let y = screenTop; y < screenBottom; y++) {
-      const distance = screen - slit;
-      const difference = Math.hypot(distance, y - upper) - Math.hypot(distance, y - lower);
-      const intensity = Math.cos(Math.PI * difference / wavelength) ** 2;
-      ctx.fillStyle = `rgba(14,113,102,${0.05 + 0.76 * intensity})`;
-      ctx.fillRect(screen, y, 22, 1.05);
-    }
+    ctx.fillStyle = fringeGradient(ctx);
+    ctx.fillRect(screen, screenTop, screenWidth, screenBottom - screenTop);
     ctx.strokeStyle = '#0e7166';
     ctx.lineWidth = 1;
-    ctx.strokeRect(screen, screenTop, 22, screenBottom - screenTop);
+    ctx.strokeRect(screen, screenTop, screenWidth, screenBottom - screenTop);
 
     const y = clamp(probe ?? centre, screenTop + 2, screenBottom - 2);
     ctx.setLineDash([3, 5]);
@@ -102,7 +121,7 @@
     line(ctx, slit, upper, screen, y);
     line(ctx, slit, lower, screen, y);
     ctx.setLineDash([]);
-    ctx.fillStyle = '#0e7166';
+    ctx.fillStyle = '#9a5a0e';
     ctx.beginPath();
     ctx.arc(screen, y, 2.8, 0, fullTurn);
     ctx.fill();
@@ -170,15 +189,23 @@
     const ctx = canvas.getContext('2d');
     if (!paint || !surface || !ctx) return;
 
-    const button = surface.querySelector('.rise-concept-replay');
-    const duration = kind === 'physics' ? 1200 : 1550;
+    const isPhysics = kind === 'physics';
+    const button = surface.querySelector('.rise-concept-replay') ||
+      (isPhysics ? surface.closest('.rise-concept-band')?.querySelector('.rise-wave-toggle') : null);
     let terms = 6;
     let phase = 1;
     let probe = null;
     let start = null;
     let playing = false;
     let frame = null;
+    let visible = typeof IntersectionObserver !== 'function';
+    let paused = false;
+    let lastFrame = null;
     ctx.setTransform(canvas.width / width, 0, 0, canvas.height / height, 0, 0);
+
+    function looping() {
+      return isPhysics && visible && !paused && !reducedMotion.matches && !document.hidden;
+    }
 
     function draw() {
       ctx.clearRect(0, 0, width, height);
@@ -187,13 +214,16 @@
 
     function tick(time) {
       frame = null;
-      if (playing) {
+      if (looping()) {
+        if (lastFrame !== null) phase = (phase + (time - lastFrame) / 1450) % 1;
+        lastFrame = time;
+      } else if (playing) {
         start ??= time;
-        phase = clamp((time - start) / duration, 0, 1);
+        phase = clamp((time - start) / 1550, 0, 1);
         playing = phase < 1;
       }
       draw();
-      if (playing) queue();
+      if (playing || looping()) queue();
     }
 
     function queue() {
@@ -207,13 +237,31 @@
       queue();
     }
 
-    surface.addEventListener('pointerenter', event => {
-      if (event.pointerType === 'mouse' || event.pointerType === 'pen') replay();
-    });
-    if (surface.matches('a')) surface.addEventListener('focus', replay);
-    button?.addEventListener('click', replay);
+    function syncLoop() {
+      lastFrame = null;
+      if (looping()) queue();
+      else if (frame !== null) {
+        cancelAnimationFrame(frame);
+        frame = null;
+      }
+    }
 
-    if (kind === 'physics') {
+    if (isPhysics) {
+      if (typeof IntersectionObserver === 'function') {
+        new IntersectionObserver(([entry]) => {
+          visible = entry.isIntersecting;
+          syncLoop();
+        }).observe(canvas);
+      }
+      document.addEventListener('visibilitychange', syncLoop);
+      if (button) {
+        button.textContent = '暫停動畫';
+        button.addEventListener('click', () => {
+          paused = !paused;
+          button.textContent = paused ? '播放動畫' : '暫停動畫';
+          syncLoop();
+        });
+      }
       surface.addEventListener('pointermove', event => {
         if (reducedMotion.matches || event.pointerType !== 'mouse') return;
         const box = canvas.getBoundingClientRect();
@@ -226,6 +274,12 @@
         probe = null;
         queue();
       });
+    } else {
+      surface.addEventListener('pointerenter', event => {
+        if (event.pointerType === 'mouse' || event.pointerType === 'pen') replay();
+      });
+      if (surface.matches('a')) surface.addEventListener('focus', replay);
+      button?.addEventListener('click', replay);
     }
 
     if (kind === 'math') {
@@ -245,6 +299,7 @@
         probe = null;
       }
       draw();
+      if (isPhysics) syncLoop();
     }
 
     reducedMotion.addEventListener('change', setMotion);

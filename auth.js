@@ -1406,8 +1406,8 @@
     const allQuestions=workbench&&(page==='questions'||new URLSearchParams(location.search).get('filter')==='all');
     const heading=document.querySelector('.auth-heading');
     if(heading){heading.querySelector('h1').textContent=workbench?'學生問答工作台':'我的提問';const intro=heading.querySelector('h1 + p');if(intro)intro.textContent=workbench?'查看學生提出的問題，提供解題引導與回覆。':'提出問題，查看教師與助教的回覆。';}
-    root.innerHTML = `<section class="auth-card">
-      <h2>${workbench ? '待答工作台' : '我的提問'}</h2>
+    root.innerHTML = `<section class="auth-card rise-question-compose">
+      <h2>${workbench ? '待答工作台' : '提出新問題'}</h2>
       <p>問題與回覆會存入帳號，供提問者及已核准的教師、助教與管理員查看。請勿填寫他人個資。</p>
       ${workbench ? '<div class="auth-field"><label for="q-filter">問題狀態</label><select id="q-filter"><option value="unanswered">待解答</option><option value="answered">已有教學回覆</option><option value="all">全部問題</option></select><p class="auth-help">待解答指尚未有教師、助教或管理員回覆；學生自己的補充不算解答。依提問時間由早到晚排列。</p></div>' : `
       <form id="question-form">
@@ -1420,26 +1420,57 @@
         <p id="q-image-status" role="status" aria-live="polite"></p><div id="q-image-preview" class="qa-image-grid"></div></div>
         <fieldset><legend>提問整理（選填）</legend><p>以下內容會和問題一起送交教師與助教，不必另外保存草稿。問題內容與提問整理合計最多 10000 字。</p><button type="button" id="q-import-draft">載入此帳號在本機保存的舊草稿</button><div class="auth-field"><label for="q-background">我觀察到什麼？</label><textarea id="q-background" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-question">我真正想問什麼？</label><textarea id="q-question" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-motivation">為什麼我想問？</label><textarea id="q-motivation" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-assumptions">我用了哪些假設？</label><textarea id="q-assumptions" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-evidence">我可以怎麼探索？</label><textarea id="q-evidence" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-impact">如果釐清了，能幫助我們理解什麼？</label><textarea id="q-impact" rows="3" maxlength="10000"></textarea></div><div class="auth-field"><label for="q-revision">這次改了什麼？</label><textarea id="q-revision" rows="3" maxlength="10000"></textarea></div></fieldset><button type="submit">直接送出問題</button>
       </form>`}
-      <hr><div id="question-list"></div>
+      </section>
+      <section class="auth-card rise-question-inbox" aria-labelledby="question-list-heading">
+      <h2 id="question-list-heading">${workbench ? '學生提問' : '我的提問紀錄'}</h2>
+      <div id="question-list" class="rise-question-list"></div>
       <div class="auth-actions"><button id="q-prev" type="button">上一頁</button><button id="q-next" type="button">下一頁</button><button id="q-refresh" type="button">重新整理</button></div>
     </section>`;
     if(workbench) $('#q-filter').value=allQuestions?'all':'unanswered';
     async function draw() {
-      const box = $('#question-list'); box.textContent = '讀取中…';
+      const box = $('#question-list'); box.innerHTML = '<p class="rise-question-empty" role="status">讀取中…</p>';
       const rows = workbench ? checked(await client.rpc('rise_staff_question_queue', {p_filter: $('#q-filter').value, p_offset: offset})) : checked(await client.from('rise_questions').select('*').eq('user_id', user.id).order('created_at', {ascending:false}).order('id').range(offset, offset + size));
-      box.innerHTML = rows.length ? '' : '<p>目前沒有問題。</p>';
+      box.innerHTML = rows.length ? '' : '<p class="rise-question-empty">目前沒有問題。</p>';
       for (const q of rows.slice(0,size)) {
-        const article = document.createElement('article'); article.className = 'auth-record';
-        article.innerHTML = `<h3>${esc(q.title)}</h3><p>${esc(new Date(q.created_at).toLocaleString('zh-TW'))} · ${esc({math:'數學',physics:'物理',chemistry:'化學',multiple:'跨學科'}[q.subject])}</p><p style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(q.body)}</p>`;
-        const open = document.createElement('button'); open.type='button'; open.textContent='查看對話／回覆';
+        const article = document.createElement('article'); article.className = 'auth-record rise-question-record';
+        article.innerHTML = `<div class="rise-question-meta">${esc({math:'數學',physics:'物理',chemistry:'化學',multiple:'跨學科'}[q.subject])} · ${esc(new Date(q.created_at).toLocaleString('zh-TW'))}</div><h3>${esc(q.title)}</h3><p class="rise-question-preview">${esc(q.body)}</p>`;
+        const preview = article.querySelector('.rise-question-preview');
+        const open = document.createElement('button'); open.type='button'; open.className='secondary';
         const thread = document.createElement('div');
+        const openLabel = workbench ? '開啟批閱' : '查看回饋與版本';
+        thread.id = `question-thread-${q.id}`;
+        thread.className = 'rise-question-thread';
+        open.setAttribute('aria-controls', thread.id);
+        function setExpanded(expanded) {
+          thread.hidden = !expanded;
+          preview.hidden = expanded;
+          open.textContent = expanded ? '收合' : openLabel;
+          open.setAttribute('aria-expanded', String(expanded));
+        }
+        let loaded = false;
+        setExpanded(false);
         open.onclick = async () => {
+          if (!thread.hidden) { setExpanded(false); return; }
+          if (loaded) { setExpanded(true); return; }
           open.disabled = true;
-          try { await discussion(q, thread); } catch(err) {report(errorText(err),true);}
+          open.textContent = '載入中…';
+          try { await discussion(q, thread); loaded = true; setExpanded(true); }
+          catch(err) {
+            if (thread.querySelector('.qa-image-grid > div')) {
+              setExpanded(true);
+              preview.hidden = false;
+            } else {
+              open.textContent = openLabel;
+            }
+            report(errorText(err),true);
+          }
           finally { open.disabled=false; }
         };
         if (workbench) {
-          const state = document.createElement('p'); state.className='auth-help'; state.textContent=q.has_staff_answer?'已有教學回覆':'待解答'; article.prepend(state);
+          const state = document.createElement('span');
+          state.className='rise-question-badge'; state.dataset.answered=String(Boolean(q.has_staff_answer));
+          state.textContent=q.has_staff_answer?'已有教學回覆':'待批閱';
+          article.querySelector('.rise-question-meta').append(state);
         }
         article.append(open,thread); box.append(article);
       }
@@ -1494,7 +1525,7 @@
           report('回覆已保存。'); if (workbench) await draw(); else await discussion(q,box);
         } catch(err) {report(errorText(err),true);} finally {if(b.isConnected)b.disabled=false;}
       };
-      const history=await window.RISE_QUESTION_HISTORY({client,user,profile,question:q,root:box,report,reload:async()=>{await draw();}});
+      const history=await window.RISE_QUESTION_HISTORY({client,user,profile,question:q,root:box,attachments:pictures,report,reload:async()=>{await draw();}});
       if(!history?.timeline){box.append(entries,more);await answers();}
       if(!staff)box.append(form);
     }

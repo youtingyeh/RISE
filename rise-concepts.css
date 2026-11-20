@@ -26,6 +26,8 @@
 .rise-concept-figure figcaption{display:flex;flex-wrap:wrap;column-gap:10px;align-items:baseline;padding-inline:6px;font-size:.87rem}
 .rise-concept-figure figcaption p{margin:0;font-size:inherit;color:var(--text)}
 .rise-concept-replay{color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--vermilion);padding:0;margin:3px 0 0;font-weight:650}
+.rise-wave-controls{display:flex;justify-content:flex-end;padding-bottom:14px}
+.rise-wave-controls .rise-wave-toggle{font-size:.86rem}
 @media(max-width:680px){
   .rise-concept-list,.rise-concept-header{grid-template-columns:1fr}
   .rise-concept-list{gap:24px}
