@@ -45,6 +45,13 @@ for(const page of ['support.html','resources.html','resources.html?id=example'])
  const {dom,w}=await setup(page,state(false));assert(w.document.querySelector('main').classList.contains('rise-area-main-hidden'));dom.window.close();
 }
 {
+ const data=state();data.flags.club_grants=false;const {dom,w,api}=await setup('club-grants.html',data);
+ assert(w.document.querySelector('main').inert);
+ assert.match(w.document.querySelector('#site-feature-gate').textContent,/校園社團補助尚未開放/);
+ data.flags.club_grants=true;await api.refresh();
+ assert.equal(w.document.querySelector('main').inert,false);dom.window.close();
+}
+{
  const data=state(false);data.flags.competitions=true;
  const {dom,w}=await setup('index.html',data);w.eval(nav);await pause();
  w.document.querySelector('.rise-nav-group button').dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));
@@ -57,12 +64,14 @@ for(const page of ['support.html','resources.html','resources.html?id=example'])
   writes++;if(fail)return {error:{code:'40001'}};Object.assign(data.flags,args.p_changes);data.version++;return {data:structuredClone(data)};
  })}};w.dispatchEvent(new w.Event('rise-nav-client'));await pause();w.eval(editor);
  await w.RISE_ADMIN_FEATURES({root:w.document.querySelector('#settings'),user:{email_confirmed_at:'yes'},profile:{role:'admin'}});await pause();
- assert.equal(w.document.querySelectorAll('[role="switch"]').length,15);
- assert.equal(w.document.querySelector('#site-toggle-club_grants'),null);
+ assert.equal(w.document.querySelectorAll('[role="switch"]').length,16);
+ assert.equal(w.document.querySelector('#site-toggle-club_grants').getAttribute('aria-label'),'校園社團補助');
  w.document.querySelector('#site-toggle-competitions').click();await pause();assert.equal(writes,1);assert.equal(api.state.flags.competitions,false);
  fail=true;w.document.querySelector('#site-toggle-yearbook').click();await pause();assert.equal(api.state.flags.yearbook,true);assert(w.document.querySelector('#settings').textContent.includes('沒有覆蓋'));
- fail=false;[...w.document.querySelectorAll('button')].find(b=>b.textContent==='套用精簡模式').click();await pause();assert.deepEqual(Array.from(api.catalog).filter(([key])=>api.state.flags[key]).map(([key])=>key),['science','videos','questions','schedule']);
- assert.equal(api.state.flags.club_grants,true);
+ fail=false;w.document.querySelector('#site-toggle-club_grants').click();await pause();assert.equal(api.state.flags.club_grants,false);
+ w.document.querySelector('#site-toggle-club_grants').click();await pause();assert.equal(api.state.flags.club_grants,true);
+ [...w.document.querySelectorAll('button')].find(b=>b.textContent==='套用精簡模式').click();await pause();assert.deepEqual(Array.from(api.catalog).filter(([key])=>api.state.flags[key]).map(([key])=>key),['science','videos','questions','schedule']);
+ assert.equal(api.state.flags.club_grants,false);
  assert.equal(w.document.querySelector('[role="switch"]').getAttribute('aria-checked'),'true');dom.window.close();
 }
 console.log('PASS feature UI: route closure, dynamic links, admin preview/logout, missing SQL, network failure, empty menus, admin switches, conflict handling, simple preset.');

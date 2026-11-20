@@ -15,10 +15,11 @@
   ['ta_training','助教培訓認證','培訓課程與認證申請'],
   ['ta_forum','月度助教論壇','教學人員交流'],
   ['plc','教師共備社群','教案與學習案例分享'],
+  ['club_grants','校園社團補助','教師申請與管理員審核'],
   ['learning_report','學習紀錄與成效','學生個人紀錄與教師課程分析'],
   ['schedule','重要日程','活動日曆與日程入口']
  ];
- const routes={science:['science.html','math.html','physics.html','chemistry.html'],videos:['explore.html','video-detail.html'],questions:['questions.html','staff-questions.html','inquiry.html'],modules:['modules.html','learning.html'],assignments:['assignments.html'],discussions:['discussions.html'],competitions:['competitions.html'],gallery:['competition-gallery.html'],dialogues:['dialogues.html'],yearbook:['yearbook.html'],ta_training:['ta-training.html'],ta_forum:['ta-forum.html'],plc:['plc.html'],learning_report:['learning-report.html'],schedule:['schedule.html']};
+ const routes={science:['science.html','math.html','physics.html','chemistry.html'],videos:['explore.html','video-detail.html'],questions:['questions.html','staff-questions.html','inquiry.html'],modules:['modules.html','learning.html'],assignments:['assignments.html'],discussions:['discussions.html'],competitions:['competitions.html'],gallery:['competition-gallery.html'],dialogues:['dialogues.html'],yearbook:['yearbook.html'],ta_training:['ta-training.html'],ta_forum:['ta-forum.html'],plc:['plc.html'],club_grants:['club-grants.html'],learning_report:['learning-report.html'],schedule:['schedule.html']};
  let status='loading',flags={},version=null,admin=false,client=null,seq=0,identityEpoch=0;
  const base=new URL('./',location.href),names={...Object.fromEntries(catalog.map(([k,v])=>[k,v])),staff_home:'教學工作台',resources_home:'教學資源'};
  const composites={staff_home:['questions','science','discussions'],resources_home:['science','yearbook','gallery','dialogues']};

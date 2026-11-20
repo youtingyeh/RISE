@@ -495,7 +495,7 @@
       <div class="container rise-concept-list">${subjectCards(true)}</div><div class="container rise-wave-controls"><button type="button" class="rise-concept-replay rise-wave-toggle" hidden>暫停動畫</button></div></div>
       <section class="section container rise-science-overview">
         <section class="rise-module-guide" aria-labelledby="science-layers"><div><h2 id="science-layers">三層教材與單元習作</h2><p>每堂 30 分鐘內，搭配 3–5 題練習。</p><a class="button" href="modules.html">查看科學探索單元</a></div><ul>${layers.map(layer => `<li>${e(layer.title)}</li>`).join("")}</ul></section>
-        <section class="rise-topic-section"><h2>已發布探索主題</h2><p>選擇探索主題，查看其中的文章、影片與教材。</p><div data-resource-feed="science"></div></section>
+        <section class="rise-topic-section"><h2>探索主題與教材</h2><p>團隊發布後，文章、影片與教材會顯示在這裡。</p><div data-resource-feed="science"></div></section>
       </section>`;
   }
 
@@ -566,7 +566,7 @@
 
             <section id="materials" class="content-section">
               <h2>${e(subject.name)}教學資源</h2>
-              <a class="text-link" href="modules.html">查看已發布單元及三層教材 →</a>
+              <a class="text-link" href="modules.html">前往單元教材區 →</a>
               <div data-resource-feed="science" data-subject="${e(id)}"></div>
             </section>
           </div>
