@@ -1266,11 +1266,11 @@ function setupCalendar() {
           </div>
           <aside class="rise-prompt-card" aria-label="提問示例：助教如何回饋一個問題">
             <p class="rise-sheet-meta"><strong>提問示例</strong><span>數列與級數・第 2 版</span></p>
-            <p class="rise-sheet-question">為什麼 1 + ½ + ¼ + ⅛ + … 加下去會<span class="rise-mark-circle">停在 2</span>，但 1 + ½ + ⅓ + ¼ + … 卻會<span class="rise-mark-wave">一直變大</span>？</p>
+            <p class="rise-sheet-question">為什麼 <span class="rise-mark-stroke" data-note-mark="analysis">1 + ½ + ¼ + ⅛ + …</span> 加下去會<span class="rise-mark-circle" data-note-mark="followup">停在 2</span>，但 1 + ½ + <span class="rise-mark-wave" data-note-mark="improvement">⅓ + ¼ + …</span> 卻會<span class="rise-mark-circle" data-note-mark="followup">一直變大</span>？</p>
             <ol class="rise-sheet-notes" aria-label="助教回饋">
-              <li><span class="rise-note-kind">思路分析</span><p>你注意到兩串的每一項都越來越小，這個比較抓得很準。</p></li>
-              <li><span class="rise-note-kind">改進建議</span><p>把後面的項分組看看：⅓＋¼、⅕ 到 ⅛……每一組至少有多大？</p></li>
-              <li><span class="rise-note-kind">延伸提問</span><p>「每一項都趨近 0」，就足以保證總和收斂嗎？</p></li>
+              <li><button class="rise-note" type="button" data-note="analysis" aria-pressed="false"><span class="rise-note-kind">思路分析</span><span class="rise-note-copy">你注意到兩串的每一項都越來越小，這個比較抓得很準。</span></button></li>
+              <li><button class="rise-note" type="button" data-note="improvement" aria-pressed="false"><span class="rise-note-kind">改進建議</span><span class="rise-note-copy">把後面的項分組看看：⅓＋¼、⅕ 到 ⅛……每一組至少有多大？</span></button></li>
+              <li><button class="rise-note" type="button" data-note="followup" aria-pressed="false"><span class="rise-note-kind">延伸提問</span><span class="rise-note-copy">「每一項都趨近 0」，就足以保證總和收斂嗎？</span></button></li>
             </ol>
             <a class="text-link" href="questions.html">寫下我的第一個問題（登入後使用）</a>
           </aside>
@@ -1296,6 +1296,43 @@ function setupCalendar() {
         <div class="rise-community-list"><div><strong>學生</strong><p>主動探索、完整表達，從回饋中修正想法。</p></div><div><strong>助教</strong><p>理解學生的思考脈絡，以再提問引導再思考。</p></div><div><strong>教師</strong><p>發展教材與討論題，支持深度理解與專業回饋。</p></div></div>
       </div></section>
       <section class="section container"><p class="eyebrow">STAY CONNECTED</p><h2>一起參與數思新生</h2><div class="rise-links"><a href="team.html"><span><strong>核心團隊</strong><small>認識推動計畫的夥伴</small></span><span aria-hidden="true">↗</span></a><a href="schedule.html"><span><strong>重要日程</strong><small>查看活動與計畫公告</small></span><span aria-hidden="true">↗</span></a><a href="account.html"><span><strong>會員中心</strong><small>進入你的學習與教學空間</small></span><span aria-hidden="true">↗</span></a></div></section>`;
+  }
+
+  function setupPromptNotes() {
+    const card = $(".rise-prompt-card");
+    if (!card) return;
+
+    const notes = card.querySelectorAll("[data-note]");
+    const marks = card.querySelectorAll("[data-note-mark]");
+    let preview = null;
+    let selected = null;
+
+    function updateInk() {
+      const active = preview ?? selected;
+      for (const mark of marks) mark.toggleAttribute("data-ink-active", mark.dataset.noteMark === active);
+      for (const note of notes) {
+        note.toggleAttribute("data-ink-active", note.dataset.note === active);
+        note.setAttribute("aria-pressed", String(note.dataset.note === selected));
+      }
+    }
+
+    for (const note of notes) {
+      const name = note.dataset.note;
+      note.addEventListener("pointerenter", (event) => {
+        if (event.pointerType !== "mouse") return;
+        preview = name;
+        updateInk();
+      });
+      note.addEventListener("pointerleave", () => {
+        if (preview !== name) return;
+        preview = null;
+        updateInk();
+      });
+      note.addEventListener("click", () => {
+        selected = selected === name ? null : name;
+        updateInk();
+      });
+    }
   }
 
   function learningPage() {
@@ -1428,6 +1465,8 @@ function setupCalendar() {
     </main>
     ${siteFooter()}
   `;
+
+  if (page === "home") setupPromptNotes();
 
   if(catalogError&&['videos','video'].includes(page)){
     const warning=document.createElement('p');warning.className='container note';warning.setAttribute('role','status');warning.textContent='最新影片清單暫時無法載入，請稍後重新整理。';

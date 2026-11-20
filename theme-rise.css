@@ -561,25 +561,44 @@ body .auth-shell .wf-create-button{background:var(--ink);border-color:var(--ink)
   font-size:clamp(1.25rem,2vw,1.5rem);
   line-height:1.85;
 }
-.rise-mark-circle{
-  padding:0 .25em;
-  border:2px solid var(--vermilion);
-  border-radius:48% 52% 46% 54% / 60% 50% 50% 40%;
+.rise-mark-stroke{
+  background:linear-gradient(176deg,transparent 32%,var(--vermilion-soft) 33% 86%,transparent 88%) left center / 0 100% no-repeat;
+  -webkit-box-decoration-break:clone;
+  box-decoration-break:clone;
+  transition:background-size .22s ease-out;
 }
+.rise-mark-stroke[data-ink-active]{background-size:100% 100%}
+.rise-mark-circle{
+  padding:0 .18em;
+  border:1.5px solid transparent;
+  border-radius:48% 52% 46% 54% / 60% 50% 50% 40%;
+  white-space:nowrap;
+  transition:border-color .18s ease-out;
+}
+.rise-mark-circle[data-ink-active]{border-color:var(--vermilion)}
 .rise-mark-wave{
-  text-decoration:underline wavy var(--vermilion);
+  text-decoration:underline wavy transparent;
   text-decoration-thickness:1.5px;
   text-underline-offset:7px;
+  transition:text-decoration-color .18s ease-out;
 }
+.rise-mark-wave[data-ink-active]{text-decoration-color:var(--vermilion)}
 .rise-sheet-notes{list-style:none;margin:0 0 18px;padding:0}
-.rise-sheet-notes li{
+.rise-sheet-notes li{border-top:1px dashed #ecc3bd}
+.rise-note{
   display:grid;
   grid-template-columns:5.2em minmax(0,1fr);
   gap:14px;
   align-items:baseline;
+  width:100%;
   padding:11px 0;
-  border-top:1px dashed #ecc3bd;
+  border:0;
+  background:transparent;
+  text-align:left;
+  transition:background-color .18s ease-out;
 }
+.rise-note[data-ink-active]{background-color:rgba(198,58,44,.05)}
+.rise-note[data-ink-active] .rise-note-kind{text-decoration:underline;text-underline-offset:.26em}
 .rise-sheet-notes .rise-note-kind{
   color:var(--vermilion);
   font-size:.8rem;
@@ -587,9 +606,7 @@ body .auth-shell .wf-create-button{background:var(--ink);border-color:var(--ink)
   letter-spacing:.08em;
   white-space:nowrap;
 }
-.rise-sheet-notes p{
-  max-width:none;
-  margin:0;
+.rise-note-copy{
   color:var(--vermilion);
   font-family:var(--font-hand);
   font-size:1.1rem;
@@ -868,7 +885,7 @@ body .auth-shell .wf-create-button:focus-visible{outline-color:var(--vermilion)}
 @media(max-width:420px){
   .rise-hero h1{font-size:2.25rem}
   .rise-hero .actions{flex-direction:column;align-items:stretch}
-  .rise-sheet-notes li{grid-template-columns:1fr;gap:2px}
+  .rise-note{grid-template-columns:1fr;gap:2px}
   .rise-community-list>div{grid-template-columns:1fr;gap:4px}
 }
 @media(prefers-reduced-motion:reduce){
