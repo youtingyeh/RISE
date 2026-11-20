@@ -10,7 +10,6 @@
   const radius = 180;
   const size = radius * 2;
   const radiusSquared = radius ** 2;
-  const coreSquared = 48 ** 2;
   const spacing = 24;
   const sampleStep = 4;
   const fadeDuration = 160;
@@ -44,10 +43,10 @@
         const dx = x - radius;
         const dy = y - radius;
         const distanceSquared = dx * dx + dy * dy;
-        // Soften the centre and taper to zero at the edge to join the flat grid.
+        // Pull toward the centre and taper to zero at the edge to join the flat grid.
         const taper = Math.max(0, 1 - distanceSquared / radiusSquared);
-        const bend = strength * 1.7 * taper ** 2 / Math.sqrt(1 + distanceSquared / coreSquared);
-        context.lineTo(x + dx * bend, y + dy * bend);
+        const pull = strength * 0.82 * taper ** 2;
+        context.lineTo(x - dx * pull, y - dy * pull);
       }
       context.lineTo(horizontal ? size : line, horizontal ? line : size);
     }
