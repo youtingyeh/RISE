@@ -1272,10 +1272,20 @@ function setupCalendar() {
               <li><button class="rise-note" type="button" data-note="improvement" aria-pressed="false"><span class="rise-note-kind">改進建議</span><span class="rise-note-copy">把後面的項分組看看：⅓＋¼、⅕ 到 ⅛……每一組至少有多大？</span></button></li>
               <li><button class="rise-note" type="button" data-note="followup" aria-pressed="false"><span class="rise-note-kind">延伸提問</span><span class="rise-note-copy">「每一項都趨近 0」，就足以保證總和收斂嗎？</span></button></li>
             </ol>
+            <details class="rise-series">
+              <summary>試算兩串級數</summary>
+              <div class="rise-series-plot" aria-live="polite" aria-atomic="true">
+                <p class="rise-series-count">各加了 <strong data-series-count>1</strong> 項</p>
+                <div class="rise-series-axis" aria-hidden="true">0<span>2</span><span>5</span></div>
+                <div class="rise-series-row"><span>等比級數</span><strong data-series-sum="geometric">1</strong><div class="rise-series-track" aria-hidden="true"><span data-series-bar="geometric" style="width:20%"></span></div></div>
+                <div class="rise-series-row"><span>調和級數</span><strong data-series-sum="harmonic">1</strong><div class="rise-series-track" aria-hidden="true"><span data-series-bar="harmonic" style="width:20%"></span></div></div>
+              </div>
+              <div class="rise-series-actions"><button type="button" class="button" data-series-step>加一項</button><button type="button" class="button secondary" data-series-reset disabled>重來</button></div>
+            </details>
             <a class="text-link" href="questions.html">寫下我的第一個問題（登入後使用）</a>
           </aside>
         </div>
-        <div class="container rise-hero-foot"><span>能力導向的學習</span><span>看見推理的過程</span><span>學生 × 助教 × 教師</span></div>
+        <div class="container rise-hero-foot"><span>能力導向的學習</span><span>看見推理的過程</span><span>學生 × 助教 × 教師</span><p class="rise-lens-controls" hidden>點網格空白處固定引力井，按 Esc 或<button type="button" data-clear-lens disabled>清除</button></p></div>
       </section>
       <section class="section container">
         <div class="rise-section-intro"><div><p class="eyebrow">TWO TRACKS, ONE JOURNEY</p><h2>思考，從兩條路一起出發。</h2></div><p>數理訓練讓想法有依據，提問練習讓理解更深入。兩條主軸相互支持，將知識轉化為可以帶走的能力。</p></div>
@@ -1333,6 +1343,46 @@ function setupCalendar() {
         updateInk();
       });
     }
+  }
+
+  function setupSeriesExperiment() {
+    const experiment = $(".rise-series");
+    if (!experiment) return;
+
+    const count = experiment.querySelector("[data-series-count]");
+    const step = experiment.querySelector("[data-series-step]");
+    const reset = experiment.querySelector("[data-series-reset]");
+    const sums = experiment.querySelectorAll("[data-series-sum]");
+    const bars = experiment.querySelectorAll("[data-series-bar]");
+    const limit = 64;
+    const format = new Intl.NumberFormat("zh-TW", { maximumFractionDigits: 4 });
+    let terms = 1;
+    let harmonic = 1;
+
+    function update() {
+      const geometric = 2 - 2 ** (1 - terms);
+      count.textContent = terms;
+      const geometricLabel = format.format(geometric);
+      sums[0].textContent = geometricLabel === "2" ? "接近 2" : geometricLabel;
+      sums[1].textContent = format.format(harmonic);
+      bars[0].style.width = `${geometric * 20}%`;
+      bars[1].style.width = `${harmonic * 20}%`;
+      step.disabled = terms >= limit;
+      reset.disabled = terms === 1;
+    }
+
+    step.addEventListener("click", () => {
+      if (terms >= limit) return;
+      terms += 1;
+      harmonic += 1 / terms;
+      update();
+    });
+    reset.addEventListener("click", () => {
+      terms = 1;
+      harmonic = 1;
+      update();
+      step.focus();
+    });
   }
 
   function learningPage() {
@@ -1466,7 +1516,10 @@ function setupCalendar() {
     ${siteFooter()}
   `;
 
-  if (page === "home") setupPromptNotes();
+  if (page === "home") {
+    setupPromptNotes();
+    setupSeriesExperiment();
+  }
 
   if(catalogError&&['videos','video'].includes(page)){
     const warning=document.createElement('p');warning.className='container note';warning.setAttribute('role','status');warning.textContent='最新影片清單暫時無法載入，請稍後重新整理。';
