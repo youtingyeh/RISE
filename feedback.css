@@ -1,0 +1,30 @@
+/* 意見與修正回報：沿用 theme-rise.css 的色彩變數，不載入外部資源。 */
+.fb-card{margin-bottom:24px}
+.fb-form{display:grid;gap:16px;max-width:720px}
+.fb-field{display:grid;gap:6px}
+.fb-label{font-weight:700;color:var(--ink,#1d2b46)}
+.fb-field input,.fb-field select,.fb-field textarea,.admin-filters select{width:100%;box-sizing:border-box;font:inherit;color:var(--text,#2f3c53);background:#fff;border:1px solid var(--rule,#d6dee9);border-radius:6px;padding:10px 12px}
+.fb-field textarea{resize:vertical;min-height:96px}
+.fb-field input:focus-visible,.fb-field select:focus-visible,.fb-field textarea:focus-visible{outline:3px solid var(--cobalt,#2b5ba8);outline-offset:1px}
+.fb-hint,.fb-count,.fb-note{color:var(--muted,#56657c);font-size:.88rem;line-height:1.6}
+.fb-count{justify-self:end;margin-top:-10px}
+.fb-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
+.fb-list{list-style:none;margin:0;padding:0;display:grid;gap:16px}
+.fb-item{border:1px solid var(--rule,#d6dee9);border-left:4px solid var(--cobalt,#2b5ba8);border-radius:6px;padding:16px 18px;background:#fff;min-width:0}
+.fb-item-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 12px;align-items:baseline}
+.fb-item-head strong{color:var(--ink,#1d2b46);overflow-wrap:anywhere}
+.fb-meta{margin:4px 0;color:var(--muted,#56657c);font-size:.88rem}
+.fb-body{margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.fb-reply{margin:10px 0 0;padding:10px 12px;background:var(--paper-2,#f4f7fb);border-left:3px solid var(--vermilion,#c63a2c);overflow-wrap:anywhere}
+.fb-badge{font-size:.82rem;padding:2px 10px;border-radius:999px;background:var(--paper-2,#f4f7fb);color:var(--ink,#1d2b46);border:1px solid var(--rule,#d6dee9);white-space:nowrap}
+.fb-new{border-color:var(--vermilion,#c63a2c);color:var(--vermilion,#c63a2c)}
+.fb-resolved{border-color:var(--teal,#0e7166);color:var(--teal,#0e7166)}
+.fb-in_progress,.fb-triaged{border-color:var(--cobalt,#2b5ba8);color:var(--cobalt,#2b5ba8)}
+.fb-triage{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--rule,#d6dee9)}
+.fb-triage .fb-field:nth-of-type(n+4){grid-column:1/-1}
+.fb-triage button{grid-column:1/-1;justify-self:start}
+.admin-metric.fb-warn strong{color:var(--vermilion,#c63a2c)}
+.admin-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:760px){.fb-triage{grid-template-columns:1fr}.fb-count{margin-top:0}}
+@media(prefers-reduced-motion:reduce){.fb-item,.fb-badge{transition:none}}
+@media print{.fb-form,.fb-triage,.fb-actions{display:none}}

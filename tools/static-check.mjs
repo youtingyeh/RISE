@@ -32,7 +32,7 @@ for (const file of files.filter(file => extname(file) === '.html')) {
     'learning.html', 'inquiry.html', 'video-detail.html', 'register.html',
     'login.html', 'verify-email.html', 'forgot-password.html',
     'reset-password.html', 'account.html', 'teacher-apply.html',
-    'admin-review.html', '404.html'
+    'admin-review.html', 'feedback.html', 'admin-feedback.html', '404.html'
   ]);
   if (privatePages.has(name) && !/<meta\s+name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html)) {
     failures.push(`${name}：登入／錯誤頁缺少 noindex`);

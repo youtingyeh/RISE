@@ -11,7 +11,7 @@
       const grid=text('div','','container footer-grid'),identity=document.createElement('div');
       const brand=link('index.html',info.name);brand.className='footer-brand';identity.append(brand,text('p','《'+info.title+'》'),text('p',info.subtitle));
       const nav=document.createElement('nav');nav.className='footer-nav';nav.setAttribute('aria-label','頁尾導覽');
-      [['about.html','關於計畫'],['join.html','加入我們'],['science.html','科學探索'],['explore.html','影音探索'],['schedule.html','重要日程'],['account.html','會員中心'],['privacy.html','個資告知']].forEach(([href,label])=>nav.append(link(href,label)));
+      [['about.html','關於計畫'],['join.html','加入我們'],['science.html','科學探索'],['explore.html','影音探索'],['schedule.html','重要日程'],['account.html','會員中心'],['privacy.html','個資告知'],['feedback.html','意見回報']].forEach(([href,label])=>{const a=link(href,label);if(href==='feedback.html'){const here=location.pathname.split('/').pop();if(here&&here!=='feedback.html'&&/^[A-Za-z0-9_.-]+$/.test(here))a.href='feedback.html?page='+encodeURIComponent(here);}nav.append(a);});
       const contact=text('p','聯絡信箱：');contact.append(link('mailto:'+info.contactEmail,info.contactEmail));identity.append(contact);
       grid.append(identity,nav);footer.replaceChildren(grid);
       const bottom=text('div','數學 · 物理 · 化學','container footer-bottom');footer.append(bottom);
