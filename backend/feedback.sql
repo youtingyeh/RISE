@@ -4,6 +4,10 @@ begin;
 do $$begin
  if to_regclass('public.rise_profiles') is null then raise exception 'Install the account system first.';end if;
 end $$;
+do $$begin
+ if to_regclass('public.rise_feedback') is not null and exists(select 1 from information_schema.columns where table_schema='public' and table_name='rise_feedback' and column_name='case_no')
+  then raise exception 'feedback-autofix.sql 已安裝。請勿重跑此檔（會降級函式）；之後只需重跑 backend/feedback-autofix.sql。';end if;
+end $$;
 create schema if not exists rise_private;
 revoke all on schema rise_private from public;
 

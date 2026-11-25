@@ -5,8 +5,8 @@ class SafeError extends Error {}
 const must=(name:string)=>{const v=Deno.env.get(name);if(!v)throw new SafeError('缺少 Edge Functions Secret：'+name+'。請到 Edge Functions → Secrets 新增。');return v;};
 const checked=(r:any)=>{if(r.error){if(['PGRST202','PGRST205','42P01'].includes(r.error.code))throw new SafeError('找不到回報彙整資料表或函式，請執行 backend/feedback.sql。');throw new SafeError('回報彙整資料庫操作失敗，請查看 Edge Function Logs。');}return r.data;};
 const same=(a:string,b:string)=>{const x=new TextEncoder().encode(a),y=new TextEncoder().encode(b);let d=x.length^y.length;for(let i=0;i<Math.max(x.length,y.length);i++)d|=(x[i]??0)^(y[i]??0);return d===0;};
-const KIND:Record<string,string>={bug:'網站問題',content:'內容修正',suggestion:'功能建議',other:'其他'};
-const STATUS:Record<string,string>={new:'未處理',triaged:'已確認',in_progress:'處理中'};
+const KIND:Record<string,string>={bug:'功能異常',security:'疑似安全問題',content:'內容修正',suggestion:'改善建議',other:'其他'};
+const STATUS:Record<string,string>={new:'未處理',triaged:'已確認',in_progress:'處理中',needs_info:'待補資料',escalated:'轉交管理者',fix_ready:'測試通過待核准',awaiting_verification:'已發布待複驗'};
 const clean=(s:unknown,n:number)=>String(s??'').replace(/[\u0000-\u001f\u007f]+/g,' ').trim().slice(0,n);
 const taipei=(d:Date)=>d.toLocaleDateString('en-CA',{timeZone:'Asia/Taipei'});
 const stamp=(v:unknown)=>v?new Date(String(v)).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false}):'—';
@@ -17,6 +17,10 @@ function buildMail(job:any,adminUrl:string){
  lines.push(`RISE 網站意見與修正回報彙整（${job.day}）`,'');
  lines.push(`統計區間：${stamp(s.window.since)} ～ ${stamp(s.window.until)}（臺北時間）`);
  lines.push(`新收集：${s.new_count} 則　未處理：${s.untriaged} 則　處理中與待處理共：${s.open_total} 則`);
+ const b=s.buckets||{};
+ lines.push(`【依狀態彙整】新增 ${b.new??s.new_count}｜待補資料 ${b.needs_info??0}｜處理中 ${b.in_progress??0}｜轉交管理者 ${b.escalated??0}｜待驗證（待核准／待複驗）${b.awaiting_verification??0}｜已結案 ${b.closed??s.resolved_in_window}`);
+ if(s.urgent_open>0)lines.push(`⚠ 尚有 ${s.urgent_open} 則疑似安全／登入／權限／個資的緊急案件未結案，請優先到管理頁處理。`);
+ if((s.fix_ready||[]).length){lines.push('待管理者決定的自動修正：');for(const f of s.fix_ready)lines.push(`  ${clean(f.case_no,30)}　${clean(f.page,80)}　${f.state==='fix_ready'?'測試通過，待核准發布':f.state==='approved'?'已核准，待發布':'已發布，待複驗'}`);}
  lines.push(`高優先未結案：${s.high_open} 則　超過 3 天仍未處理：${s.stale_untriaged} 則　本期已解決：${s.resolved_in_window} 則`);
  const kinds=Object.entries(s.by_kind_open||{}).map(([k,n])=>`${KIND[k]||k} ${n}`).join('、');
  if(kinds)lines.push(`未結案類型：${kinds}`);
@@ -33,14 +37,14 @@ function buildMail(job:any,adminUrl:string){
  lines.push(`【新收集的回報（${s.new_count} 則${s.new_count>50?'，僅列前 50 則':''}）】`);
  if(!s.new_items.length)lines.push('本期沒有新回報。');
  s.new_items.forEach((it:any,i:number)=>{
-  lines.push(`${i+1}. [${KIND[it.kind]||it.kind}]${it.priority==='high'?'［高優先］':''} ${clean(it.title,120)}`);
+  lines.push(`${i+1}. ${clean(it.case_no,30)} [${KIND[it.kind]||it.kind}]${it.urgent?'［緊急］':it.priority==='high'?'［高優先］':''} ${clean(it.title,120)}`);
   if(it.page)lines.push(`   頁面：${clean(it.page,120)}`);
   lines.push(`   ${clean(it.body,300)}`);
  });
  lines.push('');
  lines.push('【重複回報的頁面（可一併修正）】');
  if(!s.repeat_pages.length)lines.push('目前沒有同頁同類型的重複回報。');
- for(const g of s.repeat_pages)lines.push(`  ${clean(g.page,100)}（${KIND[g.kind]||g.kind}）${g.count} 則：${(g.titles||[]).map((t:string)=>clean(t,60)).join('；')}`);
+ for(const g of s.repeat_pages)lines.push(`  ${clean(g.page,100)}（${KIND[g.kind]||g.kind}）${g.count} 則：${(g.titles||[]).map((t:string)=>clean(t,60)).join('；')}${(g.case_nos||[]).length?'（'+g.case_nos.map((x:string)=>clean(x,30)).join('、')+'）':''}`);
  lines.push('');
  lines.push('【最久未結案】');
  if(!s.oldest_open.length)lines.push('沒有未結案回報。');

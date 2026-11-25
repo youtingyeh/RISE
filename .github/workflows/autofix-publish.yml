@@ -1,0 +1,40 @@
+name: Feedback autofix publish
+# 只發布管理者已在 admin-feedback.html 核准的修正：發布前重跑獨立檢查器，發布後對正式網站複驗。
+# 注意：需要允許 GITHUB_TOKEN 推送 main（或改用有權限的部署金鑰／審核流程）；尚未啟用前請勿視為已可自動發布。
+on:
+  schedule:
+    - cron: '15 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: feedback-autofix
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Publish approved fixes
+        env:
+          RISE_SUPABASE_URL: ${{ secrets.RISE_SUPABASE_URL }}
+          RISE_SERVICE_ROLE_KEY: ${{ secrets.RISE_SERVICE_ROLE_KEY }}
+        run: node tools/autofix/run.mjs publish
+      - name: Wait for Pages deployment
+        run: sleep 240
+      - name: Verify on the live site
+        env:
+          RISE_SUPABASE_URL: ${{ secrets.RISE_SUPABASE_URL }}
+          RISE_SERVICE_ROLE_KEY: ${{ secrets.RISE_SERVICE_ROLE_KEY }}
+          RISE_SITE_URL: https://youtingyeh.github.io/RISE/
+        run: node tools/autofix/run.mjs verify

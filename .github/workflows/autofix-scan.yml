@@ -1,0 +1,29 @@
+name: Feedback autofix scan
+# 每天臺北時間 09:00。只處理「公開說明頁站內連結錯誤」案例，修補只會推到 autofix/ 分支，絕不直接動 main。
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: feedback-autofix
+  cancel-in-progress: false
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Reproduce, fix, re-verify (max 2 attempts per case, enforced in the database)
+        env:
+          RISE_SUPABASE_URL: ${{ secrets.RISE_SUPABASE_URL }}
+          RISE_SERVICE_ROLE_KEY: ${{ secrets.RISE_SERVICE_ROLE_KEY }}
+          RISE_AUTOFIX_PUSH: '1'
+        run: node tools/autofix/run.mjs scan

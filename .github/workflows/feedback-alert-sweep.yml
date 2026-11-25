@@ -1,0 +1,21 @@
+name: Feedback urgent alert sweep
+# 每小時補寄尚未寄出的緊急通知（會員送出後瀏覽器會先嘗試立即觸發；這裡是備援）。
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Send pending urgent alerts
+        env:
+          URL: ${{ secrets.RISE_SUPABASE_URL }}
+          TOKEN: ${{ secrets.RISE_DIGEST_TOKEN }}
+          KEY: ${{ secrets.RISE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$TOKEN" ]; then echo "Secrets not set; alert sweep disabled."; exit 0; fi
+          curl -fsS -X POST "$URL/functions/v1/rise-feedback-alert" -H "x-rise-digest-token: $TOKEN" -H "apikey: $KEY" -H "content-type: application/json" -d '{}'

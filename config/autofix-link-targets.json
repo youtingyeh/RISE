@@ -1,0 +1,18 @@
+{
+ "_說明": "管理者維護的站內連結正確目的頁。自動修正只會依「連結文字」在此表中唯一對應的目的頁修補；沒有對應或有歧義就轉交管理者。此檔不在自動修正可修改範圍內。",
+ "version": 1,
+ "byText": {
+  "首頁": {"target": "index.html", "title": "RISE｜國立臺灣大學數思新生計畫"},
+  "關於計畫": {"target": "about.html", "title": "關於計畫"},
+  "核心團隊": {"target": "team.html", "title": "核心團隊"},
+  "加入我們": {"target": "join.html", "title": "加入我們"},
+  "重要日程": {"target": "schedule.html", "title": "重要日程"},
+  "科學探索": {"target": "science.html", "title": "科學探索"},
+  "影音探索": {"target": "explore.html", "title": "影音探索"},
+  "教學資源": {"target": "resources.html", "title": "教學資源"},
+  "前往會員中心": {"target": "account.html", "title": "會員中心"},
+  "會員中心": {"target": "account.html", "title": "會員中心"},
+  "登入": {"target": "login.html", "title": "登入"},
+  "註冊": {"target": "register.html", "title": "建立 RISE 帳號"}
+ }
+}

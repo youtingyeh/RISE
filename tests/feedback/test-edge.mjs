@@ -11,8 +11,8 @@ const createClient=()=>({auth:{getUser:async()=>result({user:valid?{id:'admin',e
 const nodemailer={createTransport:()=>({sendMail:async m=>{if(fail)throw Error('secret SMTP detail');mails.push(m);return {accepted:[m.to.address]}},close(){}})};
 const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-secret',RISE_SMTP_USER:'sender@example.org',RISE_SMTP_PASSWORD:'smtp-secret',RISE_DIGEST_TOKEN:'t'.repeat(32)};
 const handler=new Function('createClient','nodemailer','Deno',source+';return handler;')(createClient,nodemailer,{env:{get:k=>env[k]}});
-const summary={window:{since:'2026-11-25T00:00:00Z',until:'2026-11-26T00:00:00Z'},open_total:4,untriaged:2,high_open:1,stale_untriaged:1,resolved_in_window:1,by_kind_open:{bug:3,content:1},new_count:2,
- new_items:[{kind:'bug',page:'math.html',title:'按鈕沒反應\n<script>',body:'手機上點不到',priority:'high'},{kind:'content',page:'',title:'錯字',body:'第二段有錯字',priority:'normal'}],
+const summary={window:{since:'2026-11-25T00:00:00Z',until:'2026-11-26T00:00:00Z'},open_total:4,untriaged:2,high_open:1,stale_untriaged:1,resolved_in_window:1,by_kind_open:{bug:3,content:1},new_count:2,urgent_open:1,buckets:{new:2,needs_info:1,in_progress:3,escalated:1,awaiting_verification:1,closed:4},fix_ready:[{case_no:'FB-20261125-0002',page:'join.html',state:'fix_ready'}],
+ new_items:[{case_no:'FB-20261125-0001',kind:'bug',page:'math.html',title:'按鈕沒反應\n<script>',body:'手機上點不到',priority:'high'},{kind:'content',page:'',title:'錯字',body:'第二段有錯字',priority:'normal'}],
  repeat_pages:[{page:'math.html',kind:'bug',count:2,titles:['按鈕沒反應','選單']}],oldest_open:[{title:'舊問題',page:'x.html',status:'new',created_at:'2026-11-20T00:00:00Z'}]};
 const job={day:'2026-11-26',attempts:1,site_check:{checked:44,failed:[{page:'team.html',reason:'HTTP 404'}]},summary};
 const auth=()=>new Request('https://example.org',{method:'POST',headers:{Origin:'https://youtingyeh.github.io',Authorization:'Bearer token'},body:JSON.stringify({to:'attacker@example.org',site_check:{checked:1,failed:[]}})});
@@ -22,7 +22,7 @@ assert.equal((await handler(cron('wrong'))).status,401);assert.equal((await hand
 claim=job;let r=await handler(cron());assert.equal((await r.json()).sent,true);
 assert.equal(mails[0].to.address,'ytyeh@g.ntu.edu.tw');assert.equal(claimArgs.p_site_check.checked,44);assert.deepEqual(finished.at(-1),{p_day:'2026-11-26',p_sent:true});
 const text=mails[0].text;for(const s of ['新 2／未結案 4／逾期 1']){assert(mails[0].subject.includes(s));}
-for(const s of ['team.html：HTTP 404','按鈕沒反應 <script>','math.html（網站問題）2 則','舊問題','admin-feedback.html'])assert(text.includes(s),s);
+for(const s of ['team.html：HTTP 404','按鈕沒反應 <script>','math.html（功能異常）2 則','舊問題','admin-feedback.html','待補資料 1','轉交管理者 1','FB-20261125-0002　join.html　測試通過，待核准發布','緊急案件','FB-20261125-0001 [功能異常]'])assert(text.includes(s),s);
 assert(!text.includes('\n<script>'));assert(!text.includes('smtp-secret'));
 // 沒有新回報：排程不寄信，釋放領取；管理員手動仍可寄出。
 mails=[];claim={...job,summary:{...summary,new_count:0,new_items:[]}};r=await handler(cron());let out=await r.json();assert.equal(out.skipped,true);assert.equal(mails.length,0);assert.deepEqual(released.at(-1),{p_day:'2026-11-26'});
