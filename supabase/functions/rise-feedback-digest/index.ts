@@ -84,6 +84,11 @@ export async function handler(req:Request):Promise<Response>{
   const day=taipei(new Date());
   const job=checked(await db.rpc('rise_claim_feedback_digest',{p_day:day,p_site_check:siteCheck}));
   if(!job)return reply({sent:false,reason:'今日彙整已寄出，或另一個寄送正在進行；失敗的寄送會在 10 分鐘後可重試。'});
+  // 排程只在有新回報時寄信；沒有新回報就釋放領取、不寄。管理員手動寄送則一律寄出。
+  if(scheduled&&!(job.summary.new_count>0)){
+   checked(await db.rpc('rise_release_feedback_digest',{p_day:job.day}));
+   return reply({sent:false,skipped:true,reason:'今天沒有新回報，不寄信。',site_failed:(siteCheck?.failed||[]).length});
+  }
   const sender=must('RISE_SMTP_USER'),password=must('RISE_SMTP_PASSWORD');
   const to=Deno.env.get('RISE_FEEDBACK_TO')||'ytyeh@g.ntu.edu.tw';
   const site=new URL(Deno.env.get('RISE_SITE_URL')||'https://youtingyeh.github.io/RISE/');

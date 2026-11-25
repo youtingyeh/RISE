@@ -70,7 +70,13 @@ await submit('student',{title:'隔天新增的回報',body:'這是隔天才收�
 const day2=(await q('service',"select public.rise_claim_feedback_digest('2026-11-27') d"))[0].d;
 assert.equal(day2.summary.new_count,1);assert.equal(day2.summary.new_items[0].title,'隔天新增的回報');
 assert(day2.summary.open_total>=1);
+// 釋放（當天沒有新回報、未寄信）：不留下已寄出紀錄，隔天區間不漏算。
+await q('service',"select public.rise_finish_feedback_digest('2026-11-27',true)");
+const day3=(await q('service',"select public.rise_claim_feedback_digest('2026-11-28') d"))[0].d;assert.equal(day3.summary.new_count,0);
+await q('service',"select public.rise_release_feedback_digest('2026-11-28')");assert.equal((await pg.query("select count(*)::int n from rise_feedback_digest where day='2026-11-28'")).rows[0].n,0);
+await assert.rejects(()=>q('admin',"select public.rise_release_feedback_digest('2026-11-27')"));
+await submit('student',{title:'第三天的回報',body:'第三天才收到的新回報內容。',page:'chemistry.html'});assert.equal((await q('service',"select public.rise_claim_feedback_digest('2026-11-29') d"))[0].d.summary.new_count,1);
 // 重複套用 migration 不清資料。
-await pg.exec(sql);assert.equal((await pg.query('select count(*)::int n from rise_feedback')).rows[0].n,14);
+await pg.exec(sql);assert.equal((await pg.query('select count(*)::int n from rise_feedback')).rows[0].n,15);
 for(const t of ['rise_feedback','rise_feedback_events','rise_feedback_digest'])assert.equal((await pg.query('select relrowsecurity r from pg_class where relname=$1',[t])).rows[0].r,true);
 await pg.close();console.log('PASS feedback SQL: verified-member submit, validation, dedupe, rate limit, own-only reads without admin notes, admin-only triage/audit, daily digest idempotency and retry, repeatable migration.');

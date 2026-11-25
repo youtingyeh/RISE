@@ -192,5 +192,13 @@ $$;
 revoke all on function public.rise_finish_feedback_digest(date,boolean) from public,anon,authenticated;
 grant execute on function public.rise_finish_feedback_digest(date,boolean) to service_role;
 
+-- 當天沒有新回報、不寄信時釋放領取：刪除寄送中的當日列，下次統計區間仍從上一封已寄出的彙整起算，不會漏算。
+create or replace function public.rise_release_feedback_digest(p_day date) returns void
+language sql security definer set search_path='' as $$
+ delete from public.rise_feedback_digest where day=p_day and state='sending';
+$$;
+revoke all on function public.rise_release_feedback_digest(date) from public,anon,authenticated;
+grant execute on function public.rise_release_feedback_digest(date) to service_role;
+
 notify pgrst,'reload schema';
 commit;

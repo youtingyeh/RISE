@@ -117,7 +117,7 @@
   }
   const actions=el('p','',top,'fb-actions');
   const send=el('button','立即寄出今日彙整信',actions);send.type='button';send.className='button';
-  el('span','收件人固定為管理員信箱；每天只會寄出一封，排程會在早上自動寄送。',actions,'fb-hint');
+  el('span','收件人固定為管理員信箱。排程每天早上檢查，只有出現新回報時才會寄信；這個按鈕不論有無新回報都會寄出。',actions,'fb-hint');
   send.onclick=async()=>{
    if(busy)return;busy=true;send.disabled=true;say('寄送中…');
    try{
