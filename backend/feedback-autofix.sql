@@ -4,6 +4,9 @@
 begin;
 do $$begin
  if to_regclass('public.rise_feedback') is null then raise exception 'Run backend/feedback.sql first.';end if;
+ if to_regprocedure('public.rise_feedback_submission_ready()') is not null then
+  raise exception 'Feedback repair controls are installed. Do not rerun feedback-autofix.sql.';
+ end if;
 end $$;
 
 -- ---------- 欄位與約束 ----------

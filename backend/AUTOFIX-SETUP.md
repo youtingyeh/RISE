@@ -1,27 +1,16 @@
-# 意見回報分流與受限自動修正
+# 回報排程與管理員授權
 
-## 啟用狀態（重要）
-本文件所列功能**已在隔離測試環境（記憶體資料庫＋複製站台＋真實瀏覽器）驗證**，**尚未在正式環境啟用**。啟用需要下列「手動步驟」。
+## 上線次序
 
-## 流程
-回報 → 資料庫分流 → （緊急）立即通知 → （符合條件）自動重現 → 最小修補 → 獨立檢查 → 測試通過待核准 → 管理者核准 → 發布前再檢查 → 發布 → 發布後複驗 → 結案。
+1. 核對目標 Supabase 專案。依序執行尚未套用的 `feedback.sql`、`feedback-autofix.sql`、`feedback-controls.sql`。舊版已經安裝的專案只套用缺少的增量。最後一份啟用後請使用 `feedback-controls.sql` 重跑檢查或修復。
+2. 部署 `rise-feedback-repair` Edge Function，使用 `supabase/config.toml` 的設定。這支新函式在程式內核對 GitHub OIDC 簽章、有效期、對象、專案 ID、工作流程和分支。GitHub Actions 使用 `id-token: write` 取得短效身分憑證。Supabase 的服務金鑰由 Edge Function 在伺服器讀取。
+3. 管理員開啟「管理員專區 → 回報彙整管理」。排程預設關閉，管理員可隨時開啟或關閉。新增的回報與人工處理在排程關閉時仍可使用。
 
-- **分流**（`backend/feedback-autofix.sql`）：功能異常、疑似安全問題、改善建議、其他。使用者選的類型只作初步分流。含「密碼、登入、權限、角色、個資、資料遺失、刪除、token…」字樣，或發生在登入／註冊／會員中心／管理頁的回報，一律標為緊急、狀態轉交管理者、排入通知佇列，**永遠不進入自動修正**（資料庫端也會拒絕開始修補）。回報文字只是資料，自動修正程式從不讀取它。
-- **緊急通知**：`rise-feedback-alert` 寄信到管理者信箱，內容只有案件編號與類型（不含回報內文）。會員送出後瀏覽器先嘗試立即觸發；每小時排程備援。若尚未部署，管理頁最上方的「待優先處理」區仍會列出。
-- **自動修正範圍（初版僅一類）**：公開說明頁（`tools/autofix/policy.mjs` 的 `ALLOWED_PAGES`，目前 join.html、schedule.html）上、指向不存在檔案的站內連結；正確目的頁必須能由管理者維護的 `config/autofix-link-targets.json`（依連結文字）唯一決定。有歧義、找不到、無法重現、頁面不在範圍 → 轉交管理者或標「待補資料」。
-- **獨立檢查器**（`tools/autofix/verify-diff.mjs`）：由乾淨的 base 檢出執行，只看實際 git 差異。只允許修改允許頁面中某一行的 `href`，連結文字與其他字元不可動；舊目的頁必須確實不存在；新目的頁必須等於管理者設定；不可新增／刪除／改名檔案；最多 6 行。登入、角色權限、個資、資料庫、金鑰、部署設定、測試標準、檢查器與修正規則都不在允許清單內，預設拒絕。
-- **重現→修正→重驗**：修改前先在乾淨 base 上跑靜態檢查與真實點擊（記下預期／實際）；修補後重跑同一點擊檢查（須到達指定頁並看到預期標題）、靜態檢查與檢查器。**每案最多 2 次**，次數存在資料庫並有 `check(attempts<=2)`，重啟、隔日、強制重跑都不會出現第三次。第二次失敗自動轉交管理者；未通過的修補分支會被刪除，差異文字保留在紀錄裡。
-- **核准與發布**：管理者在 `admin-feedback.html` 的案件「自動修正」面板看修改前後結果、差異與可重跑指令，按「核准發布」（可勾選保留為回歸測試）。`autofix-publish` 在合併前以乾淨主線重跑檢查器與靜態檢查，只做 fast-forward 合併；分支在核准後被改動、主線已前進或檢查失敗就不發布。發布後對正式網站複驗，通過才結案；失敗轉交管理者。
-- **改善建議**：只由管理者決定是否採用；`ai_summary` 欄位目前**沒有任何程式寫入**（未接 AI），且不會被當成驗收標準。
+## 修正範圍與驗收
 
-## 管理者手動步驟（尚未完成，所以未啟用）
-1. Supabase SQL Editor：已執行過 `feedback.sql` 的，只需再執行 `backend/feedback-autofix.sql`（可重複執行；之後不要再重跑 feedback.sql，它會拒絕）。尚未安裝的，先 `feedback.sql` 再 `feedback-autofix.sql`。
-2. 重新部署 `rise-feedback-digest`，新增部署 `rise-feedback-alert`（Verify JWT 關閉；程式自行驗證）。沿用 `RISE_SMTP_USER`、`RISE_SMTP_PASSWORD`、`RISE_DIGEST_TOKEN`、`RISE_FEEDBACK_TO`。
-3. GitHub Actions Secrets 新增 `RISE_SERVICE_ROLE_KEY`（**僅放 GitHub Secret**，不要提交）；另需 `RISE_SUPABASE_URL`、`RISE_SUPABASE_ANON_KEY`、`RISE_DIGEST_TOKEN`。未設定時這三個排程只印出「未啟用」。
-4. 發布到 main：`autofix-publish.yml` 需要 `GITHUB_TOKEN` 能推送 main；若 main 有分支保護，需調整規則或改為由你在 GitHub 合併 autofix/ 分支後再標記。請先手動執行一次確認。
-5. 「AI 產生修補」：目前預設是確定性的連結對照修補；要接 AI 模型，需自行提供模組並以 `RISE_AUTOFIX_PROPOSER` 指向（提案不會被信任，仍須通過上述檢查）。尚未接上。
-
-## 限制
-- 自動修正只涵蓋 join.html、schedule.html 的靜態連結；多數頁面由 script.js 動態產生，不在範圍內（可在 policy.mjs 擴充並加測試）。
-- 發布後複驗與 Pages 部署時間有關，必要時會留在「已發布待複驗」下次再驗。
-- 每日摘要仍遵循「有新回報才寄」；「測試通過待核准」若當天沒有新回報，只會出現在管理頁與下一封摘要，不會單獨寄信。
+- 排程每天臺北時間 09:00 讀取案件，也可在 GitHub Actions 手動執行 `Feedback autofix scan`。關閉時工作流程會略過修補。
+- 管理員逐案核准 `join.html` 或 `schedule.html` 上的一個連結文字。只會處理管理者對照表中有明確目的頁的斷鏈；急件、結案、接受現況及未授權案件由管理員處理。
+- 修補在暫存工作目錄完成，重跑獨立差異檢查、靜態檢查及瀏覽器點擊。每案至多兩次，關閉與撤回保留計數。
+- 通過後由排程交付 GitHub Actions 差異檔。管理頁會顯示該次執行與檔名，差異檔保留 14 天。GitHub 排程只有讀取儲存庫的權限。由管理員檢查差異、建立並合併 PR，確認 GitHub Pages 發布後再結案。
+- 若工作已開始，關閉或撤回後會阻擋下次權限檢查、交付紀錄及後續寫入。之前已下載的差異檔仍然存在，採用前請先確認案件授權。
+- 每日通知與緊急通知可獨立由管理團隊設定。見 `FEEDBACK-SETUP.md`。

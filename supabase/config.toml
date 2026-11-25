@@ -7,3 +7,12 @@ verify_jwt = false
 
 [functions.rise-question-advisor]
 verify_jwt = false
+
+[functions.rise-feedback-repair]
+verify_jwt = false
+
+[functions.rise-feedback-alert]
+verify_jwt = false
+
+[functions.rise-feedback-digest]
+verify_jwt = false
