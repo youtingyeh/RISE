@@ -6,6 +6,7 @@
 .fb-field input,.fb-field select,.fb-field textarea,.admin-filters select{width:100%;box-sizing:border-box;font:inherit;color:var(--text,#2f3c53);background:#fff;border:1px solid var(--rule,#d6dee9);border-radius:6px;padding:10px 12px}
 .fb-field textarea{resize:vertical;min-height:96px}
 .fb-field input:focus-visible,.fb-field select:focus-visible,.fb-field textarea:focus-visible{outline:3px solid var(--cobalt,#2b5ba8);outline-offset:1px}
+.fb-field [aria-invalid=true]{border-color:var(--vermilion,#c63a2c);box-shadow:0 0 0 1px var(--vermilion,#c63a2c)}
 .fb-hint,.fb-count,.fb-note{color:var(--muted,#56657c);font-size:.88rem;line-height:1.6}
 .fb-count{justify-self:end;margin-top:-10px}
 .fb-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
@@ -41,3 +42,9 @@
 .fb-autofix h4{margin:0 0 8px;color:var(--ink,#1d2b46)}
 .fb-patch{overflow-x:auto;max-width:100%;margin:8px 0;padding:10px;background:#fff;border:1px solid var(--rule,#d6dee9);font-size:.82rem;white-space:pre-wrap;overflow-wrap:anywhere}
 .fb-autofix code{display:block;overflow-wrap:anywhere;font-size:.82rem}
+.fb-autofix>.button{margin:8px 12px 0 0}
+.fb-autofix .fb-meta{overflow-wrap:anywhere}
+.fb-repair-authorize{display:grid;gap:10px;max-width:480px;margin-top:10px}
+.fb-repair-authorize button{justify-self:start}
+.fb-enabled{color:var(--teal,#0e7166)}
+@media print{.fb-autofix .button,.fb-repair-authorize{display:none}}

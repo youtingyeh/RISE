@@ -1,11 +1,11 @@
 import {readFile,access} from 'node:fs/promises';
 import {join} from 'node:path';
-const ANCHOR=/<a\b[^>]*?\bhref="([^"]*)"[^>]*>([^<]*)<\/a>/g;
+const ANCHOR=/<a\b[^>]*?\shref="([^"]*)"[^>]*>([^<]*)<\/a>/g;
 export const normalizeText=t=>t.replace(/\s+/g,' ').trim();
 export function internalTarget(href){
- if(!href||/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(href))return null;
- const path=href.split('#')[0].split('?')[0];
- return path||null;
+ if(typeof href!=='string')return null;
+ const path=href.split(/[?#]/,1)[0];
+ return /^[a-z0-9][a-z0-9-]*\.html$/i.test(path)?path:null;
 }
 export function parseLinks(html){
  const links=[];let m;ANCHOR.lastIndex=0;

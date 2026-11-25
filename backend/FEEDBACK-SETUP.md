@@ -3,11 +3,11 @@
 ## 功能
 - `feedback.html`：已驗證信箱的會員送出網站問題、內容修正、功能建議；可追蹤處理狀態與管理員回覆。頁尾「意見回報」會自動帶入目前頁面。
 - `admin-feedback.html`：僅管理員。顯示新收集、未處理、高優先、逾 3 天未處理、同頁重複回報；逐則設定狀態、優先順序、內部備註、對外回覆、標記重複；可立即寄出當日彙整。
-- 每日 08:30（臺北時間）GitHub Actions 檢查正式網站所有頁面能否開啟，**只有前一次彙整之後出現新回報時**才寄彙整信到 ytyeh@g.ntu.edu.tw（可用 Secret `RISE_FEEDBACK_TO` 改）；沒有新回報就不寄，積累的回報會併入下一封。信中包含：排查結果、新收集回報、同頁重複、最久未結案。
+- 每日 08:30（臺北時間）GitHub Actions 檢查公開頁面，排程只在有新回報時寄出彙整。信件帶案件編號、類型、統計與管理頁連結；完整內容在登入後的管理頁查看。
 
 ## 啟用步驟（需管理員手動；GitHub 更新不等於資料庫已部署）
-1. Supabase SQL Editor 執行 `backend/feedback.sql`（可重複執行）。
-2. 新增 Edge Function `rise-feedback-digest`，貼入 `supabase/functions/rise-feedback-digest/index.ts` 並 Deploy。關閉 Verify JWT（程式自行驗證管理員或排程 token）。
+1. 依 `AUTOFIX-SETUP.md` 套用三份資料庫變更。私有回報和管理功能可以先使用，通知和排程各自設定。
+2. 若需寄信，部署 `rise-feedback-digest` 和 `rise-feedback-alert`，沿用 `supabase/config.toml` 的函式認證設定。函式自行驗證呼叫者。
 3. Edge Functions → Secrets：沿用 `RISE_SMTP_USER`、`RISE_SMTP_PASSWORD`（審核通知信已設定）；新增 `RISE_DIGEST_TOKEN`（自訂 32 字元以上隨機字串）；可選 `RISE_FEEDBACK_TO`。
 4. GitHub → Settings → Secrets and variables → Actions 新增：`RISE_SUPABASE_URL`、`RISE_SUPABASE_ANON_KEY`（公開 publishable key）、`RISE_DIGEST_TOKEN`（與上一步相同）。到 Actions 手動執行 "Daily site check and feedback digest" 驗證收信。
 5. 以管理員登入開 `admin-feedback.html`，按「立即寄出今日彙整信」測試。

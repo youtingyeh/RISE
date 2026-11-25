@@ -1,11 +1,12 @@
 // 重現 → 修正 → 重驗。狀態（含嘗試次數）一律由資料庫保存與強制；本程式重啟、改日重跑都沿用同一計數。
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {mkdtemp,rm,readFile,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {isAllowedPage,MAX_ATTEMPTS,MAX_BROKEN_LINKS} from './policy.mjs';
-import {brokenLinks} from './link-check.mjs';
+import {brokenLinks,parseLinks} from './link-check.mjs';
 import {serve,clickCheck} from './click-test.mjs';
 
 const git=(cwd,args,allowFail=false)=>{const r=spawnSync('git',['-c','user.name=rise-autofix','-c','user.email=autofix@invalid','-c','commit.gpgsign=false',...args],{cwd,encoding:'utf8',maxBuffer:20*1024*1024});if(r.status!==0&&!allowFail)throw Error('git '+args.join(' ')+' 失敗：'+r.stderr.slice(0,200));return r;};
@@ -20,16 +21,25 @@ async function checkClicks(dir,page,links){
 
 export async function runCase({store,repoDir,c,proposer,simulation=false,log=()=>{}}){
  const id=c.feedback_id,fin=(outcome,payload)=>store.finish(id,outcome,payload);
+ const allowed=()=>store.check?store.check(id):true;
+ const blocked=()=>({case_no:c.case_no,outcome:'blocked',reason:'authorization_inactive'});
+ if(!await allowed())return blocked();
  // 只使用 page 的字面值與固定欄位；回報文字從不傳入本流程，因此不可能被當成指令。
  if(!isAllowedPage(c.page)){await fin('escalate',{reason:'page_out_of_scope'});return {case_no:c.case_no,outcome:'escalated',reason:'page_out_of_scope'};}
  const baseSha=git(repoDir,['rev-parse','HEAD']).stdout.trim();
  const tmp=await mkdtemp(join(tmpdir(),'rise-autofix-'));const baseDir=join(tmp,'base');
  git(repoDir,['worktree','add','--detach',baseDir,baseSha]);
- const branch='autofix/'+c.case_no.toLowerCase();
+ const branch=c.authorization?'autofix/repair-'+createHash('sha256').update(c.authorization).digest('hex').slice(0,24):'autofix/'+c.case_no.toLowerCase();
+ const commitLabel=c.authorization?'修正失效的站內連結':'autofix '+c.case_no;
  try{
   const map=JSON.parse(await readFile(join(baseDir,'config/autofix-link-targets.json'),'utf8'));
   // 1. 重現（在乾淨的 base 上）
-  const broken=await brokenLinks(baseDir,c.page);
+  let broken=await brokenLinks(baseDir,c.page);
+  if(c.authorization){
+   const matches=parseLinks(await readFile(join(baseDir,c.page),'utf8')).filter(l=>l.text===c.link_text);
+   if(matches.length!==1){await fin('needs_info',{reason:'approved_link_not_unique'});return {case_no:c.case_no,outcome:'needs_info'};}
+   broken=broken.filter(b=>b.text===c.link_text);
+  }
   if(!broken.length){await fin('needs_info',{reason:'cannot_reproduce',before:{page:c.page,broken:[]}});return {case_no:c.case_no,outcome:'needs_info',reason:'cannot_reproduce'};}
   if(broken.length>MAX_BROKEN_LINKS){await fin('escalate',{reason:'too_many_broken_links',before:{page:c.page,count:broken.length}});return {case_no:c.case_no,outcome:'escalated',reason:'too_many_broken_links'};}
   const unmapped=broken.filter(b=>!map.byText[b.text]);
@@ -44,6 +54,7 @@ export async function runCase({store,repoDir,c,proposer,simulation=false,log=()=
   let prior=null,last={case_no:c.case_no,outcome:'attempt_failed'};
   for(let round=0;round<MAX_ATTEMPTS;round++){
    let attempt;try{attempt=await store.begin(id,branch,simulation);}catch(e){return {case_no:c.case_no,outcome:'blocked',reason:String(e.message).replace(/^rise:/,'')};}
+   if(!await allowed())return blocked();
    const workDir=join(tmp,'work'+attempt);
    git(repoDir,['worktree','add','-B',branch,workDir,baseSha]);
    let failure=null,head=null,verdict=null,diffText='';
@@ -52,17 +63,23 @@ export async function runCase({store,repoDir,c,proposer,simulation=false,log=()=
     const proposal=await safe(()=>proposer({attempt,page:c.page,html,broken,map,prior}),e=>({error:String(e.message).slice(0,160)}));
     if(proposal.error||!proposal.files)failure={phase:'proposal',problems:[proposal.error||'提案沒有任何檔案']};
     else{
+     if(!await allowed())return blocked();
      for(const [path,content] of Object.entries(proposal.files)){
-      const target=join(workDir,path);if(!target.startsWith(workDir))failure={phase:'proposal',problems:['路徑超出工作目錄']};else await writeFile(target,content);
+      if(path!==c.page){failure={phase:'scope_check',problems:[`受保護範圍：${path}`]};break;}
+      await writeFile(join(workDir,path),content);
      }
-     git(workDir,['add','-A']);git(workDir,['commit','-q','-m','autofix '+c.case_no]);
-     head=git(workDir,['rev-parse','HEAD']).stdout.trim();diffText=git(repoDir,['diff','--no-renames',baseSha,head]).stdout.slice(0,4000);
+     if(!failure){
+      git(workDir,['add','--',c.page]);git(workDir,['commit','-q','-m',commitLabel]);
+      head=git(workDir,['rev-parse','HEAD']).stdout.trim();diffText=git(repoDir,['diff','--no-renames',baseSha,head]).stdout.slice(0,4000);
+     }
     }
     if(!failure){
      // 獨立檢查器：從乾淨 base 載入，因此提案無法改動檢查規則。
      const checker=await import(pathToFileURL(join(baseDir,'tools/autofix/verify-diff.mjs')).href);
      verdict=await checker.verifyDiff({baseDir,repoDir,baseRef:baseSha,headRef:head,map});
      if(!verdict.ok)failure={phase:'scope_check',problems:verdict.problems};
+     else if(c.authorization&&(verdict.fixes.length!==1||verdict.fixes[0].text!==c.link_text))
+      failure={phase:'scope_check',problems:['差異超過案件核准的連結']};
     }
     if(!failure){const sc=staticCheck(workDir);if(!sc.ok)failure={phase:'static_check',problems:[sc.summary]};}
     let afterClicks=[];

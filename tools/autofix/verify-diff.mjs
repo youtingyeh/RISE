@@ -7,8 +7,11 @@ import {pathToFileURL} from 'node:url';
 import {isAllowedPage,whyDenied,MAX_CHANGED_LINES} from './policy.mjs';
 import {internalTarget,normalizeText} from './link-check.mjs';
 const git=(cwd,args)=>{const r=spawnSync('git',args,{cwd,encoding:'utf8',maxBuffer:20*1024*1024});if(r.status!==0)throw Error('git '+args.join(' ')+' 失敗：'+r.stderr.slice(0,200));return r.stdout;};
-const ANCHORS=/<a\b[^>]*?\bhref="([^"]*)"[^>]*>([^<]*)<\/a>/g;
-const anchors=line=>[...line.matchAll(ANCHORS)].map(m=>({href:m[1],text:normalizeText(m[2]),skeleton:m[0].replace(m[1],'\u0000')}));
+const ANCHORS=/<a\b[^>]*?\shref="([^"]*)"[^>]*>([^<]*)<\/a>/gd;
+const anchors=line=>[...line.matchAll(ANCHORS)].map(m=>({href:m[1],text:normalizeText(m[2]),range:m.indices[1]}));
+function maskHrefs(line,links){
+ return [...links].reverse().reduce((s,{range:[start,end]})=>s.slice(0,start)+'\u0001'+s.slice(end),line);
+}
 const exists=async p=>{try{await access(p);return true;}catch{return false;}};
 
 export async function verifyDiff({baseDir,repoDir,baseRef,headRef,map,pageRoot}){
@@ -34,8 +37,7 @@ export async function verifyDiff({baseDir,repoDir,baseRef,headRef,map,pageRoot})
    const a=anchors(oldText[i]),b=anchors(newText[i]);
    if(!a.length||a.length!==b.length){problems.push(`${path}:${i+1}：變更的不是 <a href> 連結`);continue;}
    // 去掉 href 後必須完全相同：連結以外的任何字元都不能被動到。
-   let rebuiltOld=oldText[i],rebuiltNew=newText[i];
-   for(const x of a)rebuiltOld=rebuiltOld.replace(x.href,'\u0001');for(const x of b)rebuiltNew=rebuiltNew.replace(x.href,'\u0001');
+   const rebuiltOld=maskHrefs(oldText[i],a),rebuiltNew=maskHrefs(newText[i],b);
    if(rebuiltOld!==rebuiltNew){problems.push(`${path}:${i+1}：除了 href 之外還有其他內容被修改`);continue;}
    for(let k=0;k<a.length;k++){
     if(a[k].href===b[k].href)continue;
