@@ -24,25 +24,40 @@ const summary={
  repeat_pages:[{page:'math.html?email=private-person',kind:'bug',count:2,titles:['private-repeat-title'],case_nos:['FB-20261125-0001','FB-20261125-0030','private-invalid-case-number']}],
  oldest_open:[{case_no:'FB-20261120-0005',title:'private-oldest-title',page:'x.html?detail=private-detail',status:'private-status'}],
 };
-const job={day:'2026-11-26',attempts:1,site_check:{checked:44,failed:[{page:'team.html',reason:'private-scan-reason'}],note:'private-scan-note'},summary};
+const scanFailures=[
+ {page:'team.html',reason:'private-scan-reason'},
+ {page:'https://example.org/team.html?ref=private-url'},
+ {page:'subdirectory/private-path.html'},
+ {page:'team.html?ref=private-query'},
+ {page:'unknown-page.html'},
+ {page:'team.html'},
+];
+const scanCheck={checked:44,failed:scanFailures,note:'private-scan-note'};
+const job={day:'2026-11-26',attempts:1,site_check:scanCheck,summary};
 const auth=()=>new Request('https://example.org',{method:'POST',headers:{Origin:'https://youtingyeh.github.io',Authorization:'Bearer token'},body:JSON.stringify({to:'attacker@example.org',site_check:{checked:1,failed:[]}})});
-const cron=(token='t'.repeat(32),body={site_check:{checked:44,failed:[{page:'team.html',reason:'HTTP 404'}],note:'ok'}})=>new Request('https://example.org',{method:'POST',headers:{'x-rise-digest-token':token},body:JSON.stringify(body)});
+const cron=(token='t'.repeat(32),body={site_check:scanCheck})=>new Request('https://example.org',{method:'POST',headers:{'x-rise-digest-token':token},body:JSON.stringify(body)});
 valid=false;assert.equal((await handler(auth())).status,401);valid=true;role='student';assert.equal((await handler(auth())).status,403);assert.equal(mails.length,0);role='admin';
 assert.equal((await handler(cron('wrong'))).status,401);assert.equal((await handler(new Request('https://example.org',{method:'POST',headers:{Origin:'https://evil.example'}}))).status,403);
 claim=job;let r=await handler(cron());assert.equal((await r.json()).sent,true);
-assert.equal(mails[0].to.address,'ytyeh@g.ntu.edu.tw');assert.equal(claimArgs.p_site_check.checked,44);assert.deepEqual(finished.at(-1),{p_day:'2026-11-26',p_sent:true});
+assert.equal(mails[0].to.address,'ytyeh@g.ntu.edu.tw');assert.deepEqual(claimArgs.p_site_check,{checked:44,failed:[{page:'team.html'}],failed_count:6});assert.deepEqual(finished.at(-1),{p_day:'2026-11-26',p_sent:true});
 const {subject,text}=mails[0];
 assert.equal(subject,'【RISE 回報彙整】2026-11-26　新 3／未結案 4／逾期 1');
 for(const expected of [
- '網站排查：檢查 44 個頁面｜異常 1 個','異常頁面：team.html','待補資料 1','轉交管理者 1','緊急案件未結案 1 則',
+ '網站排查：檢查 44 個頁面｜異常 6 個','異常頁面：team.html…等 6 個','待補資料 1','轉交管理者 1','緊急案件未結案 1 則',
  'FB-20261125-0001 [功能異常]','FB-20261125-0003 [疑似安全問題]［緊急］','FB-20261125-0004 [其他]',
  '功能異常 2 則（FB-20261125-0001、FB-20261125-0030）','待管理者處理的修正案件：FB-20261125-0002',
  '最久未結案：FB-20261120-0005','到管理頁處理：https://youtingyeh.github.io/RISE/admin-feedback.html',
 ])assert(text.includes(expected),expected);
-for(const forbidden of ['private-','join.html','math.html','account.html','x.html','smtp-secret','?']) {
+for(const forbidden of ['private-','unknown-page.html','example.org','join.html','math.html','account.html','x.html','smtp-secret','?']) {
  assert(!text.includes(forbidden),forbidden);
  assert(!subject.includes(forbidden),forbidden);
 }
+// Only ten verified names appear, while the total still counts all failures.
+const eleven=['404','about','admin-console','admin-courses','admin-feedback','admin-publication','admin-review','admin-teacher-access','admin-videos','assignments','yearbook'].map(page=>({page:page+'.html'}));
+mails=[];claim={...job,site_check:{checked:44,failed:eleven}};
+await handler(cron());
+assert(mails[0].text.includes('assignments.html…等 11 個'));
+assert(!mails[0].text.includes('yearbook.html'));
 // 沒有新回報：排程不寄信，釋放領取；管理員手動仍可寄出。
 mails=[];claim={...job,summary:{...summary,new_count:0,new_items:[]}};r=await handler(cron());let out=await r.json();assert.equal(out.skipped,true);assert.equal(mails.length,0);assert.deepEqual(released.at(-1),{p_day:'2026-11-26'});
 mails=[];await handler(auth());assert.equal(mails.length,1);
