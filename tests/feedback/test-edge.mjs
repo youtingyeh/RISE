@@ -34,12 +34,12 @@ assert.equal(mails[0].to.address,'ytyeh@g.ntu.edu.tw');assert.equal(claimArgs.p_
 const {subject,text}=mails[0];
 assert.equal(subject,'【RISE 回報彙整】2026-11-26　新 3／未結案 4／逾期 1');
 for(const expected of [
- '網站排查：檢查 44 個頁面｜異常 1 個','待補資料 1','轉交管理者 1','緊急案件未結案 1 則',
+ '網站排查：檢查 44 個頁面｜異常 1 個','異常頁面：team.html','待補資料 1','轉交管理者 1','緊急案件未結案 1 則',
  'FB-20261125-0001 [功能異常]','FB-20261125-0003 [疑似安全問題]［緊急］','FB-20261125-0004 [其他]',
  '功能異常 2 則（FB-20261125-0001、FB-20261125-0030）','待管理者處理的修正案件：FB-20261125-0002',
  '最久未結案：FB-20261120-0005','到管理頁處理：https://youtingyeh.github.io/RISE/admin-feedback.html',
 ])assert(text.includes(expected),expected);
-for(const forbidden of ['private-','join.html','math.html','team.html','account.html','x.html','smtp-secret','?']) {
+for(const forbidden of ['private-','join.html','math.html','account.html','x.html','smtp-secret','?']) {
  assert(!text.includes(forbidden),forbidden);
  assert(!subject.includes(forbidden),forbidden);
 }

@@ -35,6 +35,10 @@ function buildMail(job:any,adminUrl:string){
  if(job.site_check){
   const failed=Array.isArray(job.site_check.failed) ? job.site_check.failed.length : 0;
   lines.push(`網站排查：檢查 ${count(job.site_check.checked)} 個頁面｜異常 ${failed} 個`);
+  if(failed){
+   const pages=job.site_check.failed.slice(0,10).map((f:any)=>String(f?.page??'').replace(/[^\w./-]/g,'').slice(0,60)).filter(Boolean);
+   if(pages.length)lines.push(`異常頁面：${pages.join('、')}${failed>pages.length?`…等 ${failed} 個`:''}`);
+  }
  }
 
  lines.push('',`【新收集的回報（${newCount} 則${newCount>50?'，僅列前 50 則':''}）】`);
