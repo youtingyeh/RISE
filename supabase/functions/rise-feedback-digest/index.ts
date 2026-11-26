@@ -6,11 +6,31 @@ const must=(name:string)=>{const v=Deno.env.get(name);if(!v)throw new SafeError(
 const checked=(r:any)=>{if(r.error){if(['PGRST202','PGRST205','42P01'].includes(r.error.code))throw new SafeError('找不到回報彙整資料表或函式，請執行 backend/feedback.sql。');throw new SafeError('回報彙整資料庫操作失敗，請查看 Edge Function Logs。');}return r.data;};
 const same=(a:string,b:string)=>{const x=new TextEncoder().encode(a),y=new TextEncoder().encode(b);let d=x.length^y.length;for(let i=0;i<Math.max(x.length,y.length);i++)d|=(x[i]??0)^(y[i]??0);return d===0;};
 const KIND:Record<string,string>={bug:'功能異常',security:'疑似安全問題',content:'內容修正',suggestion:'改善建議',other:'其他'};
-const clean=(s:unknown,n:number)=>String(s??'').replace(/[\u0000-\u001f\u007f]+/g,' ').trim().slice(0,n);
 const taipei=(d:Date)=>d.toLocaleDateString('en-CA',{timeZone:'Asia/Taipei'});
 const count=(value:unknown)=>typeof value==='number' && Number.isSafeInteger(value) && value>=0 ? value : 0;
 const kindLabel=(kind:unknown)=>typeof kind==='string' && Object.hasOwn(KIND,kind) ? KIND[kind] : KIND.other;
 const caseNumber=(value:unknown)=>typeof value==='string' ? value.match(/^(FB-\d{8}-\d{4,18})$/)?.[1] : undefined;
+
+// Keep in sync with the repository-root HTML pages scanned by scripts/daily-site-check.mjs.
+const scanPages = new Set([
+ '404.html', 'about.html', 'account.html', 'admin-console.html', 'admin-courses.html',
+ 'admin-feedback.html', 'admin-publication.html', 'admin-review.html', 'admin-teacher-access.html', 'admin-videos.html',
+ 'assignments.html', 'chemistry.html', 'club-grants.html', 'competition-gallery.html', 'competitions.html',
+ 'dialogues.html', 'discussions.html', 'explore.html', 'feedback.html', 'forgot-password.html',
+ 'index.html', 'inquiry.html', 'join.html', 'learning-report.html', 'learning.html',
+ 'login.html', 'math.html', 'modules.html', 'physics.html', 'plc.html',
+ 'privacy.html', 'questions.html', 'register.html', 'reset-password.html', 'resources.html',
+ 'schedule.html', 'science.html', 'staff-questions.html', 'support.html', 'ta-forum.html',
+ 'ta-training.html', 'teacher-apply.html', 'team.html', 'verify-email.html', 'video-detail.html',
+ 'yearbook.html',
+]);
+function scannedFilenames(failed: unknown): string[] {
+ if(!Array.isArray(failed))return [];
+ return [...new Set<string>(failed.slice(0,30).flatMap(item=>{
+  const page=item?.page;
+  return typeof page==='string' && scanPages.has(page) ? [page] : [];
+ }))];
+}
 
 function buildMail(job:any,adminUrl:string){
  // 僅從摘要擷取伺服器產生的案件編號、固定類型與數量。
@@ -33,8 +53,11 @@ function buildMail(job:any,adminUrl:string){
  });
  if(kindCounts.length)lines.push(`未結案類型：${kindCounts.join('、')}`);
  if(job.site_check){
-  const failed=Array.isArray(job.site_check.failed) ? job.site_check.failed.length : 0;
+  const failed=Math.max(count(job.site_check.failed_count),
+   Array.isArray(job.site_check.failed) ? job.site_check.failed.length : 0);
   lines.push(`網站排查：檢查 ${count(job.site_check.checked)} 個頁面｜異常 ${failed} 個`);
+  const pages=scannedFilenames(job.site_check.failed).slice(0,10);
+  if(pages.length)lines.push(`異常頁面：${pages.join('、')}${failed>pages.length?`…等 ${failed} 個`:''}`);
  }
 
  lines.push('',`【新收集的回報（${newCount} 則${newCount>50?'，僅列前 50 則':''}）】`);
@@ -91,7 +114,13 @@ export async function handler(req:Request):Promise<Response>{
   if(scheduled){
    const body=await req.json().catch(()=>({}));
    const c=body?.site_check;
-   if(c&&typeof c==='object'&&Number.isSafeInteger(c.checked))siteCheck={checked:c.checked,failed:Array.isArray(c.failed)?c.failed.slice(0,30).map((f:any)=>({page:clean(f?.page,100),reason:clean(f?.reason,100)})):[],note:clean(c.note,200)};
+   if(c&&typeof c==='object'&&Number.isSafeInteger(c.checked)&&c.checked>=0){
+    siteCheck={
+     checked:c.checked,
+     failed:scannedFilenames(c.failed).map(page=>({page})),
+     failed_count:Array.isArray(c.failed)?c.failed.length:0,
+    };
+   }
   }
   const day=taipei(new Date());
   const job=checked(await db.rpc('rise_claim_feedback_digest',{p_day:day,p_site_check:siteCheck}));
@@ -99,7 +128,7 @@ export async function handler(req:Request):Promise<Response>{
   // 排程只在有新回報時寄信；沒有新回報就釋放領取、不寄。管理員手動寄送則一律寄出。
   if(scheduled&&!(job.summary.new_count>0)){
    checked(await db.rpc('rise_release_feedback_digest',{p_day:job.day}));
-   return reply({sent:false,skipped:true,reason:'今天沒有新回報，不寄信。',site_failed:(siteCheck?.failed||[]).length});
+   return reply({sent:false,skipped:true,reason:'今天沒有新回報，不寄信。',site_failed:siteCheck?.failed_count??0});
   }
   const sender=must('RISE_SMTP_USER'),password=must('RISE_SMTP_PASSWORD');
   const to=Deno.env.get('RISE_FEEDBACK_TO')||'ytyeh@g.ntu.edu.tw';
